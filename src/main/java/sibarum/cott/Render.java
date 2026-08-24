@@ -25,9 +25,9 @@ import java.util.regex.Pattern;
  * <p>The requirement is that this is the <em>inverse</em> of {@link Parser}: whatever appears in the
  * display has to be something the display can read again, because the result of one evaluation is
  * the entry for the next. Two things follow. Brackets come from the term's shape and never from
- * scanning the rendered string — with the × dropped, {@code 2ω} is a product that no longer looks
+ * scanning the rendered string — with the sign dropped, {@code 2ω} is a product that no longer looks
  * like one, and a scanner would call it an atom and then print {@code (2ω)^ω} as {@code 2ω^ω}. And
- * the × is dropped exactly where {@link Notation#implied} will put it back.
+ * the sign is dropped exactly where {@link Notation#implied} will put it back.
  */
 public final class Render {
 
@@ -35,7 +35,7 @@ public final class Render {
     }
 
     // How tightly a rendered form binds, mirroring the parser: ^ takes a primary on both sides,
-    // × and ÷ take factors, + takes terms.
+    // · and ÷ take factors, + takes terms.
     private static final int ADD = 1;
     private static final int MUL = 2;
     private static final int POW = 3;
@@ -80,7 +80,7 @@ public final class Render {
         if (p.mult().equals(MINUS_ONE)) {
             return "-" + body;
         }
-        // 2ω, but 2×0^2: a digit may not lead. A FRACTIONAL coefficient is bracketed, both because
+        // 2ω, but 2·0^2: a digit may not lead. A FRACTIONAL coefficient is bracketed, both because
         // 1÷2ω reads as a quotient of the product, and because a bare exponent — which is what a
         // logarithm returns — renders as 1÷2ω itself, and two objects must not print alike.
         return juxtapose(coefficient(p.mult()), body);
@@ -180,7 +180,7 @@ public final class Render {
     }
 
     /**
-     * A product, rendered the way it would be typed: the × dropped wherever juxtaposition alone
+     * A product, rendered the way it would be typed: the sign dropped wherever juxtaposition alone
      * already means multiplication. The factors arrive in canonical order from the evaluator, which
      * is what puts the coefficient at the front rather than buried in the middle.
      */
@@ -188,7 +188,7 @@ public final class Render {
         String out = "";
         for (Val f : args) {
             // A product inside a product needs no brackets — times is associative and juxtaposition
-            // binds exactly as × does. A QUOTIENT does: a×x÷y reads as (a×x)÷y, and div is primitive
+            // binds exactly as · does. A QUOTIENT does: a·x÷y reads as (a·x)÷y, and div is primitive
             // here, so dropping the brackets would move which pair the residue belongs to.
             String piece = arg(f, quotient(f) ? POW : MUL);
             out = out.isEmpty() ? piece : juxtapose(out, piece);
@@ -208,11 +208,11 @@ public final class Render {
         };
     }
 
-    /** Two rendered factors, with a × only where juxtaposition would not read back as a product. */
+    /** Two rendered factors, with a sign only where juxtaposition would not read back as a product. */
     private static String juxtapose(String left, String right) {
         return Notation.implied(left.charAt(left.length() - 1), right.charAt(0))
                 ? left + right
-                : left + "×" + right;
+                : left + Notation.TIMES + right;
     }
 
     /** Render for a position that needs at least {@code min} binding tightness. */

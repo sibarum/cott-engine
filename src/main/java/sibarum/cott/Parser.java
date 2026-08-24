@@ -13,11 +13,11 @@ import java.math.BigInteger;
 import java.util.List;
 
 /**
- * A display expression to a term. Precedence: {@code ^} over {@code × ÷} over {@code + −}, with
+ * A display expression to a term. Precedence: {@code ^} over {@code · ÷} over {@code + −}, with
  * {@code ^} associating to the right.
  *
  * <p>The input is expected to have been through {@link Notation#normalize}, so it holds the display
- * glyphs and carries an explicit × wherever juxtaposition meant one.
+ * glyphs and carries an explicit {@link Notation#TIMES} wherever juxtaposition meant one.
  *
  * <p>The grammar is written over {@link Term} rather than {@link Val} because {@code log} returns an
  * <em>exponent</em>, which is a different sort. An exponent cannot be an operand of the arithmetic,
@@ -57,12 +57,12 @@ public final class Parser {
 
     private Term term() {
         Term a = factor();
-        while (p < s.length() && (peek() == '×' || peek() == '÷')) {
+        while (p < s.length() && (peek() == Notation.TIMES || peek() == '÷')) {
             char op = next();
             Val b = val(factor());
             // Division is primitive, not times-by-inverse: on equal arguments it is the
             // multiplicative residue and has to keep which argument it came from.
-            a = op == '×' ? new Times(List.of(val(a), b)) : new Div(val(a), b);
+            a = op == Notation.TIMES ? new Times(List.of(val(a), b)) : new Div(val(a), b);
         }
         return a;
     }

@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * <p>The load-bearing test here is {@link #outputReadsBackAsItself}. The result of one evaluation is
  * the entry for the next, so anything the display can write it also has to be able to read — and
  * getting that wrong is subtle, because a rendering can be perfectly legible and still re-parse into
- * a different term. {@code 2ω} is the standing example: with the × dropped it is a product that no
+ * a different term. {@code 2ω} is the standing example: with the · dropped it is a product that no
  * longer looks like one.
  */
 class DisplayTest {
@@ -25,7 +25,7 @@ class DisplayTest {
     /** Arithmetic on numerals, which are points like everything else. */
     @Test
     void numerals() {
-        assertEquals("6", ev("2×3"));
+        assertEquals("6", ev("2·3"));
         assertEquals("2", ev("1+1"));
         assertEquals("8", ev("2^3"));
         assertEquals("5÷2", ev("2.5"));
@@ -39,7 +39,7 @@ class DisplayTest {
         assertEquals("ω", ev("1÷0"));
         assertEquals("2ω", ev("2÷0"));
         assertEquals("(1÷2)ω", ev("1÷2w"));
-        assertEquals("0^-2", ev("w×w"));
+        assertEquals("0^-2", ev("w·w"));
         assertEquals("1", ev("0^0"));
         assertEquals("-1", ev("0^w"));
         assertEquals("-1", ev("w^w"));
@@ -47,7 +47,7 @@ class DisplayTest {
         assertEquals("-1", ev("i^2"));
         assertEquals("1", ev("i^4"));
         // two copies of the point 0 — the multiplicity is the count, not a coefficient to fold in
-        assertEquals("2×0", ev("0+0"));
+        assertEquals("2·0", ev("0+0"));
     }
 
     /**
@@ -56,23 +56,23 @@ class DisplayTest {
      */
     @Test
     void theSameResidueInTwoContexts() {
-        assertEquals("x", ev("x×(0÷0)"));      // erasure: the operand disappears
+        assertEquals("x", ev("x·(0÷0)"));      // erasure: the operand disappears
         assertEquals("1+x", ev("x+0÷0"));      // residue: it materialises as a one
         assertEquals("1^1", ev("1÷1"));        // the finer reading: not 1
-        assertEquals("1^0", ev("0×w"));        // the user law: 0·ω is 0/0
-        assertEquals("x", ev("x×(1÷1)"));
-        assertEquals("x", ev("x×(w÷w)"));
+        assertEquals("1^0", ev("0·w"));        // the user law: 0·ω is 0/0
+        assertEquals("x", ev("x·(1÷1)"));
+        assertEquals("x", ev("x·(w÷w)"));
         // ÷ binds left to right within a product, and div is primitive, so the brackets above are
-        // not decoration: x×0÷0 is (x·0)/0, a quotient of a product, and it has no residue in it.
-        assertEquals("(0x)÷0", ev("x×0÷0"));
+        // not decoration: x·0÷0 is (x·0)/0, a quotient of a product, and it has no residue in it.
+        assertEquals("(0x)÷0", ev("x·0÷0"));
     }
 
     /** Outside the closure set nothing erases, so the winding survives in both contexts. */
     @Test
     void windingsOutsideTheClosureSet() {
-        assertEquals("x×1^y", ev("x×(y÷y)"));
+        assertEquals("x·1^y", ev("x·(y÷y)"));
         assertEquals("x+1^y", ev("x+y÷y"));
-        assertEquals("x×0^y", ev("x×(y−y)"));
+        assertEquals("x·0^y", ev("x·(y−y)"));
         assertEquals("x+0^y", ev("x+(y−y)"));
     }
 
@@ -97,18 +97,22 @@ class DisplayTest {
         assertEquals("log(x, 0)", ev("log(x, 0)"));
         // an exponent is not a point, so it cannot be an operand
         assertEquals("log is an exponent, not a value",
-                assertThrows(SyntaxException.class, () -> ev("2×log(0, 0)")).getMessage());
+                assertThrows(SyntaxException.class, () -> ev("2·log(0, 0)")).getMessage());
     }
 
     /** A typed expression and a clicked one agree, because juxtaposition is resolved in one place. */
     @Test
     void juxtapositionMultiplies() {
-        assertEquals(ev("2×ω"), ev("2w"));
-        assertEquals(ev("x×y"), ev("xy"));
-        assertEquals(ev("3×(x+1)"), ev("3(x+1)"));
+        assertEquals(ev("2·ω"), ev("2w"));
+        assertEquals(ev("x·y"), ev("xy"));
+        assertEquals(ev("3·(x+1)"), ev("3(x+1)"));
         assertEquals(ev("1 + 1"), ev("1+1"));   // whitespace is dropped, not rejected
         assertEquals(ev("1/0"), ev("1÷0"));     // a keyboard cannot reach ÷
-        assertEquals(ev("2*3"), ev("2×3"));
+        assertEquals(ev("2*3"), ev("2·3"));
+        // The sign this notation used to print, still read on the way in. Nothing here persists an
+        // expression, but a paste from somewhere else may carry it and it costs one replace to accept.
+        assertEquals(ev("2·3"), ev("2×3"));
+        assertEquals("x·1^y", ev("x×(y÷y)"));
     }
 
     /** Powers associate to the right, and print with the brackets that say so. */
@@ -132,8 +136,8 @@ class DisplayTest {
     @Test
     void outputReadsBackAsItself() {
         List<String> entries = List.of(
-                "2×3", "1+1", "2÷0", "1÷2w", "w×w", "0^0", "0^w", "w^w", "i^2", "0+0",
-                "x×0÷0", "x+0÷0", "x×(y÷y)", "x+y÷y", "x×(y−y)", "x+(y−y)",
+                "2·3", "1+1", "2÷0", "1÷2w", "w·w", "0^0", "0^w", "w^w", "i^2", "0+0",
+                "x·0÷0", "x+0÷0", "x·(y÷y)", "x+y÷y", "x·(y−y)", "x+(y−y)",
                 "xy", "x+y", "πe", "x^2", "0^x", "(2w)^w", "−1^w", "2.5", "2−1",
                 "0^(w÷5)", "0^(−1÷2)", "log(x, 0)", "3(x+1)", "1÷3", "2^3^2");
         for (String entry : entries) {
@@ -168,7 +172,7 @@ class DisplayTest {
         // the visible half: the display changes under a second =
         assertEquals("1^1", ev("1÷1"));
         assertEquals("1", ev("1^1"));
-        assertEquals("1^0", ev("0×w"));
+        assertEquals("1^0", ev("0·w"));
         assertEquals("1", ev("1^0"));
         assertEquals("1^ω", ev("w÷w"));
         assertEquals("1", ev("1^ω"));

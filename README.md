@@ -52,7 +52,7 @@ adjoined, it is derived, and it falls out of the exponent arithmetic.
 
 ```java
 Cott.evaluate("x+0÷0")     // "1+x"    — the residue materialises
-Cott.evaluate("x×(0÷0)")   // "x"      — the operand erases
+Cott.evaluate("x·(0÷0)")   // "x"      — the operand erases
 Cott.evaluate("2÷0")       // "2ω"
 Cott.evaluate("w^w")       // "-1"
 ```
