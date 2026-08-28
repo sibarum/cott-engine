@@ -1,5 +1,9 @@
 package sibarum.cott;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * The surface notation: which characters end an operand, which begin one, and therefore where
  * juxtaposition alone means multiplication.
@@ -9,6 +13,18 @@ package sibarum.cott;
  * {@link #adjacency} puts it back on the way in from exactly the same two character sets. Deriving
  * both from one place is the invariant; the keypad reads them too, so a clicked expression and a
  * typed one agree.
+ *
+ * <h2>Words</h2>
+ * The rule above is a rule about single characters, and it has to stay one: {@code xy} is {@code x·y}, so a run
+ * of letters cannot be read as a name by default. What breaks the tie is a <b>vocabulary</b> — the names of
+ * {@link Real}'s functions, {@code log}, and whatever a session has defined in its {@link Bindings}. The scan
+ * below matches those, longest first, and treats each match as one token; everything else is still a character.
+ * So {@code sin(x)} is a call, {@code theta} is a name once something has defined it and five juxtaposed
+ * variables until then, and {@code xy} never changes meaning.
+ *
+ * <p>A token that is a <em>function</em> name does not end an operand — its brackets follow it, and
+ * {@code sin(x)} must not become {@code sin·(x)} — while a token that is a defined value does, so {@code 2k} is
+ * {@code 2·k} exactly as {@code 2x} is.
  */
 public final class Notation {
 
@@ -29,6 +45,9 @@ public final class Notation {
     /** What this notation used to print, still read on the way in so older text is not a syntax error. */
     private static final char LEGACY_TIMES = '×';
 
+    /** The base-0 logarithm's name. Not a {@link Real}: it returns an exponent, and it is COTT's own. */
+    static final String LOG = "log";
+
     private Notation() {
     }
 
@@ -38,6 +57,21 @@ public final class Notation {
     /** Characters that begin an operand token. */
     public static final String OPERAND_HEAD = "0123456789.(eiπωxyzl";
 
+    /** The words every session knows, longest first. A session's own names are matched ahead of these. */
+    private static final List<String> BUILTIN = builtinWords();
+
+    private static List<String> builtinWords() {
+        List<String> words = new ArrayList<>(Real.NAMES);
+        words.add(LOG);
+        return longestFirst(words);
+    }
+
+    private static List<String> longestFirst(List<String> words) {
+        List<String> out = new ArrayList<>(words);
+        out.sort(Comparator.comparingInt(String::length).reversed().thenComparing(s -> s));
+        return List.copyOf(out);
+    }
+
     /**
      * Typed ASCII to the keypad's glyphs, whitespace dropped, juxtaposition made explicit.
      *
@@ -46,32 +80,102 @@ public final class Notation {
      * left the calculator unable to re-read its own output.
      */
     public static String normalize(String s) {
+        return normalize(s, Bindings.EMPTY);
+    }
+
+    /** As {@link #normalize(String)}, reading {@code session}'s names as words rather than as juxtaposition. */
+    public static String normalize(String s, Bindings session) {
         return adjacency(s.replaceAll("\\s+", "")
                 .replace('*', TIMES).replace(LEGACY_TIMES, TIMES)
-                .replace('/', '÷').replace('-', '−').replace('w', 'ω'));
+                .replace('/', '÷').replace('-', '−').replace('w', 'ω'), session);
     }
 
     /**
-     * Make juxtaposition multiply: {@code 2ω}, {@code 3(x+1)}, {@code xy}. The keypad has always
-     * inserted this sign as you press, but a typed expression never got it — so {@code 2ω} was a
-     * syntax error. Doing it here rather than in the parser keeps typed input and the keypad agreeing.
+     * Make juxtaposition multiply: {@code 2ω}, {@code 3(x+1)}, {@code xy}, {@code 2sin(x)}. The keypad has always
+     * inserted this sign as you press, but a typed expression never got it — so {@code 2ω} was a syntax error.
+     * Doing it here rather than in the parser keeps typed input and the keypad agreeing.
      */
-    static String adjacency(String s) {
+    static String adjacency(String s, Bindings session) {
+        List<String> words = vocabulary(session);
         StringBuilder out = new StringBuilder(s.length() + 8);
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (i > 0 && implied(s.charAt(i - 1), c)) {
+        Token previous = null;
+        int i = 0;
+        while (i < s.length()) {
+            Token token = tokenAt(s, i, words, session);
+            if (previous != null && previous.ends() && token.starts() && !numeral(token.text().charAt(0))) {
                 out.append(TIMES);
             }
-            out.append(c);
+            out.append(token.text());
+            previous = token;
+            i += token.text().length();
         }
         return out.toString();
+    }
+
+    /**
+     * The built-in words and {@code session}'s names as one list, longest first.
+     *
+     * <p>Longest first over the <em>whole</em> list, not one group after the other: a session that defines
+     * {@code a} must not shadow {@code atan}, and it would if its own names were tried first.
+     *
+     * <p>Always asked of the {@link Bindings}, never short-circuited on its being empty. It used to be, and that
+     * was a bug waiting for the scope a definition's body is read in: that scope defines nothing and yet carries
+     * the parameters, so "empty" and "has no words of its own" stopped being the same question.
+     */
+    private static List<String> vocabulary(Bindings session) {
+        return session.vocabulary();
+    }
+
+    /** The built-in words, for {@link Bindings} to fold its own names into. */
+    static List<String> builtins() {
+        return BUILTIN;
+    }
+
+    /** {@code words} longest first, so a scan matching in order finds the longest match. */
+    static List<String> vocabularyOf(List<String> words) {
+        return longestFirst(words);
+    }
+
+    /** One token: a word from the vocabulary, or a single character. */
+    private record Token(String text, boolean ends, boolean starts) {
+    }
+
+    private static Token tokenAt(String s, int i, List<String> words, Bindings session) {
+        String w = longestAt(s, i, words);
+        if (w != null) {
+            boolean call = Real.of(w) != null || w.equals(LOG) || session.isFunction(w);
+            return new Token(w, !call, true);
+        }
+        char c = s.charAt(i);
+        return new Token(String.valueOf(c), endsOperand(c), startsOperand(c));
+    }
+
+    /**
+     * The word standing at {@code i}, or null where there is none — the same scan {@link #adjacency} makes,
+     * exposed so {@link Parser} reads a word exactly where the adjacency pass decided there was one. Two scans
+     * that could disagree about where {@code sin} ends is precisely the failure this class exists to prevent.
+     */
+    static String wordAt(String s, int i, Bindings session) {
+        return longestAt(s, i, vocabulary(session));
+    }
+
+    private static String longestAt(String s, int i, List<String> words) {
+        for (String w : words) {
+            if (s.startsWith(w, i)) {
+                return w;
+            }
+        }
+        return null;
     }
 
     /**
      * Whether juxtaposition alone multiplies. The left side has to be something an operand can
      * follow, the right has to be something an operand can start with, and a digit may never lead —
      * mid-numeral the digits belong to one operand, since {@code 2·3} is not {@code 23}.
+     *
+     * <p>Character by character, which is what {@link Render} needs: it joins two pieces it has already
+     * rendered, and a piece that begins with a letter — a call — simply keeps the sign, which reads back as
+     * the same product.
      */
     public static boolean implied(char left, char right) {
         return endsOperand(left) && startsOperand(right) && !numeral(right);

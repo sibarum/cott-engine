@@ -241,6 +241,26 @@ public sealed interface Term {
         }
     }
 
+    /**
+     * A call: one of {@link Real}'s functions, or a name a session has defined (see {@link Bindings}).
+     *
+     * <p>One node for both, because the difference is not the term's shape but who answers it. A built-in
+     * reduces here, in {@link Cott}, when its arguments have a real reading; a defined one is expanded by
+     * {@link Bindings} <em>before</em> the evaluator ever sees it, so the evaluator has no notion of an
+     * environment and stays a function of its argument alone. A call to neither stands, like everything else
+     * this theory has no answer for.
+     */
+    record Call(String name, List<Val> args) implements Val {
+        public Call {
+            args = List.copyOf(args);
+        }
+
+        @Override
+        public String toString() {
+            return name + "(" + join(args) + ")";
+        }
+    }
+
     // ------------------------------------------------------------------ the named points
 
     Pt ONE = new Pt(Rational.ONE, Xp.UNIT);

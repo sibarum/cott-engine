@@ -95,9 +95,16 @@ class DisplayTest {
         assertEquals("-1", ev("log(w, 0)"));
         assertEquals("ω", ev("log(−1, 0)"));
         assertEquals("log(x, 0)", ev("log(x, 0)"));
-        // an exponent is not a point, so it cannot be an operand
-        assertEquals("log is an exponent, not a value",
-                assertThrows(SyntaxException.class, () -> ev("2·log(0, 0)")).getMessage());
+        // An exponent is not a point, so it cannot be an operand. The message has to say WHICH of the two
+        // surprises is happening: "log is an exponent" only helps somebody who already knew that COTT's log
+        // is not the logarithm, and the expression that reported it was a sum, not a log.
+        String sort = "log here returns an exponent, not a value -- it cannot be added to or "
+                + "multiplied by anything, only stand alone";
+        assertEquals(sort, assertThrows(SyntaxException.class, () -> ev("2·log(0, 0)")).getMessage());
+        assertEquals(sort, assertThrows(SyntaxException.class, () -> ev("0^-23+log(2, 3)")).getMessage());
+        // The base is the SECOND argument, and a missing one says so rather than saying "Error".
+        assertEquals("log needs a base: log(x, b) is the log OF x, TO base b",
+                assertThrows(SyntaxException.class, () -> ev("log(8)")).getMessage());
     }
 
     /** A typed expression and a clicked one agree, because juxtaposition is resolved in one place. */

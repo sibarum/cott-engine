@@ -48,6 +48,54 @@ come back unchanged — where the theory has no definite answer, the term stands
 neither has a base-0 exponential form and neither is derivable, so they never reduce. `i` is not
 adjoined, it is derived, and it falls out of the exponent arithmetic.
 
+## The real functions
+
+Trigonometry has no base-0 exponential form — the same reason π and e are atoms — so it is not theory here, it
+is a catalogue: `Real`, one enum, read by the parser, the printer, the adjacency pass and the keypad alike.
+
+```java
+Cott.evaluate("sin(π÷2)")     // "1"
+Cott.evaluate("sin(2)")       // "0.909297426826"
+Cott.evaluate("sin(x)")       // "sin(x)"   — no number to work on, so it stands, and stays plottable
+Cott.evaluate("asin(2)")      // "asin(2)"  — not a finite real, so it stands too
+Cott.evaluate("sin(deg(90))") // "1"
+```
+
+sin cos tan, their inverses, sec csc cot and theirs, the six hyperbolics, `atan2(x, y)` — the angle of the
+point, in the order written — and `deg`/`rad`, which **construct** an angle rather than switching a mode: an
+expression carrying `deg(90)` cannot be ambiguous about which measure it was written in, and one written under
+a mode always is. `acot` takes the continuous branch, (0, π), rather than the one `atan(1/x)` tears at zero.
+
+This is the one place the engine approximates. Answers are rounded to **fifteen decimal places** and shown to
+**twelve** — rounded at all so that `sin(π)` is zero rather than the 1.22e-16 the floating point computes, and
+shown three places narrower because everything downstream of a call is exact arithmetic on an approximation and
+the error grows with the expression. Those three are guard digits, and they are why `sin(θ)²+cos(θ)²` is 1 and
+not 1.000000000001.
+
+A multiplicity now prints as a decimal wherever that spelling is the shorter one — the same exact rational
+either way, but `0.909297426826` rather than `454648713413÷500000000000`. Nothing that read well as a fraction
+changed: `5÷2` and `1÷2` are no longer than `2.5` and `0.5`, ties go to the fraction, and a rounding that would
+turn a small number into zero is never used.
+
+`log` is untouched and is still not the logarithm: it is the base-0 exponent reading, it returns an **exponent**,
+and an exponent is not an operand — so `2+log(8, 2)` is a sort error, and the message now says which of those two
+surprises is happening rather than assuming you knew the first.
+
+## Names a session gives
+
+`Bindings` is what `k = 3` and `f(x) = x^2+1` mean. It is expansion and not an environment: the definitions go
+into the term before `Cott` sees it, so the evaluator stays a function of its argument alone.
+
+```java
+Bindings s = Bindings.EMPTY.define("k = 3").define("f(t) = k·t");
+s.expand(Parser.parse(Notation.normalize("f(4)", s), s))   // 12
+```
+
+A name is only a name once the vocabulary knows it: `xy` is `x·y` and has to stay so, so `Notation` and `Parser`
+both scan words out of `Real`'s names plus the session's, longest first, and everything else is still a single
+character. A body keeps the names it was written with and looks them up when it is used, so correcting `k`
+corrects everything that mentions it. A ring of definitions is refused rather than run until the stack ends.
+
 ## Use
 
 ```java

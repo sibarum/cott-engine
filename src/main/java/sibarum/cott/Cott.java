@@ -3,6 +3,7 @@ package sibarum.cott;
 import sibarum.cott.Term.AWind;
 import sibarum.cott.Term.Approx;
 import sibarum.cott.Term.Atom;
+import sibarum.cott.Term.Call;
 import sibarum.cott.Term.Div;
 import sibarum.cott.Term.Exp;
 import sibarum.cott.Term.Inv;
@@ -83,6 +84,7 @@ public final class Cott {
             case Wind w -> new Wind(eval(w.of()));
             case AWind w -> new AWind(eval(w.of()));
             case Approx a -> approx(eval(a.of()));
+            case Call c -> call(c);
             case Plus p -> plus(flatten(p.args(), true));
             case Times t -> times(flatten(t.args(), false));
         };
@@ -214,6 +216,111 @@ public final class Cott {
                     new Xp(p.exp().grade(), p.exp().twist().subtract(Rational.ONE), p.exp().torsion())));
         }
         return null;   // a half twist is i, which has no exponent reading at all
+    }
+
+    /**
+     * The REAL reading, and the third of these after {@link #asPoint} and {@link #asExponent}. Null where there
+     * is none, which is how {@link Real}'s functions decline: {@code sin(x)} has no number to work on, so the
+     * call stands and the plotter can still draw it.
+     *
+     * <p>The table is {@link Term.Pt}'s, read on the line: grade 0 is the multiplicity, a positive grade is
+     * zero, a negative one is ω and has no real value, a whole twist negates and a half twist is i. π and e
+     * answer here and nowhere else in this file, which is the one place their being atoms is a nuisance rather
+     * than the point. Everything a residue could be — {@link Wind}, {@link AWind}, {@link Approx} — has no
+     * reading at all, and neither does a call that did not reduce.
+     */
+    static Double asReal(Val v) {
+        return switch (v) {
+            case Pt p -> realOfPoint(p);
+            case Atom a -> switch (a.name()) {
+                case "π" -> Math.PI;
+                case "e" -> Math.E;
+                default -> null;
+            };
+            case Neg n -> combine(asReal(n.of()), 0.0, (x, ignored) -> -x);
+            case Inv i -> combine(1.0, asReal(i.of()), (x, y) -> x / y);
+            case Div d -> combine(asReal(d.of()), asReal(d.by()), (x, y) -> x / y);
+            case Pow p -> combine(asReal(p.base()), asReal(p.exponent()), Math::pow);
+            case Plus p -> fold(p.args(), 0.0, Double::sum);
+            case Times t -> fold(t.args(), 1.0, (x, y) -> x * y);
+            default -> null;
+        };
+    }
+
+    private static Double realOfPoint(Pt p) {
+        Xp e = p.exp();
+        if (!e.torsion().isZero()) {
+            return null;                      // a root of the residue zero is not on the line
+        }
+        boolean negated = e.twist().isOne();
+        if (!negated && !e.twist().isZero()) {
+            return null;                      // a half twist is i
+        }
+        int grade = e.grade().signum();
+        if (grade < 0) {
+            return null;                      // ω is not a value the line holds
+        }
+        double magnitude = grade > 0 ? 0.0 : decimal(p.mult());
+        return finite(negated ? -magnitude : magnitude);
+    }
+
+    /** A multiplicity as a double, through {@link java.math.BigDecimal} so a large exact fraction survives. */
+    private static double decimal(Rational r) {
+        return new java.math.BigDecimal(r.numerator())
+                .divide(new java.math.BigDecimal(r.denominator()), java.math.MathContext.DECIMAL64)
+                .doubleValue();
+    }
+
+    private static Double combine(Double a, Double b, java.util.function.DoubleBinaryOperator op) {
+        return a == null || b == null ? null : finite(op.applyAsDouble(a, b));
+    }
+
+    private static Double fold(List<Val> args, double unit, java.util.function.DoubleBinaryOperator op) {
+        double acc = unit;
+        for (Val a : args) {
+            Double x = asReal(a);
+            if (x == null) {
+                return null;
+            }
+            acc = op.applyAsDouble(acc, x);
+        }
+        return finite(acc);
+    }
+
+    /** An overflow or a division by zero is not a real answer, so it is no answer — the term stands. */
+    private static Double finite(double d) {
+        return Double.isFinite(d) ? d : null;
+    }
+
+    // ---------------------------------------------------------------- calls
+
+    /**
+     * A call. Arguments first, as everywhere here, and then the one question that decides everything: does every
+     * argument have a real reading? If so this is arithmetic and {@link Real} answers it; if not, the call is a
+     * term like any other and stands. A name {@link Real} does not know stands too — {@link Bindings} has
+     * already expanded whatever was defined, so anything left is genuinely undefined and saying so by standing
+     * is this engine's habit.
+     */
+    private static Val call(Call c) {
+        List<Val> args = new ArrayList<>(c.args().size());
+        for (Val a : c.args()) {
+            args.add(eval(a));
+        }
+        Call evaluated = new Call(c.name(), args);
+        Real fn = Real.of(c.name());
+        if (fn == null || args.size() != fn.arity()) {
+            return evaluated;
+        }
+        List<Double> reals = new ArrayList<>(args.size());
+        for (Val a : args) {
+            Double x = asReal(a);
+            if (x == null) {
+                return evaluated;
+            }
+            reals.add(x);
+        }
+        Rational answer = fn.apply(reals);
+        return answer == null ? evaluated : Term.number(answer);
     }
 
     // ---------------------------------------------------------------- unary

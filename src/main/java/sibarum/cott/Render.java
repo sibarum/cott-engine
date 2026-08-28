@@ -3,6 +3,7 @@ package sibarum.cott;
 import sibarum.cott.Term.AWind;
 import sibarum.cott.Term.Approx;
 import sibarum.cott.Term.Atom;
+import sibarum.cott.Term.Call;
 import sibarum.cott.Term.Div;
 import sibarum.cott.Term.Inv;
 import sibarum.cott.Term.Lg;
@@ -44,6 +45,19 @@ public final class Render {
     /** An exponent the {@code ^} slot can hold whole: one signed integer, or the twist unit. */
     private static final Pattern EXP_ATOM = Pattern.compile("-?(?:\\d+|ω)");
 
+    /**
+     * Places the display keeps back from {@link Real#PLACES} — the guard digits.
+     *
+     * <p>Three of them, and they are what makes {@code sin(θ)²+cos(θ)²} come out as 1. The arithmetic rounds
+     * wider than the display shows, so the error that grows through an expression grows in the part nobody
+     * reads. Written as a difference rather than as a second constant because that is what it is: change the
+     * arithmetic's width and the display follows, and the gap between them stays the thing that was chosen.
+     */
+    private static final int GUARD = 3;
+
+    /** Decimal places a multiplicity is shown to. See {@link #rational}. */
+    private static final int SHOWN = Real.PLACES - GUARD;
+
     public static String show(Term t) {
         return switch (t) {
             case Xp x -> exponent(x);
@@ -52,6 +66,9 @@ public final class Render {
             case Logb l -> "log(" + show(l.of()) + ", " + show(l.base()) + ")";
             case Pt p -> point(p);
             case Atom a -> a.name();
+            // A call is written the way it is typed. Its arguments are whole expressions and the call's own
+            // brackets already separate them, so nothing inside needs brackets of its own.
+            case Call c -> c.name() + "(" + String.join(", ", c.args().stream().map(Render::show).toList()) + ")";
             case Wind w -> "1^" + arg(w.of(), ATOM);
             case AWind w -> "0^" + arg(w.of(), ATOM);
             case Neg n -> "-" + arg(n.of(), ATOM);
@@ -88,9 +105,10 @@ public final class Render {
 
     private static final Rational MINUS_ONE = Rational.of(-1);
 
-    /** A multiplicity in front of a point: bracketed when it is a fraction, bare when it is whole. */
+    /** A multiplicity in front of a point: bracketed when it is spelled as a quotient, bare otherwise. */
     private static String coefficient(Rational mult) {
-        return mult.isInteger() ? mult.toString() : "(" + rational(mult) + ")";
+        String s = rational(mult);
+        return s.indexOf('÷') < 0 ? s : "(" + s + ")";
     }
 
     /** The points that have names; null for everything else. */
@@ -153,9 +171,48 @@ public final class Render {
         return s;
     }
 
-    /** A rational in the display's own language: 5/2 prints as 5÷2, which is what the keypad types. */
+    /**
+     * A rational in the display's own language: 5/2 prints as 5÷2, which is what the keypad types.
+     *
+     * <h2>Or as a decimal, when that is shorter</h2>
+     * A multiplicity is exact and stays exact — {@code 2.5} is five halves and not a float — but there are two
+     * ways to write one down, and the shorter is the one to show. Everything that reads well as a fraction is
+     * untouched, since {@code 1÷2} and {@code 5÷2} are no shorter than {@code 0.5} and {@code 2.5} and a tie
+     * goes to the fraction; {@code 1÷3} has no decimal at all and keeps its own. What this rescues is the case
+     * {@link Real} produces: {@code sin(2)} is {@code 454648713413÷500000000000} as a quotient and
+     * {@code 0.909297426826} as a decimal, and only one of those is an answer.
+     *
+     * <h2>Twelve places, and what that costs</h2>
+     * The decimal is rounded to {@link #SHOWN} places, because arithmetic <em>downstream</em> of an approximation
+     * is exact arithmetic on an approximation and gets longer as it goes: {@code sin(θ)²+cos(θ)²} is
+     * 1.000000000001279794257938, every digit of it correct and none of it useful. So the display is a
+     * twelve-place window onto an exact value, and re-entering what it shows re-enters the rounding — which is
+     * what a displayed decimal has always meant, and is now true of this one too.
+     *
+     * <p>The rounding never wins where it would <b>lose the number</b>. {@code 2^-50} is small and is not zero,
+     * and its quotient says so in eighteen characters, so the quotient is what appears.
+     */
     private static String rational(Rational r) {
-        return r.toString().replace("/", "÷");
+        String fraction = r.toString().replace("/", "÷");
+        String decimal = decimal(r);
+        return decimal != null && decimal.length() < fraction.length() ? decimal : fraction;
+    }
+
+    /**
+     * Whether {@code r} is written as a quotient. This and not {@code isInteger} is what the bracketing rules
+     * below ask, because a multiplicity that prints as a decimal is a primary and needs no brackets at all:
+     * {@code 0.5ω} reads back as the product it is, while {@code 1÷2ω} would read as a quotient of one.
+     */
+    private static boolean spelledAsQuotient(Rational r) {
+        return rational(r).indexOf('÷') >= 0;
+    }
+
+    /** {@code r} as a decimal of at most {@link #SHOWN} places, or null where that is not a spelling of it.  */
+    private static String decimal(Rational r) {
+        java.math.BigDecimal value = new java.math.BigDecimal(r.numerator())
+                .divide(new java.math.BigDecimal(r.denominator()), SHOWN, java.math.RoundingMode.HALF_EVEN)
+                .stripTrailingZeros();
+        return value.signum() == 0 && r.signum() != 0 ? null : value.toPlainString();
     }
 
     // ---------------------------------------------------------------- the operators
@@ -203,7 +260,7 @@ public final class Render {
             case Inv i -> true;
             // A fractional multiplicity is a bare quotient only when there is no point behind it:
             // 5/2 alone renders as 5÷2, while 5/2 copies of ω render as (5÷2)ω, bracketing itself.
-            case Pt p -> p.exp().isUnit() && !p.mult().isInteger();
+            case Pt p -> p.exp().isUnit() && spelledAsQuotient(p.mult());
             default -> false;
         };
     }
@@ -231,7 +288,7 @@ public final class Render {
             case Pt p -> {
                 if (p.exp().isUnit()) {
                     // the plain number k: an atom, unless it is a fraction, which is a quotient
-                    yield p.mult().isInteger() ? ATOM : MUL;
+                    yield spelledAsQuotient(p.mult()) ? MUL : ATOM;
                 }
                 boolean bare = p.mult().isOne() || p.mult().equals(MINUS_ONE);
                 yield bare ? (name(p.exp()) != null ? ATOM : POW) : MUL;
@@ -240,6 +297,7 @@ public final class Render {
             case Atom a -> ATOM;
             case Lg l -> ATOM;      // a call is parenthesised, so it binds as tightly as a name
             case Logb l -> ATOM;
+            case Call c -> ATOM;
             default -> POW;         // neg, inv, pow, wind, awind, approx
         };
     }
