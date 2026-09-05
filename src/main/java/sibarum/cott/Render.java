@@ -148,8 +148,10 @@ public final class Render {
             plus(s).append(e.twist().isOne() ? "ω" : rational(e.twist()) + "ω");
         }
         if (!e.torsion().isZero()) {
-            // torsion 1/d is the d-th root of the residue zero, written 0/d
-            plus(s).append("0÷").append(e.torsion().denominator());
+            // The torsion k is k copies of the residue zero, written k·0 — the same grouping a
+            // residue of order k gets anywhere else, and it reads back as itself. The old spelling
+            // printed the denominator alone, so torsion 1/3 and 2/3 were two objects with one name.
+            plus(s).append(coefficient(e.torsion())).append("·0");
         }
         return s.isEmpty() ? "0" : s.toString();
     }
