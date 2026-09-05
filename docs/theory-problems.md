@@ -80,45 +80,81 @@ consequence went with E2, since `(-1)^0` is no longer this term. So the conseque
 rejected on sight each time it appeared is no longer attached to this question, and **yes** is
 cheaper than it was.
 
-**Half a proposed rule, now adopted.** The exponent slot of `0^` is additive, since
-`0^(a+b) = 0^a · 0^b`. So an erasure landing there is at home or foreign depending on its kind:
+**Universal invariance does not reach this term, and here is why.** Invariance is indexed by
+the operation: `+(z-z)` may be added anywhere, `*(z/z)` multiplied anywhere, and both hold
+inside an exponent as readily as outside one — `1+(z-z)` and `1·(z/z)` are both still `1`. So
+the exponent of `0^` is not a slot of one privileged kind, and an earlier version of this
+section was wrong to call it additive and to sort erasures into "home" and "foreign" by that.
 
-| in the exponent of `0^` | kind | context | behaviour | status |
-|---|---|---|---|---|
-| `1 - 1` | additive | home | erases — the term discharges | still open: this problem |
-| `1 / 1` | multiplicative | foreign | materialises as `1` | ADOPTED with total subtraction |
+What separates this term from every invariance example is a **host**. In `x + (z-z)` the
+erasure form is added *to* something, and that something is what survives. In `0^(1 + -1)` the
+erasure form is the entire exponent; there is nothing for it to be invariant with respect to.
+Writing `1 - 1 = 0 + (1 - 1)` to supply a host is circular — it assumes the value `0` is an
+additive host, which is problem 2.
 
-The foreign row is no longer a proposal: the totality of E10 is exactly that row, and it is
-what makes `0 - 0 = 0^(1/1) = 0^1 = 0`. The home row was always the other half, and it is
-still the open one. The two halves were consistent as a pair, which is mild evidence for the
-home row — but it has still not been derived from anything.
+So the question is not which kind of erasure lands where. It is what a hostless erasure means
+in a parameter slot, and the answer is either the value it would materialise as, or nothing at
+all.
 
-### 2) What negation does
+**One thing the branch does settle.** The totality of E10 is exactly the statement that
+`0^(a÷a)` materialises as `0^1` rather than discharging, in the one case where the erasure is
+hostless and multiplicative. That is `y - y = 0`, and it stands. It is evidence by analogy for
+materialising the additive one too — the same situation, the other operation — but only
+analogy: `0^(1 + -1)` has not been derived from it, and the two are not forced to agree, since
+the whole point of matching on terms is that context is allowed to decide.
 
-The old conflict here is resolved, and it left a hole.
+### 2) Negation, and which premise makes 0 the additive identity
 
-E10 with its totality gives `0 - 0 = 0^(1/1) = 0^1 = 0`. Reading `+(x-x) = ∅` as "0 is the
-additive identity", the additive inverse of the identity is the identity, so `-0 = 0`. The
-other route gives `-0 = 0·(-1) = 0^1 · 0^w = 0^(1+w)`, and those agree only if `w = 0`, which
-E6 forbids. E10 is protected by this branch and `-1 = 0^w` is forced by E6 and E7, so the
-casualty is `-y = y·(-1)`:
+**A retraction first.** This section previously concluded that negation is not multiplication
+by −1, deriving `-0 = 0` from the totality of E10 plus `+(x-x) = ∅` read as "0 is the additive
+identity". That reading is wrong. Universal invariance is indexed by the operation, not by a
+position, and it is a statement about the erasure **form**: adding `x-x` to anything changes
+nothing. The additive identity is deliberately kept separate from magnitude-zero — the value
+`0 = 0^1` is a point of the type with an orientation and a reciprocal, and separating those two
+jobs is the whole bookkeeping difference from the classic treatment. See
+notation-and-terminology.md.
+
+So `0 - 0 = 0^(1/1) = 0^1 = 0` says what the expression `0 - 0` is worth. Reading it as `-0`
+needs the value `0` to be the additive identity, and E10 does not supply that.
+
+**What the conflict actually is.** Two routes to `-0`:
 
 ```
-negation is not multiplication by -1
+(i)  0 - 0 = 0^(1÷1) = 0^1 = 0                   E10 with totality, THEN "0 is the additive
+                                                 identity", which E10 does not give
+(ii) -0 = 0·(-1) = 0^1 · 0^w = 0^(1+w)           E1, then -1 = 0^w
 ```
 
-That was the cheapest of the four candidates and the only one never written down as an
-assumption, so this is the expected outcome. But it removes the only exponent rule negation
-had. `-(0^a) = 0^(a+w)` was that rule, and it *was* multiplication by −1.
+They agree only if `w = 0`, which E6 forbids. Route (ii) is E1 plus a Chosen item that E6 and
+E7 very nearly force. Route (i) needs a premise from somewhere, and there is exactly one place
+in the theory that supplies it:
 
-**So the open question is now: what does negation do to an exponent?** Nothing in the
-primitives says. E10 gives differences of two values, `0^a - 0^b = 0^(a/b)`, and `-0 = 0`, and
-that is the whole of what is known. Note that `-(0^a)` cannot be recovered from E10 as
-`0^0 - 0^a`, because that needs `0` to be the additive identity *and* a value-level rule for
-unary minus, which is the thing being asked for.
+```
+the Maybe addition law makes the value 0 the additive identity
+    x + 0 = 0^u + 0^1 = 0^(u·1) = 0^u = x,  since 1 is the multiplicative identity
+    in the exponent.
+```
 
-One step to confirm before this is load-bearing: reading `+(x-x) = ∅` as "0 is the additive
-identity". Everything else in the chain is E1, E6 and E10.
+That was not noticed while `0^a + 0^b = 0^(a·b)` was read only as E10's mirror. So the conflict
+is **the Maybe addition law against negation-as-multiplication-by-−1**, and the addition law is
+the lower-ranked of the two. Nothing here forces the choice, but the ranking points one way.
+
+**Where this leaves the values.** Taking route (ii), which is what the docs now record:
+
+```
+-0 = 0^(1+w),  and  0^(1+w) != 0^1 by E6
+```
+
+So `-0` is a magnitude-zero point distinct from `0`, with the opposite orientation, the way
+omega is. Traction has more than one of these, which is the same feature that separates the
+additive identity from magnitude-zero in the first place. The old `-0 != w` stays Proven and is
+now the weaker statement of the two.
+
+**What would settle it.** Whether `x + 0 = x` for the value `0`. If yes, the addition law
+survives and negation is not multiplication by −1, and negation is then left with no exponent
+rule at all. If no, negation keeps `a + w` and the addition law needs restating so that it does
+not quietly make `0` an identity — for instance by being a rule about terms rather than values,
+which is the distinction finding 5 in rule-combinations.md already relies on.
 
 ### 3) There is no power rule off the integers
 

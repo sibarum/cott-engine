@@ -48,34 +48,44 @@ log_(0^a)(0^b) = 0^(b÷a)
 
 ### Unary operations
 
-| value op    | exponent op | rule | status |
-|-------------|-------------|------|--------|
-| `1 ÷ 0^a`   | `-a`        | E3   | Proven |
-| `-(0^a)`    | unknown     | —    | Open   |
+| value op    | exponent op | rule           | status |
+|-------------|-------------|----------------|--------|
+| `1 ÷ 0^a`   | `-a`        | E3             | Proven |
+| `-(0^a)`    | `a + w`     | E1, `-1 = 0^w` | Chosen |
 
-Negation used to be "add w to the exponent", by E1 and `-1 = 0^w`, which is negation read as
-multiplication by −1. In this branch that reading is false: E10 with totality forces `-0 = 0`,
-while `0·(-1) = 0^(1+w)` forces `-0 = 0^(1+w)`, and those agree only if `w = 0`. See
-equivalence-classes.md, Chosen. So negation is an operation with no exponent rule at present —
-this is now problem 2, and it is a bigger hole than the conflict it replaced.
+Negation is "add w to the exponent" — negation read as multiplication by −1. It gives
+`-0 = 0^(1+w)`, which E6 keeps distinct from `0^1`, so `-0` is a magnitude-zero point with the
+opposite orientation rather than `0` itself.
+
+It is an involution exactly when `2w = 0`, which the Maybe addition law supplies:
+`w + w = 0^-1 + 0^-1 = 0^((-1)(-1)) = 0^1 = 0`. Note the awkwardness there — that same addition
+law makes the value `0` an additive identity, which contradicts this row. So the row that needs
+the addition law to be an involution is the row the addition law collides with. That is
+problem 2, and it is a conflict between two items, not a hole.
 
 ### Degenerate cells
 
 A cell is degenerate when the exponent-level operation is an erasure form — `x - x` or `x ÷ x`.
 
-| value op | exponent op | erasure at | kind in the exponent | behaviour |
+| value op | exponent op | erasure at | form in the exponent | behaviour |
 |----------|-------------|------------|----------------------|-----------|
-| `·`      | `a + b`     | `b = -a`   | additive, home       | open — Problem 1 |
-| `÷`      | `a - b`     | `a = b`    | additive, home       | open — same question |
+| `·`      | `a + b`     | `b = -a`   | additive             | open — Problem 1 |
+| `÷`      | `a - b`     | `a = b`    | additive             | open — same question |
 | `+`      | `a · b`     | `b = 1÷a`  | multiplicative       | no standard value form |
-| `-`      | `a ÷ b`     | `a = b`    | multiplicative, foreign | materialises as 1: `y - y = 0` |
+| `-`      | `a ÷ b`     | `a = b`    | multiplicative       | materialises as 1: `y - y = 0` |
 
 Rows 1, 2 and 4 are the erasure changing kind: a multiplicative erasure at the value level
 lands as an additive erasure in the exponent, and the other way round.
 
-Row 4 is settled by the totality of E10 — the foreign erasure materialises. Rows 1 and 2 are
-the home case and are still open; that is Problem 1. Row 3 has no recognisable value-level
-form, which is one more reason the addition law is only Maybe.
+Row 4 is settled by the totality of E10: the erasure materialises. Rows 1 and 2 are still open,
+and that is Problem 1. Row 3 has no recognisable value-level form, which is one more reason the
+addition law is only Maybe.
+
+What distinguishes the settled row from the open ones is not the *kind* of erasure — universal
+invariance holds for both kinds inside an exponent, so an exponent is not a slot of privileged
+kind. It is that these erasures have no **host**: `0^(1 + -1)` is an erasure form standing as
+the whole exponent, with nothing for it to be added to, which is why the invariance that
+governs `0^(a + (z-z))` says nothing about it. See theory-problems.md, problem 1.
 
 `0·w` is row 1 at `a = 1, b = -1`. That is the whole of Problem 1.
 
@@ -91,12 +101,15 @@ form, which is one more reason the addition law is only Maybe.
    rule at all rather than an unconstrained one. Those two were filed False on E2's authority;
    they are Open again. See problem 3.
 
-3) Discharge and materialise are no longer both in use without a rule. The foreign erasure
-   materialises: that is the totality of E10, chosen. The home erasure is undecided, and that
-   is Problem 1 -- but it is now one question rather than half a table.
+3) Discharge and materialise are no longer both in use without a rule. The multiplicative
+   erasure in row 4 materialises: that is the totality of E10, chosen. The additive one is
+   undecided, and that is Problem 1 -- but it is now one question rather than half a table.
 
-4) The negation conflict is resolved, at a price. E10 is protected, `-1 = 0^w` is forced by E6
-   and E7, so `-y = y·(-1)` is the casualty. What negation does to an exponent is now unknown.
+4) The negation conflict is NOT resolved by E10, and an earlier version of this file said it
+   was. E10 gives what `0 - 0` is worth; it does not make the value `0` an additive identity,
+   and universal invariance does not either. The premise that does is the Maybe addition law,
+   via `x + 0 = 0^(u·1) = x`. So the conflict is that law against `-(0^a) = 0^(a+w)`, which is
+   Maybe against Chosen. See theory-problems.md, problem 2.
 
 5) Degenerate cells cannot be recognised by value, only by term shape. 1·1 is the value 1;
    1·(1÷1) is an erasure. Same class, different terms. So simplify() has to match on the

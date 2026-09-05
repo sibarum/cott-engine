@@ -45,7 +45,7 @@ The power law `(0^u)^v = 0^(uv)` was withdrawn on 2026-09-05, keeping E10 and to
 instead — the branch the author's ℚ model satisfies, and so the branch known to be consistent.
 What survives is the integer case, which is a theorem of E1 rather than a law of its own. The
 cost is that `x^v` has no rule at non-integer `v`, and that `1^w`, `(-1)^0` and `x^0` are no
-longer the same question as `0·w`. What it buys is that negation is not multiplication by −1.
+longer the same question as `0·w`.
 
 ## Build
 

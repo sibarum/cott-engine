@@ -99,8 +99,10 @@ by the back door at exactly the points the theory withdrew it.
 `n = 0` is not in the rule. Zero copies is the empty product, and calling it 1 is `x^0 = 1`,
 which the theory does not have.
 
-Negation has lost its rule rather than gained one. `-(0^a) -> 0^(a+w)` must NOT be implemented;
-it is now false, not merely unproven.
+Negation keeps its rule. `-(0^a) -> 0^(a+w)` is Chosen, as it was — a retraction inside the E2
+commit had briefly called it false. It stays out of the implementable list only because it
+conflicts with the Maybe addition law (problem 2), so whichever of the two is implemented has
+to be the one behind the flag.
 
 Promotion finally gets a consumer here: the exponent rules need both operands as tractions, so
 `ProjRationalToTractionPromotionRule` needs a registry that runs before the binary rules.
@@ -141,14 +143,13 @@ Mostly renames: `Term` -> `IExpr`, `Rational` -> `ProjectiveRationalLiteral`,
 `Cott.reduce(t)` -> `expr.simplify()`. `Parser`, `Notation`, `Render` and `Real` calls survive.
 
 **Not mechanical:** it has its own `Traction.java` and `TractionTest.java`. If those assert
-`x^0 = 1` or `-0 = 0`, the docs now mark the first False and the second open. Read them before
-counting this phase as renames.
+`x^0 = 1`, no rule reaches it — the term has to stand. If they assert `-0 = 0`, that is against
+the negation rule the docs now record, which gives `-0 = 0^(1+w)`, distinct from `0` by E6.
+Read them before counting this phase as renames.
 
 ### What this plan deliberately does not do
 
-It does not resolve `0·w`, supply a power rule off the integers, say what negation does to an
-exponent, or adopt the general involution. Every one of those is a theory decision, and the
-engine is built so each leaves a standing term rather than a wrong answer.
-
-`-0 = 0` is no longer on that list: the branch settles it. What is on the list instead is what
-negation does in general, which is a bigger hole than the conflict it replaced.
+It does not resolve `0·w`, supply a power rule off the integers, choose between the Maybe
+addition law and negation-as-multiplication-by-−1, or adopt the general involution. Every one of
+those is a theory decision, and the engine is built so each leaves a standing term rather than
+a wrong answer.

@@ -88,8 +88,10 @@ w = 0^-1 = 1/0
 -0 != w
     0 - 0 = 0^1 - 0^1 = 0^(1/1) = 0^1 = 0, by E10 and its totality.
     -0 = w would require 1/1 = -1.
-    In this branch this goes further and settles -0; see "negation is not multiplication
-    by -1" under Chosen.
+    This rules out w and nothing more. It does NOT reach -0 = 0: reading the expression
+    0 - 0 as -0 needs the value 0 to be the additive identity, and universal invariance does
+    not say that -- it says the erasure FORM adds without effect. The value of -0 comes from
+    the negation rule under Chosen instead.
 
 0·x = 0^(1+u)
     0^1 · 0^u = 0^(1+u), by E1 and E4.
@@ -131,19 +133,20 @@ log_0(x) = 0^x  and  0^(0^x) = x
     deletion, but it has lost most of its customers: the results that were built on the
     general form went with E2.
 
-negation is not multiplication by -1
-    Forced in this branch, and this is what the branch buys.
-    E10 with its totality gives 0 - 0 = 0^(1/1) = 0^1 = 0. Read +(x-x) = ∅ as "0 is the
-    additive identity" -- which is what that universal invariance says once x - x = 0 -- and
-    the additive inverse of the identity is the identity, so -0 = 0.
-    Now the other route: -0 = 0·(-1) = 0^1 · 0^w = 0^(1+w), by E1 and 0^w = -1.
-    The two agree only if 0^(1+w) = 0^1, so by E6 only if w = 0, and w != 0 because
-    0^-1 != 0^1. So -y = y·(-1) is false here.
-    E10 is protected by the branch and 0^w = -1 is forced by E6 and E7, so this is the only
-    remaining casualty of that conflict. The one step to confirm is the reading of +(x-x) = ∅
-    above; the rest of the chain is E1, E6 and E10.
-    Consequence: the exponent rule for negation is now UNKNOWN. It used to be a + w, which
-    was multiplication by -1 in exponent form. See theory-problems.md, problem 2.
+-(0^a) = 0^(a+w),  so  -0 = 0^(1+w)
+    E1 and 0^w = -1: negation is multiplication by -1, which adds w to the exponent.
+    Inherits the leap, and nothing above it is stronger.
+    Note 0^(1+w) != 0^1 by E6, since w != 0. So -0 is a magnitude-zero point distinct from
+    0 -- an opposite orientation, the way omega is -- rather than 0 itself. That is consistent
+    with the Proven -0 != w, and it is what settles the old value-of--0 question in this
+    branch.
+    An earlier version of this file claimed the opposite, that negation is NOT multiplication
+    by -1, deriving -0 = 0 from E10 plus "0 is the additive identity". RETRACTED: universal
+    invariance does not supply that premise. +(x-x) = ∅ is about the erasure form, and the
+    additive identity is kept separate from magnitude-zero on purpose -- see
+    notation-and-terminology.md. What does supply the premise is the Maybe addition law, one
+    rank lower than this, so the conflict is Maybe against Chosen. See theory-problems.md,
+    problem 2.
 ```
 
 ### Maybe
@@ -158,6 +161,13 @@ Not 100% sure yet, but the evidence is strong.
     + to · necessarily carries · to +.
     Never stated independently, so it is held one rank below the primitives.
     Never used E2, so the deletion leaves it where it was.
+
+    It carries a consequence that was not noticed while it was only a mirror: it makes the
+    VALUE 0 the additive identity. x + 0 = 0^u + 0^1 = 0^(u·1) = 0^u = x, since 1 is the
+    multiplicative identity in the exponent. That is the premise the retracted -0 = 0
+    argument needed, and it collides with the negation rule above, which gives
+    -0 = 0^(1+w) != 0. So this law and negation-as-multiplication-by--1 cannot both stand,
+    and this one is the lower-ranked of the two. See theory-problems.md, problem 2.
 ```
 
 ### Open
@@ -188,7 +198,6 @@ Nothing here is disproved. Each item lost its proof, and none of them has anothe
 (-1)^0 = 0^(0w) = 1^w       E2 at v = 0
 1^w = 0^(0w)                E2 at v = w
 wx = 0^((-1)^x)             built on (-1)^x; its E1 half survives as w·x = 0^(u-1)
--(0^a) = 0^(a+w)            was negation as multiplication by -1, and is now false; see Chosen
 log_(0^a)(0^b) = 0^(b/a)    was E2 + E6. A logarithm to a general base is undefined again,
                             which is why E8 is back to being a primitive in earnest
 (0^u)^v, v non-integer      no rule

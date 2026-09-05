@@ -26,12 +26,37 @@ Universal invariance refers to operational identities.
 
 See also: Erasure.
 
-Note on `+(x-x) = ∅` under total subtraction. Subtraction is total (E10), so `x - x` is the value
-`0` rather than nothing at all. The two are compatible: what `+(x-x) = ∅` says is that *adding*
-`x - x` changes nothing, which is "0 is the additive identity" once `x - x = 0`. Read that way it
-is load-bearing — it is the step that takes `0 - 0 = 0` to `-0 = 0`, and so the step that makes
-negation not multiplication by −1. See equivalence-classes.md, Chosen, and theory-problems.md,
-problem 2. If that reading is wrong, that whole conclusion comes back open.
+### By which operation, not where
+
+The invariance is indexed by the **operation**, not by a position in the expression. The question
+is never "where may I put `z-z`", it is "by which operation may I apply it". Illustrated in the
+reals, where `x + 3x` is the expression and the classic readings apply:
+
+```
+x·(z-z) + 3x^(z-z)                              both change the value: 0, and 1
+x+(z-z) + (3+(z-z))·x^(1+(z-z))    = x + 3x     added anywhere, including into an exponent
+x·(z/z) + (3÷(z/z))·x^(1·(z/z))    = x + 3x     multiplied anywhere, likewise
+```
+
+So an exponent is not a slot of one privileged kind. It holds a value, and a value takes both
+invariants: `1+(z-z)` and `1·(z/z)` are both still `1`. What decides the outcome is which
+operation carried the erasure form in, and whether that is the form's own operation.
+
+And by reversibility, each of these runs backwards: erasure in reverse is how a term is
+**injected** without disturbing equality. An identity that erases in one direction licenses the
+injection in the other.
+
+### The additive identity is not magnitude-zero
+
+Practically, this treatment of erasure agrees with the classic one. The difference is
+bookkeeping: it keeps the **additive identity** — the thing that adds without effect, which is
+the erasure form `x-x` — separate from **magnitude-zero**, the point `0 = 0^1`, which is a value
+of the type with an orientation and a reciprocal. Classically `0` does both jobs at once, and
+separating them is precisely what epsilon and `dx` are for.
+
+So `+(x-x) = ∅` is a statement about the erasure form. It does NOT say that the value `0` is the
+additive identity, and it cannot be used as that. See theory-problems.md, problem 2, for what
+does and does not follow — the two were conflated there once, and the retraction is recorded.
 
 ### "A = B"
 
