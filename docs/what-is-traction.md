@@ -33,10 +33,17 @@ occupying the same coordinate on the "real number line".
 Traction Theory treats exponentiation as a primitive operation of the type, as primitive as addition
 and multiplication, and it extends to any base, including zero and omega.
 
-Log is not a second primitive. `log_(0^a)(0^b) = b/a` falls straight out of `(0^u)^v = 0^(uv)` plus
-injectivity, so a logarithm to any base is definable rather than assumed. Only `log_0` is
-distinguished, and only because `a = 1` makes it the inverse of the base-0 exponential — which, on
-the closure set, is that same exponential. That is the involution. See rule-combinations.md.
+Log is a second primitive after all. `log_(0^a)(0^b) = b/a` used to fall straight out of
+`(0^u)^v = 0^(uv)` plus injectivity, so a logarithm to any base was definable rather than assumed —
+but that power law is withdrawn, and what replaces it reaches integer exponents only, which settles
+`log` at a general base nowhere. So `log_0` is primitive (E8), and a logarithm to any other base is
+currently undefined. `log_0` remains the distinguished one, because `a = 1` makes it the inverse of
+the base-0 exponential — which, on the closure set, is that same exponential. That is the involution.
+See rule-combinations.md and theory-problems.md, problem 3.
+
+Note that "extends to any base" is a claim about totality that the theory does not currently
+support in its right operand: with the general power law gone, `x^v` has a rule for integer `v`
+and no rule otherwise. That is problem 3, and it is the open question this section depends on.
 
 ### Information Conservation
 

@@ -39,7 +39,13 @@ over.
 - [theory-problems.md](docs/theory-problems.md) — what is open, and what each open question blocks
 
 The central unresolved term is `0·w`. It is the one product with zero whose exponent sum is an
-erasure, and `0^(0w)`, `1^w` and `(-1)^0` are all the same question wearing different clothes.
+erasure, and `0^(0w)` is the same question wearing different clothes.
+
+The power law `(0^u)^v = 0^(uv)` was withdrawn on 2026-09-05, keeping E10 and total subtraction
+instead — the branch the author's ℚ model satisfies, and so the branch known to be consistent.
+What survives is the integer case, which is a theorem of E1 rather than a law of its own. The
+cost is that `x^v` has no rule at non-integer `v`, and that `1^w`, `(-1)^0` and `x^0` are no
+longer the same question as `0·w`. What it buys is that negation is not multiplication by −1.
 
 ## Build
 

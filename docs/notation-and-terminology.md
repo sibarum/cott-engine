@@ -26,6 +26,13 @@ Universal invariance refers to operational identities.
 
 See also: Erasure.
 
+Note on `+(x-x) = ∅` under total subtraction. Subtraction is total (E10), so `x - x` is the value
+`0` rather than nothing at all. The two are compatible: what `+(x-x) = ∅` says is that *adding*
+`x - x` changes nothing, which is "0 is the additive identity" once `x - x = 0`. Read that way it
+is load-bearing — it is the step that takes `0 - 0 = 0` to `-0 = 0`, and so the step that makes
+negation not multiplication by −1. See equivalence-classes.md, Chosen, and theory-problems.md,
+problem 2. If that reading is wrong, that whole conclusion comes back open.
+
 ### "A = B"
 
 This is two-way equality, up to universal invariance.
