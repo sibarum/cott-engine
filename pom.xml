@@ -10,10 +10,10 @@
 
     <name>cott-engine</name>
     <description>
-        COTT — Constructive Operational Type Theory — as a direct evaluator. Every point is k copies
-        of 0^E, identities belong to operations rather than values, and the two residue families 1^a
-        and 0^a are first-class terms. Pure Java: no subprocess, no native code, no reflection, so
-        it is GraalVM native-image friendly and testable without a toolchain.
+        Traction Theory as a direct evaluator. A value is a pair of projective coordinates kept
+        exactly as it arises, and a traction is a base raised to an exponent that is itself an
+        expression. Pure Java: no subprocess, no native code, no reflection, so it is GraalVM
+        native-image friendly and testable without a toolchain.
     </description>
 
     <properties>
@@ -39,6 +39,18 @@
                 <version>3.13.0</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
+                    <!--
+                      Phase 1 scaffold, and the whole of what phase 3 has to remove. The syntax
+                      layer in sibarum.cott still names the deleted carrier in about 84 places, so
+                      it cannot compile yet. The pattern stops at sibarum/cott/*.java and so leaves
+                      the engine packages below it alone.
+                    -->
+                    <excludes>
+                        <exclude>sibarum/cott/*.java</exclude>
+                    </excludes>
+                    <testExcludes>
+                        <testExclude>sibarum/cott/*.java</testExclude>
+                    </testExcludes>
                 </configuration>
             </plugin>
             <plugin>

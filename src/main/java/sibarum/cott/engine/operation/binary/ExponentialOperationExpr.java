@@ -1,0 +1,28 @@
+package sibarum.cott.engine.operation.binary;
+
+import sibarum.cott.engine.base.expr.IExpr;
+
+import java.util.Optional;
+
+public record ExponentialOperationExpr(IExpr base, IExpr exponent) implements IBinaryOperationExpr {
+
+    @Override
+    public IExpr simplify() {
+        return this;
+    }
+
+    @Override
+    public Optional<Double> evaluate() {
+        return Optional.empty();
+    }
+
+    @Override
+    public IExpr left() {
+        return base;
+    }
+
+    @Override
+    public IExpr right() {
+        return exponent;
+    }
+}
