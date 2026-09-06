@@ -45,6 +45,21 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
     @Override
     public IExpr plus(IExpr expr) {
         if (expr instanceof ProjectiveRationalLiteral(BigInteger numerator1, BigInteger denominator1)) {
+            // A common denominator is used when there already is one. Cross-multiplication is how you MAKE a
+            // common denominator, and applying it regardless invents one you were already holding: it sent
+            // 1/2 + 1/2 to (4,4) rather than (2,2), and cubed the denominator over three additions. Since
+            // nothing reduces afterwards, that inflation is permanent and it is visible -- adding a value to
+            // itself and doubling it by multiplication landed on different coordinates.
+            //
+            // It also breaks at a zero denominator, where every cross term picks up a zero factor: w + w came
+            // out as (0,0), which is one, while 2·w is (2,0). The identity (a/b + c/d) = (ad+cb)/(bd) is
+            // derived on the assumption that bd is not zero, so omega was never a special case -- it was the
+            // place the general defect could not be missed.
+            //
+            // This does not reduce anything: 1/2 + 1/2 is (2,2), which is still not the literal one.
+            if (this.denominator.equals(denominator1)) {
+                return new ProjectiveRationalLiteral(this.numerator.add(numerator1), this.denominator);
+            }
             return new ProjectiveRationalLiteral(
                     this.numerator.multiply(denominator1).add(numerator1.multiply(this.denominator)),
                     this.denominator.multiply(denominator1));

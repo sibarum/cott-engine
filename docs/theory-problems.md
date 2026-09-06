@@ -203,34 +203,41 @@ Its one remaining customer is the Maybe addition law `0^a + 0^b = 0^(a·b)`, whi
 justification anyway (the mirror of E10). So adopting or rejecting the general involution now
 costs much less than it did — and buys much less.
 
-### 5) The two layers disagree at the four points
+### 5) Two readings of the same expression, and which one is in force
 
-Found by implementing the rules, and it is the sharpest form of the `0·w` question rather than a separate
-one. The engine has a projective coordinate layer — the rationals with omega, where a value is a pair — and
-a traction layer, where a value is `0^a`. Both can answer some of the same expressions, and they do not
-always agree.
+Not a contradiction to be resolved by killing one side. The engine has a projective coordinate layer — the
+rationals with omega, where a value is a pair — and a traction layer, where a value is `0^a`. Some
+expressions have an answer in both, and the two answers are answers to different questions.
+
+`0·w` is the case that matters. On the real line it behaves as `0·w = 1`: two coordinate pairs multiply to
+`(0,0)`, which is one. In the lift it is `0^(1 + -1)`, an additive erasure with no host, and that is
+Problem 1. Both are right where they stand. What an engine needs is not a winner but a record of which
+reading it is in, and the current one runs the traction rules first — "the finer reading wins" — so the
+lifted reading is what a user sees, and the term stands.
+
+**This section previously claimed a contradiction, on the strength of a defect.** The coordinate addition
+cross-multiplied unconditionally, so `w + w` came out as `(0,0)` — one — while `2·w` was `(2,0)`. Adding a
+value to itself and doubling it disagreed, and not only at omega: `1/2 + 1/2` was `(4,4)` against `(2,2)`
+for `2·(1/2)`, and three thirds cubed the denominator to `(27,27)`. Cross-multiplication is how a common
+denominator is *made*, and it was being applied when one was already there. A common denominator is now used
+where there is one; nothing is reduced by it, and `1/2 + 1/3` is untouched.
+
+What survives of the finding, with the arithmetic right:
 
 ```
-w + w        coordinates: (1,0) + (1,0) = (0,0), which is 1
-0·w          coordinates: (0,1) · (1,0) = (0,0), which is 1
-             tractions:   0^(1 + -1), an erasure -- Problem 1, undecided
-(-1)·(-1)    coordinates: (-1,1) · (-1,1) = (1,1), which is 1
-             tractions:   0^w · 0^w = 0^(w+w) = 0^1 = 0, by E1 and the leap
-1 + w        coordinates: (1,1) + (1,0) = (1,0), which is w
+0·w          coordinates: 1                 tractions: 0^(1 + -1), Problem 1
+(-1)·(-1)    coordinates: 1                 tractions: 0^(w+w) = 0^(2w), standing
+1 + w        coordinates: w
 ```
 
-The last line is why the negation rule cannot simply be switched on: `-0 = 0^(1+w)` becomes `0^w`, which is
-`-1`. And the third is why `-1 = 0^w` is not used as a reading in the engine at all — wiring it makes the
-square of minus one zero.
+So the leap can be wired without producing a falsehood — it was `0^1 = 0` before the fix, and is `0^(2w)`
+now, which is a term standing rather than a wrong answer. What it costs is that `(-1)·(-1)` stops answering
+1, because the traction reading runs first and cannot finish. It would finish under `2w = 0`, which is the
+same condition rule-combinations.md names for negation to be an involution, and which E6 gives from
+`0^(2w) = 1 = 0^0`. That is one decision covering the leap, the involution and the square of minus one.
 
-So the coordinate layer has already answered Problem 1, in the materialise direction, by the
-`(0,0) -> (1,1)` normalisation in its constructor. That normalisation is deliberate and has a test on it.
-Either it is the answer, in which case Problem 1 is settled and the docs should say so; or the coordinates
-are a model that is wrong about omega, in which case `w + w = 1` needs to go and `0·w` stays open.
-
-Nothing here is decided. What the engine does meanwhile: the traction rules run first and leave the
-undecided cells standing, three of the four points read as powers of zero, and the fourth — the leap — is
-kept where the two layers cannot meet.
+The engine meanwhile: traction rules first, undecided cells standing, three of the four points read as
+powers of zero, and the leap kept out of the reading so ordinary arithmetic keeps answering.
 
 ### 6) Nilpotents
 

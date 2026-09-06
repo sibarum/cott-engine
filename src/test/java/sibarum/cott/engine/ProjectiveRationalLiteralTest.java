@@ -38,7 +38,10 @@ class ProjectiveRationalLiteralTest {
 
     @Test
     void additionDoesNotReduceWhatItProduces() {
-        assertEquals(at(4, 4), at(1, 2).plus(at(1, 2)));
+        assertEquals(at(2, 2), at(1, 2).plus(at(1, 2)));
+        // and it does not INFLATE what it produces either: a common denominator is used where there is one,
+        // so adding a value to itself and doubling it by multiplication land on the same coordinates.
+        assertEquals(at(1, 2).plus(at(1, 2)), at(2, 1).times(at(1, 2)));
     }
 
     @Test
@@ -94,7 +97,7 @@ class ProjectiveRationalLiteralTest {
     @Test
     void subtractingSomethingFromItselfLandsOnTheValueZero() {
         IExpr difference = at(2, 3).minus(at(2, 3));
-        assertEquals(at(0, 9), difference);
+        assertEquals(at(0, 3), difference);
         assertEquals(Optional.of(0.0), difference.evaluate());
     }
 

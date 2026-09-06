@@ -46,17 +46,27 @@ class TractionRulesTest {
     }
 
     /**
-     * The fourth is the leap, and it is unwired. Taking it would read (-1)·(-1) as 0^(w+w), and the
-     * coordinates put w+w at 1 -- (1,0) + (1,0) is (0,0), which is one -- so the engine would answer that the
-     * square of minus one is zero. It answers 1, by the coordinates, and 0^w prints as itself.
+     * The fourth is the leap, and it is unwired — but no longer because it gave a wrong answer.
+     *
+     * <p>It used to: {@code w+w} came out as 1 from a defect in the coordinate addition, so reading
+     * {@code -1 = 0^w} sent {@code (-1)·(-1)} to {@code 0^1}, which is the point zero. With the addition
+     * fixed, {@code w+w} is {@code 2w} and the same route reaches {@code 0^(2w)}, which is not an answer but
+     * is not a falsehood either — it is the term standing.
+     *
+     * <p>So what wiring the leap now costs is that {@code (-1)·(-1)} stops answering 1 and stands instead,
+     * because the traction reading runs first and cannot finish. It would finish if {@code 2w = 0} were
+     * adopted, since then {@code 0^(2w)} is {@code 0^0}, which is 1 — and {@code 2w = 0} is exactly the
+     * condition rule-combinations.md already names for negation to be an involution.
      */
     @Test
-    void theLeapIsNotWired() {
+    void theLeapIsNotWiredAndNoLongerGivesAWrongAnswer() {
         assertEquals(Optional.empty(), TractionRules.exponentOfZero(NEG_ONE));
         assertEquals(Optional.of(OMEGA), TractionRules.provisionalMinusOne(NEG_ONE));
         assertEquals(ONE, new MultiplicationOperationExpr(NEG_ONE, NEG_ONE).simplify());
-        // and what it would have answered, by the route it would have taken
-        assertEquals(ZERO, TractionRules.traction(new AdditionOperationExpr(OMEGA, OMEGA).simplify()));
+        // The route it would take, and where it now stops: 0^(w+w) = 0^2w, standing.
+        assertEquals(ProjectiveRationalLiteral.of(2, 0), new AdditionOperationExpr(OMEGA, OMEGA).simplify());
+        assertEquals(new TractionLiteral(ZERO, ProjectiveRationalLiteral.of(2, 0)),
+                TractionRules.traction(new AdditionOperationExpr(OMEGA, OMEGA).simplify()));
     }
 
     /**
