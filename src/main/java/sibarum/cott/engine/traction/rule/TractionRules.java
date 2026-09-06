@@ -54,7 +54,9 @@ public final class TractionRules {
     public static final Rule NEGATIVE_POWER =
             new Rule("(0^a)^-n = 0^(-a·n)", "E3", Rule.Status.PROVEN);
     public static final Rule BASE_ZERO =
-            new Rule("0^E is a traction; 0^1 = 0 and 0^0 = 1", "E4, E5", Rule.Status.PROVEN);
+            new Rule("0^E is a traction", "E6: every value is 0^a for one a", Rule.Status.PROVEN);
+    public static final Rule POINT =
+            new Rule("0^1 = 0, 0^0 = 1, 0^-1 = w", "E4, E5, and w = 1÷0", Rule.Status.PROVEN);
 
     /** Not a rewrite at all: the cell is open, and saying so is what keeps the layer below from answering. */
     public static final Rule STANDS =
@@ -103,18 +105,31 @@ public final class TractionRules {
      * construction and a value cannot come out spelled two ways depending on which was used.
      */
     public static IExpr traction(IExpr exponent) {
+        return new TractionLiteral(ZERO, exponent);
+    }
+
+    /**
+     * The point a traction names, where it names one: {@code 0^1 = 0} (E4), {@code 0^0 = 1} (E5) and
+     * {@code 0^-1 = w} (Proven). A rewrite of its own rather than something {@link #traction} does on the way
+     * past, so that a derivation shows it happening instead of finding it already done.
+     * <p>
+     * {@code 0^w} is not folded, for the same reason {@code -1} is not read as it: folding one direction and
+     * not the other leaves the two unable to meet under E1, and folding both answers 0 for {@code (-1)·(-1)}.
+     */
+    public static Optional<Rewrite> point(IExpr base, IExpr exponent) {
+        if (!ZERO.equals(base)) {
+            return Optional.empty();
+        }
         if (ONE.equals(exponent)) {
-            return ZERO;
+            return Optional.of(new Rewrite(ZERO, POINT));
         }
         if (ZERO.equals(exponent)) {
-            return ONE;
+            return Optional.of(new Rewrite(ONE, POINT));
         }
         if (NEG_ONE.equals(exponent)) {
-            return OMEGA;
+            return Optional.of(new Rewrite(OMEGA, POINT));
         }
-        // 0^w stays 0^w, for the same reason -1 is not read as it: folding one direction without the other
-        // would leave the two unable to meet under E1, and folding both answers 0 for (-1)·(-1).
-        return new TractionLiteral(ZERO, exponent);
+        return Optional.empty();
     }
 
     /**
@@ -246,7 +261,7 @@ public final class TractionRules {
     private static IExpr repeated(IExpr base, BigInteger n) {
         IExpr out = base;
         for (BigInteger i = BigInteger.ONE; i.compareTo(n) < 0; i = i.add(BigInteger.ONE)) {
-            out = new MultiplicationOperationExpr(out, base).simplify();
+            out = new MultiplicationOperationExpr(out, base);
         }
         return out;
     }
@@ -293,20 +308,25 @@ public final class TractionRules {
         return exponentOfZero(left).flatMap(a -> exponentOfZero(right).map(b -> new Pair(a, b)));
     }
 
+    // The exponent arithmetic is BUILT and not performed. A rule that reduced its own exponent would be
+    // doing work no derivation could show -- 0·0 would arrive at 0^2 with the step from 1+1 to 2 missing --
+    // and since the derivation is now the evaluator, work that cannot be shown is work that does not happen.
+    // The driver reduces these on the turns that follow.
+
     private static IExpr plus(IExpr a, IExpr b) {
-        return new AdditionOperationExpr(a, b).simplify();
+        return new AdditionOperationExpr(a, b);
     }
 
     private static IExpr minus(IExpr a, IExpr b) {
-        return new AdditionOperationExpr(a, new NegationOperationExpr(b)).simplify();
+        return new AdditionOperationExpr(a, new NegationOperationExpr(b));
     }
 
     private static IExpr times(IExpr a, IExpr b) {
-        return new MultiplicationOperationExpr(a, b).simplify();
+        return new MultiplicationOperationExpr(a, b);
     }
 
     private static IExpr over(IExpr a, IExpr b) {
-        return new MultiplicationOperationExpr(a, new ReciprocalOperationExpr(b)).simplify();
+        return new MultiplicationOperationExpr(a, new ReciprocalOperationExpr(b));
     }
 
     /** Whether {@code b} is {@code -a} as a TERM: the negation of it, or its coordinates with the sign turned. */

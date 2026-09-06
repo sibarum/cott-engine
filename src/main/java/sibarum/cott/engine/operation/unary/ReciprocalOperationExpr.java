@@ -14,11 +14,6 @@ public record ReciprocalOperationExpr(IExpr operand) implements IUnaryOperationE
         return operand;
     }
 
-    @Override
-    public IExpr simplify() {
-        return operand.simplify().reciprocal();
-    }
-
     /**
      * A shadow of zero belongs to both zero and omega, and each is the other's reciprocal, so the
      * projection stays at zero either way instead of running off to an infinity.

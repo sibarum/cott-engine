@@ -141,8 +141,10 @@ class TractionRulesTest {
      */
     @Test
     void anIntegerPowerIsRecognisedByItsTermAndNotByItsValue() {
+        // The base 0^1 is the point zero, so this is 0^(6÷3) -- and the exponent STAYS (6,3). Had the pair
+        // been read as the integer 2, the rule would have fired and produced 0^2.
         IExpr byCoordinates = new ExponentialOperationExpr(pow0(1, 1), at(6, 3));
-        assertEquals(byCoordinates, byCoordinates.simplify());
+        assertEquals(new TractionLiteral(ZERO, at(6, 3)), byCoordinates.simplify());
     }
 
     // ---------------------------------------------------------------- the cells that stand
@@ -220,9 +222,9 @@ class TractionRulesTest {
      */
     @Test
     void theAdditionLawIsProvisionalAndNotWired() {
-        assertEquals(Optional.of(pow0(6, 1)), TractionRules.provisionalSum(pow0(2, 1), pow0(3, 1)).map(Rewrite::result));
+        assertEquals(Optional.of(pow0(6, 1)), TractionRules.provisionalSum(pow0(2, 1), pow0(3, 1)).map(rewrite -> rewrite.result().simplify()));
         // x + 0 = x is the consequence that collides with negation: 0^u + 0^1 = 0^(u·1) = 0^u.
-        assertEquals(Optional.of(pow0(2, 1)), TractionRules.provisionalSum(pow0(2, 1), ZERO).map(Rewrite::result));
+        assertEquals(Optional.of(pow0(2, 1)), TractionRules.provisionalSum(pow0(2, 1), ZERO).map(rewrite -> rewrite.result().simplify()));
         // Unwired: an ordinary sum still goes to the projective layer, where 1+1 is 2 and not 0^(0·0).
         assertEquals(ProjectiveRationalLiteral.of(2, 1), new AdditionOperationExpr(ONE, ONE).simplify());
     }
@@ -234,7 +236,7 @@ class TractionRulesTest {
      */
     @Test
     void theNegationRuleIsProvisionalAndDisagreesWithTheCoordinates() {
-        assertEquals(Optional.of(new TractionLiteral(ZERO, OMEGA)), TractionRules.provisionalNegation(ZERO).map(Rewrite::result));
+        assertEquals(Optional.of(new TractionLiteral(ZERO, OMEGA)), TractionRules.provisionalNegation(ZERO).map(rewrite -> rewrite.result().simplify()));
         assertEquals(ZERO, ZERO.negated());
         assertTrue(TractionRules.provisionalNegation(new AtomExpr("x")).isEmpty());
     }

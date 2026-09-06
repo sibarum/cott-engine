@@ -230,25 +230,33 @@ cos(π÷3)·2  =>  1   [assumes: cos of a real reading, rounded to 15 places  [A
 
 Four decisions in the shape of it:
 
+**There is no other evaluator.** `Deriver.derive` *is* simplification, and `IExpr.simplify()` is that walk
+with the reasons dropped. No node has a `simplify()` of its own any more; they were deleted. The first version
+kept a fast big-step path beside the derivation and pinned the two together with a test, which is the
+arrangement this replaces — pinning by test only covers the inputs somebody thought to write down, and the
+ways two paths drift are exactly the ways nobody thinks of: a rule consulted in a different order, a result
+one path re-reduces and the other does not, an optimisation applied to one. There is now nothing to keep in
+step. The cost is that `simplify()` allocates a step list it throws away; take it back with a flag on the
+driver if a plotter ever needs it, not with a second walk.
+
 **Small steps, whole terms.** One rewrite per line, the entire expression each time, so it reads as a chain of
 equalities the way the docs argue rather than as a log of what the evaluator did to itself.
 
-**One set of rules, not two.** `TractionRules` returns a `Rewrite` — result plus justification — and
-`simplify()` drops the justification. A tracing evaluator running its own copy of the rules can drift from the
-real one, and a proof of something the engine did not do is worse than no proof. `DerivationTest` pins them:
-the last term of a derivation is what `simplify()` returns, over every expression the round-trip test uses.
-
-**`simplify()` is untouched.** It answers in one recursive pass, which is what a plotter sampling a thousand
-points needs. The derivation is a second entry point over the same rules, not a mode.
+**Rules build; the driver reduces.** `TractionRules` returns `0^(1+1)` rather than `0^2` — a rule that
+finished its own exponent arithmetic would be doing work no derivation could show. That is also what turned
+the four-point folding (`0^1 = 0`) into a rewrite of its own instead of something a rule did on its way past.
 
 **The projective layer reports itself.** Every defect found in this engine has been coordinate arithmetic
 rather than a traction rule — `w+w` landing on 1, `0·w` answered by two pairs multiplying before any rule was
 consulted, `(-1)·(-1)` reaching zero. A derivation that recorded only the interesting-looking layer would have
 missed all three.
 
-The granularity is one step per rule firing; the exponent arithmetic a rule does internally is folded into its
-step. Finer is available later by having the rules return their result unsimplified, and would be worth it if
-a defect is ever traced to a step that a derivation could not show.
+```
+2^3  =>  8   [proven]
+    = 2·2·2        (0^a)^n = 0^(a·n), integer n  [E1, repeated multiplication]
+    = 4·2          the coordinates combine
+    = 8            the coordinates combine
+```
 
 ### What this plan deliberately does not do
 

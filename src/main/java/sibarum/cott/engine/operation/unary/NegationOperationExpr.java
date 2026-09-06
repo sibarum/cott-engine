@@ -16,11 +16,6 @@ public record NegationOperationExpr(IExpr operand) implements IUnaryOperationExp
     }
 
     @Override
-    public IExpr simplify() {
-        return operand.simplify().negated();
-    }
-
-    @Override
     public Optional<Double> evaluate() {
         IExpr simplified = simplify();
         if (!this.equals(simplified)) {

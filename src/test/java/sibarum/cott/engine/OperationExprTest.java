@@ -19,8 +19,13 @@ import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ZERO
 
 class OperationExprTest {
 
-    /** Stands in for anything the projective layer cannot combine with. */
-    private static final TractionLiteral OPAQUE = new TractionLiteral(ZERO, ONE);
+    /**
+     * Stands in for anything the projective layer cannot combine with.
+     *
+     * <p>0^2 and not 0^1: the latter is the point zero by E4, and now that the fold is a rewrite of its own
+     * rather than something a rule did on its way past, it is no longer opaque to anything.
+     */
+    private static final TractionLiteral OPAQUE = new TractionLiteral(ZERO, ProjectiveRationalLiteral.of(2, 1));
 
     private static ProjectiveRationalLiteral at(int numerator, int denominator) {
         return ProjectiveRationalLiteral.of(numerator, denominator);

@@ -17,11 +17,6 @@ public record LogarithmOperationExpr(IExpr base, IExpr operand) implements IBina
     }
 
     @Override
-    public IExpr simplify() {
-        return this;
-    }
-
-    @Override
     public Optional<Double> evaluate() {
         return Optional.empty();
     }

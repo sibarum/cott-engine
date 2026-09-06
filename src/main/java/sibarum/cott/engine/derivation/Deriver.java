@@ -20,19 +20,21 @@ import java.util.Optional;
 /**
  * Simplification, one rewrite at a time, with a record of each.
  *
- * <h2>Small steps, whole terms</h2>
- * {@code simplify()} answers in one recursive pass, which is what an evaluator should do and what a plotter
- * sampling a thousand points needs. This walks the same rules but applies one rewrite per turn and hands back
- * the entire expression each time, so the result reads as a chain of equalities rather than as a log of what
- * the evaluator did to itself. The rewrite chosen is the leftmost innermost one, which is the order
- * {@code simplify()} works in — operands before the operation.
+ * <h2>There is no other evaluator</h2>
+ * This is it. {@link IExpr#simplify()} is this walk with the reasons dropped, so an answer and its account of
+ * itself cannot come apart: not by a rule changing under one of them, not by the order they consult things
+ * drifting, not by one being optimised and the other left behind. There was a second, faster path here for a
+ * while, and the reason it is gone is that nothing about it could be verified except by testing the two
+ * against each other on inputs somebody thought to write down.
  *
- * <h2>One set of rules, not two</h2>
- * Nothing here reimplements a rule. {@link TractionRules} hands back what it did and why, and the fast path
- * simply drops the why; this keeps it. A tracing evaluator that runs its own copy of the rules can disagree
- * with the real one, and a proof of something the engine did not do is worse than no proof — so
- * {@code DerivationTest} pins the two together: the last term of a derivation is what {@code simplify()}
- * returns.
+ * <h2>Small steps, whole terms</h2>
+ * One rewrite per turn, the entire expression handed back each time, so the result reads as a chain of
+ * equalities rather than as a log of what the evaluator did to itself. The rewrite chosen is the leftmost
+ * innermost one: operands before the operation.
+ *
+ * <p>Rules do not reduce what they build, either. {@link TractionRules} returns {@code 0^(1+1)} and this
+ * reduces the exponent on the next turn, because a rule that finished its own arithmetic would be doing work
+ * no derivation could show -- and work that cannot be shown is work that does not happen here.
  *
  * <h2>The projective layer is in the trace too</h2>
  * The steps that have gone wrong here were coordinate arithmetic, not traction rules — {@code w+w} landing on
@@ -46,6 +48,12 @@ public final class Deriver {
     public static final Rule PROJECTIVE =
             new Rule("the coordinates combine", "projective arithmetic", Rule.Status.PROVEN);
 
+    /** Reversibility, which COTT asks of an operation before it asks anything else. */
+    public static final Rule NEGATION_INVOLUTION =
+            new Rule("-(-x) = x", "negation is reversible", Rule.Status.PROVEN);
+    public static final Rule RECIPROCAL_INVOLUTION =
+            new Rule("1÷(1÷x) = x", "the reciprocal is reversible", Rule.Status.PROVEN);
+
     /**
      * Enough turns for any expression a person will type, and a stop rather than a hang if a rule is ever
      * written that undoes another.
@@ -55,7 +63,14 @@ public final class Deriver {
     private Deriver() {
     }
 
-    /** Simplify {@code expr}, keeping every rewrite. */
+    /**
+     * Simplify {@code expr}, keeping every rewrite.
+     *
+     * <p>This is the evaluator. {@link IExpr#simplify()} is this and then the last term, so there is no second
+     * path that could answer differently from the one that explains itself -- the audit and the result are
+     * the same walk, and a divergence between them is not something that has to be tested for because there
+     * is nothing to diverge.
+     */
     public static Derivation derive(IExpr expr) {
         List<Step> steps = new ArrayList<>();
         IExpr current = expr;
@@ -137,6 +152,14 @@ public final class Deriver {
             case AdditionOperationExpr(IExpr l, IExpr r) ->
                     TractionRules.sum(l, r).or(() -> projective(l.plus(r), e));
             case ExponentialOperationExpr p -> TractionRules.power(p.base(), p.exponent());
+            case TractionLiteral t -> TractionRules.point(t.base(), t.exp());
+            // Uncovering an operand from under two negations is not the coordinates combining, and labelling
+            // it that way would have put a false reason in a derivation. It is reversibility, which is what
+            // COTT asks of every operation before anything else.
+            case NegationOperationExpr(NegationOperationExpr(IExpr under)) ->
+                    Optional.of(new Rewrite(under, NEGATION_INVOLUTION));
+            case ReciprocalOperationExpr(ReciprocalOperationExpr(IExpr under)) ->
+                    Optional.of(new Rewrite(under, RECIPROCAL_INVOLUTION));
             case NegationOperationExpr(IExpr operand) -> projective(operand.negated(), e);
             case ReciprocalOperationExpr(IExpr operand) -> projective(operand.reciprocal(), e);
             default -> Optional.empty();

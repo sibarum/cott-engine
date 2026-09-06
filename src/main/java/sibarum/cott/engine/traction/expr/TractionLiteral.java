@@ -21,21 +21,6 @@ import java.util.Optional;
  */
 public record TractionLiteral(IExpr base, IExpr exp) implements IExpr {
 
-    /**
-     * The parts simplify; the traction itself does not. Nothing is read off a base or an exponent
-     * here and no rule fires between them -- that is phase 2 -- so an unresolved traction stands,
-     * and stands as the same object rather than a rebuilt copy of itself.
-     */
-    @Override
-    public IExpr simplify() {
-        IExpr simplifiedBase = base.simplify();
-        IExpr simplifiedExp = exp.simplify();
-        if (simplifiedBase.equals(base) && simplifiedExp.equals(exp)) {
-            return this;
-        }
-        return new TractionLiteral(simplifiedBase, simplifiedExp);
-    }
-
     @Override
     public Optional<Double> evaluate() {
         return Optional.empty();

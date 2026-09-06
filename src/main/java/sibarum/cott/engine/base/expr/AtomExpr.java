@@ -24,11 +24,6 @@ public record AtomExpr(String name) implements IExpr {
     }
 
     @Override
-    public IExpr simplify() {
-        return this;
-    }
-
-    @Override
     public Optional<Double> evaluate() {
         return Optional.empty();
     }

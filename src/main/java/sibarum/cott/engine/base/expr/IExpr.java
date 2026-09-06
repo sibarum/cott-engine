@@ -32,8 +32,15 @@ public interface IExpr {
      * The furthest this expression reduces on its own terms. Operands are simplified first, and
      * where the operation has no definite answer for them the term stands: the result is then equal
      * to this one rather than reduced. Simplification is therefore idempotent.
+     *
+     * <p>This is the derivation with the reasons dropped, and it is not a second implementation of it. There
+     * is no fast path: an evaluator that answers by one route and explains itself by another can be made to
+     * disagree with its own explanation, and an explanation that does not describe what happened is worse than
+     * none. So the audit and the answer are one walk, and there is nothing left to keep in step.
      */
-    IExpr simplify();
+    default IExpr simplify() {
+        return sibarum.cott.engine.derivation.Deriver.derive(this).to();
+    }
 
     /**
      * The real value of this expression, or empty where it has none — because a part of it is not a

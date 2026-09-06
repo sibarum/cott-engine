@@ -23,16 +23,6 @@ public record CallExpr(String name, List<IExpr> args) implements IExpr {
         args = List.copyOf(args);
     }
 
-    /**
-     * The arguments simplify; the call does not. As with a traction, an unresolved call comes back as the same
-     * object rather than a rebuilt copy, so identity survives a simplification that changed nothing.
-     */
-    @Override
-    public IExpr simplify() {
-        List<IExpr> simplified = args.stream().map(IExpr::simplify).toList();
-        return simplified.equals(args) ? this : new CallExpr(name, simplified);
-    }
-
     @Override
     public Optional<Double> evaluate() {
         return Optional.empty();

@@ -18,9 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The answer comes with its proof, and the proof is of what actually happened.
  *
- * <p>The load-bearing test here is {@link #aDerivationEndsWhereSimplifyDoes}. A tracing evaluator that runs
- * its own copy of the rules can drift from the real one, and a proof of something the engine did not do is
- * worse than no proof at all — so the two are pinned together on every expression the round-trip test uses.
+ * <p>{@link #aDerivationEndsWhereSimplifyDoes} used to be the load-bearing test here, pinning two
+ * implementations together on whatever inputs somebody had thought to write down. It is now true by
+ * construction — {@code simplify()} is the derivation with the reasons dropped — and it is kept as a
+ * tripwire rather than as a proof: it fails the moment anyone gives a node its own {@code simplify()} again,
+ * which is how a second evaluator would come back.
  */
 class DerivationTest {
 
@@ -66,7 +68,10 @@ class DerivationTest {
         assertEquals("0^2", Render.show(d.to()));
         assertTrue(d.isProven());
         assertTrue(d.assumptions().isEmpty());
-        assertEquals(TractionRules.PRODUCT, d.steps().getLast().rule());
+        // E1 fires, and then the exponent sum it built is reduced -- two steps, both visible, which is the
+        // point of the rules no longer doing their own arithmetic behind the derivation's back.
+        assertTrue(d.steps().stream().anyMatch(s -> s.rule().equals(TractionRules.PRODUCT)));
+        assertEquals(Deriver.PROJECTIVE, d.steps().getLast().rule());
     }
 
     /**

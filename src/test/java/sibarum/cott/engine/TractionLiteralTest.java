@@ -3,6 +3,7 @@ package sibarum.cott.engine;
 import org.junit.jupiter.api.Test;
 import sibarum.cott.engine.base.expr.IExpr;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
+import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
 import sibarum.cott.engine.traction.expr.ProjRationalToTractionPromotionRule;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
@@ -31,10 +32,13 @@ class TractionLiteralTest {
         assertSame(nested, nested.simplify());
     }
 
+    /** An exponent is reduced wherever it stands, and 0^1 is then the point zero by E4. */
     @Test
     void anExponentCanBeAnyExpression() {
         IExpr sum = new AdditionOperationExpr(ONE, ZERO);
-        assertEquals(new TractionLiteral(ZERO, at(1, 1)), new TractionLiteral(ZERO, sum).simplify());
+        assertEquals(ZERO, new TractionLiteral(ZERO, sum).simplify());
+        assertEquals(new TractionLiteral(ZERO, at(2, 1)),
+                new TractionLiteral(ZERO, new AdditionOperationExpr(ONE, ONE)).simplify());
     }
 
     @Test
@@ -53,12 +57,13 @@ class TractionLiteralTest {
      */
     @Test
     void anOperationTheTheoryHasNotSettledStandsAsATerm() {
-        TractionLiteral zero = new TractionLiteral(ZERO, ONE);
-        TractionLiteral omega = new TractionLiteral(ZERO, at(-1, 1));
-        IExpr product = zero.times(omega);
+        // 0^1 and 0^-1 are the points zero and omega, which they fold to first; their product is the erasure
+        // and stands there.
+        IExpr product = new TractionLiteral(ZERO, ONE).times(new TractionLiteral(ZERO, at(-1, 1)));
+        IExpr stood = product.simplify();
 
-        assertEquals(product, product.simplify());
-        assertEquals(product.simplify(), product.simplify().simplify());
+        assertEquals(new MultiplicationOperationExpr(ZERO, at(1, 0)), stood);
+        assertEquals(stood, stood.simplify());
     }
 
     @Test

@@ -98,15 +98,6 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
     }
 
     /**
-     * A literal is already as far reduced as it goes -- reducing coordinates is exactly what this
-     * type does not do.
-     */
-    @Override
-    public IExpr simplify() {
-        return this;
-    }
-
-    /**
      * The default projection: the rational shadow this value casts on the real line. Omega has a
      * zero magnitude, so it projects onto the same coordinate as zero rather than onto an infinity
      * the type does not contain.

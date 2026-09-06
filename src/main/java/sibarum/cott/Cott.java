@@ -60,7 +60,7 @@ public final class Cott {
      * outcome and not one to reach a step early.
      */
     public static IExpr reduce(IExpr e) {
-        return calls(e).simplify();
+        return derive(e).to();
     }
 
     /**
@@ -76,7 +76,17 @@ public final class Cott {
 
     /** As {@link #derive(String)}, in a session's vocabulary. */
     public static Derivation derive(String entry, Bindings session) {
-        IExpr from = session.expand(Parser.parse(Notation.normalize(entry, session), session));
+        return derive(session.expand(Parser.parse(Notation.normalize(entry, session), session)));
+    }
+
+    /**
+     * The derivation of an expression already parsed and expanded.
+     *
+     * <p>{@link #reduce} is this and then the last term. There is no second walk that answers without
+     * explaining, so the two cannot come apart -- not by a rule changing under one of them, and not by the
+     * order they consult things drifting, because there is only one order.
+     */
+    public static Derivation derive(IExpr from) {
         List<Step> steps = new ArrayList<>();
         IExpr current = from;
         while (true) {
@@ -136,24 +146,6 @@ public final class Cott {
             case NegationOperationExpr(IExpr operand) -> List.of(new Child(operand, NegationOperationExpr::new));
             case ReciprocalOperationExpr(IExpr operand) -> List.of(new Child(operand, ReciprocalOperationExpr::new));
             default -> List.of();
-        };
-    }
-
-    /** Fold every {@link Real} call whose arguments all have a real reading. */
-    private static IExpr calls(IExpr e) {
-        return switch (e) {
-            case CallExpr c -> {
-                List<IExpr> args = c.args().stream().map(Cott::calls).toList();
-                Real fn = Real.of(c.name());
-                IExpr answered = fn == null ? null : answer(fn, args);
-                yield answered != null ? answered : new CallExpr(c.name(), args);
-            }
-            case NegationOperationExpr n -> new NegationOperationExpr(calls(n.operand()));
-            case ReciprocalOperationExpr i -> new ReciprocalOperationExpr(calls(i.operand()));
-            case AdditionOperationExpr a -> new AdditionOperationExpr(calls(a.left()), calls(a.right()));
-            case MultiplicationOperationExpr m -> new MultiplicationOperationExpr(calls(m.left()), calls(m.right()));
-            case ExponentialOperationExpr p -> new ExponentialOperationExpr(calls(p.base()), calls(p.exponent()));
-            default -> e;
         };
     }
 
