@@ -20,9 +20,9 @@ RealTest.java          169 lines    1
 BindingsTest.java      227 lines    2
 ```
 
-The syntax layer does not compile. That is expected until phase 3, and the compiler plugin
-excludes `sibarum/cott/*.java` so the engine below it can be built and tested meanwhile.
-Deleting that exclusion is what "phase 3 is done" means.
+The whole of it compiles again as of phase 3, and the exclusion that kept the syntax layer out
+of the build is gone from the pom. `mvn test` is 114 green and one skipped; `mvn install` puts
+`sibarum.cott` back in the jar, which is what a client needs.
 
 The deletion is committed (`dbe1ec1`), together with these docs.
 
@@ -134,18 +134,59 @@ nearly intact.
 
 **Done when:** `mvn test` is green and a string round-trips: parse, simplify, render.
 
+**Landed.** 114 tests green, one skipped. The exclusion is gone from the pom, so `sibarum.cott`
+is in the jar again. Four things the estimate above missed:
+
+*The carrier had no node for a name or a call*, so the parser had nothing to build `x`, `π` or
+`sin(x)` from. `AtomExpr` and `CallExpr` were added under `base/expr`. Neither is theory — an
+atom is what a name has always parsed to, and nothing in the carrier answers a call.
+
+*Nothing answered a `Real` call either.* That was `Cott.reduce`'s job and `Cott` had been
+deleted, so `Cott` is back as a front end and not an evaluator: normalize, parse, expand, answer
+the real calls, simplify, render. The real *reading* lives there too, because it has to know π
+and e, and the carrier must not.
+
+*The reading of omega is not the carrier's projection of it.* `ProjectiveRationalLiteral`
+projects ω onto zero's shadow, which is right for a projection and wrong as an argument to sin —
+it made `sin(ω)` answer 0. A zero denominator now has no real reading, and the call stands.
+
+*The printer names nothing.* `0^0` prints as `0^0`, not `1`: E5 belongs to `simplify()`. The old
+printer could name points because what it printed was already a normal form. The decimal spelling
+had to be narrowed for a related reason: coordinates do not reduce, so `0.5` is the pair (5, 10)
+and nothing else, and printing (1, 2) that way would hand back a different literal. A decimal is
+used only where the denominator is already a power of ten, which is exactly the case it exists
+for — `Real` rounds to a denominator of 10^15.
+
+Consequences visible in the tests, all of them non-reduction showing through: `cos(π÷3)` is
+`0.5` where it used to be `1÷2`, a typed `2.5` comes back as `2.5` rather than `5÷2`, and
+`1÷2w` is `ω` — halving omega does not move it, since `(1,2)·(1,0) = (1,0)`. That last one is
+also why `i` has no coordinate form: `0^(w/2)` would say `-1`. `i` parses as an atom and stands.
+
+Five assertions now wait on phase 2 and say so where they stand: three integer powers, the
+guard-digit test (skipped, since it cannot square anything), and one canonical product ordering.
+
 ### Phase 4 — calculator
 
-`calculator-vexel-demo` has 66 sites touching `Term`, `Rational` or `Cott.reduce`. Maven
-coordinates are unchanged (`sibarum.cott:cott-engine:0.1.0-SNAPSHOT`), so its pom needs nothing.
+**Withdrawn. `calculator-vexel-demo` has been deleted, and a client for this engine will be
+written from scratch rather than ported.**
 
-Mostly renames: `Term` -> `IExpr`, `Rational` -> `ProjectiveRationalLiteral`,
-`Cott.reduce(t)` -> `expr.simplify()`. `Parser`, `Notation`, `Render` and `Real` calls survive.
+What the audit found before it went, kept because a rewrite should not walk back into it. The
+187 references were two different jobs sharing one name: `Rational` was doing plot geometry —
+sample points across a range, axis bounds — where an ordinary reducing rational is what is
+wanted, while the projective coordinate never reduces and carries ω and `0÷0 = 1` with it. A
+client wants both, and should say which it means at each site rather than inheriting one class
+for both.
 
-**Not mechanical:** it has its own `Traction.java` and `TractionTest.java`. If those assert
-`x^0 = 1`, no rule reaches it — the term has to stand. If they assert `-0 = 0`, that is against
-the negation rule the docs now record, which gives `-0 = 0^(1+w)`, distinct from `0` by E6.
-Read them before counting this phase as renames.
+The bridge was worse than a rename. `Traction.java` read the carrier structurally — a
+multiplicity over a three-slot exponent, with `Wind`/`AWind` for erasure — so it encoded the
+abandoned theory in its shape, not just its imports. And two of its tests asserted the opposite
+of what this branch says: `1-1` read as erasure rather than as a value, which total subtraction
+overturns, and `0w` read as erasure, which the carrier answers as 1. Neither was a porting
+problem.
+
+The lesson for whatever replaces it: a client reads what the engine says and does not re-derive
+it. Anything that pattern-matches the carrier's shape will have to be rewritten every time the
+carrier moves, and the carrier is going to move again.
 
 ### What this plan deliberately does not do
 

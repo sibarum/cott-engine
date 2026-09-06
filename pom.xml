@@ -39,18 +39,6 @@
                 <version>3.13.0</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
-                    <!--
-                      Phase 1 scaffold, and the whole of what phase 3 has to remove. The syntax
-                      layer in sibarum.cott still names the deleted carrier in about 84 places, so
-                      it cannot compile yet. The pattern stops at sibarum/cott/*.java and so leaves
-                      the engine packages below it alone.
-                    -->
-                    <excludes>
-                        <exclude>sibarum/cott/*.java</exclude>
-                    </excludes>
-                    <testExcludes>
-                        <testExclude>sibarum/cott/*.java</testExclude>
-                    </testExcludes>
                 </configuration>
             </plugin>
             <plugin>

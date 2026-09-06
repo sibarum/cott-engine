@@ -1,6 +1,9 @@
 package sibarum.cott;
 
+import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
@@ -12,11 +15,11 @@ import java.util.stream.Collectors;
  * The real-valued functions, and the one place in this engine that approximates.
  *
  * <h2>Why they are a catalogue and not terms</h2>
- * Everything else here is exact: a multiplicity is a {@link Rational}, an exponent is three of them, and a term
+ * Everything else here is exact: a value is a pair of projective coordinates, an exponent is an expression, and a term
  * with no definite answer stands rather than being rounded into one. Trigonometry has no such reading — there is
- * no base-0 exponential form for {@code sin}, the same reason π and e are {@link Term.Atom}s — so these are not
+ * no base-0 exponential form for {@code sin}, the same reason π and e are atoms — so these are not
  * theory, they are a table of functions the keypad can reach. Keeping them in one enum rather than scattering
- * them through {@link Cott} is the same discipline {@link Notation} follows: the parser, the printer, the
+ * them through the engine is the same discipline {@link Notation} follows: the parser, the printer, the
  * adjacency pass and the keypad all read the names from here, so a key that types {@code sin(} and a printer
  * that writes {@code sin(} cannot drift apart.
  *
@@ -136,10 +139,10 @@ public enum Real {
 
     /**
      * Apply it, rounded to {@link #PLACES}, or null where the answer is not a finite real — which is how a
-     * function declines to reduce, the same way {@link Cott#asPoint} returns null for a term with no point
-     * reading.
+     * function declines to reduce, the same way every other unanswerable question here leaves its term
+     * standing.
      */
-    Rational apply(List<Double> args) {
+    ProjectiveRationalLiteral apply(List<Double> args) {
         if (args.size() != arity) {
             return null;
         }
@@ -154,7 +157,7 @@ public enum Real {
         // A BigDecimal is a scaled integer, so unscaling it is exactly the fraction it stands for -- no
         // second rounding, and nothing here has to know how a decimal string is spelled.
         return rounded.scale() <= 0
-                ? Rational.of(rounded.toBigIntegerExact(), java.math.BigInteger.ONE)
-                : Rational.of(rounded.unscaledValue(), java.math.BigInteger.TEN.pow(rounded.scale()));
+                ? new ProjectiveRationalLiteral(rounded.toBigIntegerExact(), BigInteger.ONE)
+                : new ProjectiveRationalLiteral(rounded.unscaledValue(), BigInteger.TEN.pow(rounded.scale()));
     }
 }

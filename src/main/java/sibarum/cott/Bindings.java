@@ -1,22 +1,15 @@
 package sibarum.cott;
 
-import sibarum.cott.Term.AWind;
-import sibarum.cott.Term.Approx;
-import sibarum.cott.Term.Atom;
-import sibarum.cott.Term.Call;
-import sibarum.cott.Term.Div;
-import sibarum.cott.Term.Exp;
-import sibarum.cott.Term.Inv;
-import sibarum.cott.Term.Lg;
-import sibarum.cott.Term.Logb;
-import sibarum.cott.Term.Neg;
-import sibarum.cott.Term.Plus;
-import sibarum.cott.Term.Pow;
-import sibarum.cott.Term.Pt;
-import sibarum.cott.Term.Times;
-import sibarum.cott.Term.Val;
-import sibarum.cott.Term.Wind;
-import sibarum.cott.Term.Xp;
+import sibarum.cott.engine.base.expr.AtomExpr;
+import sibarum.cott.engine.base.expr.CallExpr;
+import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
+import sibarum.cott.engine.operation.binary.ExponentialOperationExpr;
+import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
+import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
+import sibarum.cott.engine.operation.unary.NegationOperationExpr;
+import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
+import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,10 +22,10 @@ import java.util.Set;
  * What a session has named: {@code k = 3}, {@code f(x) = x^2+1}.
  *
  * <h2>Expansion, not environment</h2>
- * A binding is expanded into the term <b>before</b> {@link Cott} sees it, and the evaluator therefore has no
+ * A binding is expanded into the term <b>before</b> the engine sees it, and the evaluator therefore has no
  * notion of a scope at all — it stays a function of its argument, which is what makes every rule in it provable
- * on its own. The whole of the mechanism is {@link #expand}: an {@link Atom} bound to a value becomes that
- * value, a {@link Call} to a bound function becomes its body with the arguments put in, and everything else is
+ * on its own. The whole of the mechanism is {@link #expand}: an atom bound to a value becomes that
+ * value, a {@link CallExpr} to a bound function becomes its body with the arguments put in, and everything else is
  * carried through unchanged.
  *
  * <h2>Definitions are read in the vocabulary that precedes them, and looked up when they are used</h2>
@@ -59,7 +52,7 @@ import java.util.Set;
  * it takes is settled when it is applied, against the function that was actually passed — the same bargain
  * every other name here makes, and the reason {@code iter} works for a defined {@code g} and for {@code sin}
  * alike. A functor is otherwise nothing new in the evaluator: {@link #expand} substitutes a name for a name and
- * then applies it, so what reaches {@link Cott} is still a term with no notion of a function in it at all.
+ * then applies it, so what reaches the engine is still a term with no notion of a function in it at all.
  *
  * <h2>Immutable</h2>
  * {@link #define} and {@link #without} return a new object, so the window that edits a session's definitions and
@@ -100,7 +93,7 @@ public final class Bindings {
      * @param params the parameters, in order, or empty for a value
      * @param body   the right-hand side, already parsed in the vocabulary in scope when it was written
      */
-    public record Definition(String name, List<Param> params, Term body) {
+    public record Definition(String name, List<Param> params, IExpr body) {
         public Definition {
             params = List.copyOf(params);
         }
@@ -243,7 +236,7 @@ public final class Bindings {
     // ---------------------------------------------------------------- reading a definition
 
     /** The body, read in this vocabulary plus {@code params} — a parameter shadows whatever it is spelled like. */
-    private Term read(String body, List<Param> params) {
+    private IExpr read(String body, List<Param> params) {
         Bindings scope = params.isEmpty() ? this : new Bindings(defs, params);
         return Parser.parse(Notation.normalize(body, scope), scope);
     }
@@ -355,61 +348,70 @@ public final class Bindings {
     // ---------------------------------------------------------------- expansion
 
     /**
-     * Put every definition into {@code t}. What comes out mentions no defined name, so what reaches {@link Cott}
+     * Put every definition into {@code t}. What comes out mentions no defined name, so what reaches the engine
      * is the expression the definitions <em>stand for</em> — and so is the term the plotter reads its variables
      * out of, which is why plotting {@code f(x)} draws f's body rather than an opaque symbol.
      *
      * @throws SyntaxException where a definition expands into itself, or a function is given the wrong count
      */
-    public Term expand(Term t) {
+    public IExpr expand(IExpr t) {
         if (defs.isEmpty()) {
             return t;
         }
-        return t instanceof Val v ? expand(v, Map.of(), 0) : expand((Exp) t, Map.of(), 0);
+        return expand(t, Map.of(), 0);
     }
 
-    private Val expand(Val v, Map<String, Val> args, int depth) {
+    /**
+     * The walk is over {@link IExpr}, which is not sealed, so it ends in a default rather than in an exhaustive
+     * switch. A node this does not know is a leaf as far as expansion is concerned and is carried through
+     * unchanged — which is the same answer the listed leaves get, and the right one for a node added later that
+     * holds no names.
+     */
+    private IExpr expand(IExpr v, Map<String, IExpr> args, int depth) {
         if (depth > LIMIT) {
             throw new SyntaxException("a definition here expands into itself");
         }
         return switch (v) {
-            case Pt p -> p;
-            case Atom a -> {
-                Val given = args.get(a.name());
+            case AtomExpr a -> {
+                IExpr given = args.get(a.name());
                 if (given != null) {
                     yield given;                    // a parameter, already expanded by the caller
                 }
                 Definition d = defs.get(a.name());
                 // A FUNCTION named without brackets is not a value, so it stands: f alone is the name f, and
                 // only f(...) is its body. Expanding it here would put a loose parameter into the answer.
-                yield d == null || d.isFunction() || !(d.body() instanceof Val body)
+                yield d == null || d.isFunction()
                         ? a
-                        : expand(body, Map.of(), depth + 1);
+                        : expand(d.body(), Map.of(), depth + 1);
             }
-            case Neg n -> new Neg(expand(n.of(), args, depth));
-            case Inv i -> new Inv(expand(i.of(), args, depth));
-            case Div d -> new Div(expand(d.of(), args, depth), expand(d.by(), args, depth));
-            case Pow p -> new Pow(expand(p.base(), args, depth), expand(p.exponent(), args, depth));
-            case Wind w -> new Wind(expand(w.of(), args, depth));
-            case AWind w -> new AWind(expand(w.of(), args, depth));
-            case Approx a -> new Approx(expand(a.of(), args, depth));
-            case Plus p -> new Plus(expandAll(p.args(), args, depth));
-            case Times t -> new Times(expandAll(t.args(), args, depth));
-            case Call c -> call(c, args, depth);
+            case NegationOperationExpr n -> new NegationOperationExpr(expand(n.operand(), args, depth));
+            case ReciprocalOperationExpr i -> new ReciprocalOperationExpr(expand(i.operand(), args, depth));
+            case AdditionOperationExpr a ->
+                    new AdditionOperationExpr(expand(a.left(), args, depth), expand(a.right(), args, depth));
+            case MultiplicationOperationExpr m ->
+                    new MultiplicationOperationExpr(expand(m.left(), args, depth), expand(m.right(), args, depth));
+            case ExponentialOperationExpr p ->
+                    new ExponentialOperationExpr(expand(p.base(), args, depth), expand(p.exponent(), args, depth));
+            case LogarithmOperationExpr l ->
+                    new LogarithmOperationExpr(expand(l.base(), args, depth), expand(l.operand(), args, depth));
+            case TractionLiteral t ->
+                    new TractionLiteral(expand(t.base(), args, depth), expand(t.exp(), args, depth));
+            case CallExpr c -> call(c, args, depth);
+            default -> v;
         };
     }
 
-    private Val call(Call c, Map<String, Val> args, int depth) {
-        List<Val> given = expandAll(c.args(), args, depth);
-        Val passed = args.get(c.name());
+    private IExpr call(CallExpr c, Map<String, IExpr> args, int depth) {
+        List<IExpr> given = expandAll(c.args(), args, depth);
+        IExpr passed = args.get(c.name());
         if (passed != null) {
             // A PARAMETER standing in call position, which is the whole of the functor mechanism: what the
             // caller bound it to names the function to apply here.
             return applyPassed(c.name(), passed, given, depth);
         }
         Definition d = defs.get(c.name());
-        if (d == null || !d.isFunction() || !(d.body() instanceof Val body)) {
-            return new Call(c.name(), given);   // a built-in, or a name nothing defines: it stands
+        if (d == null || !d.isFunction() || !(d.body() instanceof IExpr body)) {
+            return new CallExpr(c.name(), given);   // a built-in, or a name nothing defines: it stands
         }
         return apply(d, body, given, depth);
     }
@@ -419,7 +421,7 @@ public final class Bindings {
      * {@link #checkKind} when it was bound, so the only thing left is which kind of function it names — one
      * this session defined, or one of {@link Real}'s.
      */
-    private Val applyPassed(String param, Val passed, List<Val> given, int depth) {
+    private IExpr applyPassed(String param, IExpr passed, List<IExpr> given, int depth) {
         String named = functionNamed(passed);
         if (named == null) {
             // Unreachable through define/expand, since the kind is checked at the binding. Kept because a
@@ -428,23 +430,23 @@ public final class Bindings {
         }
         Definition d = defs.get(named);
         if (d != null) {
-            return d.body() instanceof Val body ? apply(d, body, given, depth) : new Call(named, given);
+            return d.body() instanceof IExpr body ? apply(d, body, given, depth) : new CallExpr(named, given);
         }
         Real fn = Real.of(named);
         if (given.size() != fn.arity()) {
             throw new SyntaxException(fn.label() + " takes " + fn.arity()
                     + (fn.arity() == 1 ? " argument" : " arguments") + ", not " + given.size());
         }
-        return new Call(fn.label(), given);
+        return new CallExpr(fn.label(), given);
     }
 
     /** {@code d}'s body with {@code given} put in. The count and the kinds are checked here, at the binding. */
-    private Val apply(Definition d, Val body, List<Val> given, int depth) {
+    private IExpr apply(Definition d, IExpr body, List<IExpr> given, int depth) {
         if (given.size() != d.params().size()) {
             throw new SyntaxException(d.name() + " takes " + d.params().size()
                     + (d.params().size() == 1 ? " argument" : " arguments") + ", not " + given.size());
         }
-        Map<String, Val> bound = new LinkedHashMap<>();
+        Map<String, IExpr> bound = new LinkedHashMap<>();
         for (int i = 0; i < given.size(); i++) {
             Param p = d.params().get(i);
             checkKind(d, p, given.get(i));
@@ -462,7 +464,7 @@ public final class Bindings {
      * a bare function name would carry that name into the answer as though it were a variable, and then get
      * plotted as one.
      */
-    private void checkKind(Definition d, Param p, Val given) {
+    private void checkKind(Definition d, Param p, IExpr given) {
         String named = functionNamed(given);
         if (p.function() && named == null) {
             throw new SyntaxException(d.name() + "'s " + p.name() + " is a function, so it is given the NAME of "
@@ -477,13 +479,13 @@ public final class Bindings {
     /**
      * The function a value <em>names</em>, if it names one, and null otherwise.
      *
-     * <p>A bare name is an {@link Atom} and always has been — {@link Parser} takes one in an argument slot and
+     * <p>A bare name is an {@link AtomExpr} and always has been — {@link Parser} takes one in an argument slot and
      * {@link #expand} leaves a function's name standing — so passing a function costs the term language nothing
      * at all. What decides whether such an atom is a function is this lookup, made against whatever is defined
      * at the moment of the call, exactly as every other name here is.
      */
-    private String functionNamed(Val v) {
-        if (!(v instanceof Atom a)) {
+    private String functionNamed(IExpr v) {
+        if (!(v instanceof AtomExpr a)) {
             return null;
         }
         Definition d = defs.get(a.name());
@@ -493,19 +495,12 @@ public final class Bindings {
         return Real.of(a.name()) != null ? a.name() : null;
     }
 
-    private List<Val> expandAll(List<Val> vs, Map<String, Val> args, int depth) {
-        List<Val> out = new ArrayList<>(vs.size());
-        for (Val v : vs) {
+    private List<IExpr> expandAll(List<IExpr> vs, Map<String, IExpr> args, int depth) {
+        List<IExpr> out = new ArrayList<>(vs.size());
+        for (IExpr v : vs) {
             out.add(expand(v, args, depth));
         }
         return out;
     }
 
-    private Exp expand(Exp e, Map<String, Val> args, int depth) {
-        return switch (e) {
-            case Xp x -> x;
-            case Lg l -> new Lg(expand(l.of(), args, depth));
-            case Logb l -> new Logb(expand(l.base(), args, depth), expand(l.of(), args, depth));
-        };
-    }
 }
