@@ -3,6 +3,7 @@ package sibarum.cott.engine;
 import org.junit.jupiter.api.Test;
 import sibarum.cott.engine.base.expr.AtomExpr;
 import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.base.rule.Rewrite;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.binary.ExponentialOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
@@ -219,9 +220,9 @@ class TractionRulesTest {
      */
     @Test
     void theAdditionLawIsProvisionalAndNotWired() {
-        assertEquals(Optional.of(pow0(6, 1)), TractionRules.provisionalSum(pow0(2, 1), pow0(3, 1)));
+        assertEquals(Optional.of(pow0(6, 1)), TractionRules.provisionalSum(pow0(2, 1), pow0(3, 1)).map(Rewrite::result));
         // x + 0 = x is the consequence that collides with negation: 0^u + 0^1 = 0^(u·1) = 0^u.
-        assertEquals(Optional.of(pow0(2, 1)), TractionRules.provisionalSum(pow0(2, 1), ZERO));
+        assertEquals(Optional.of(pow0(2, 1)), TractionRules.provisionalSum(pow0(2, 1), ZERO).map(Rewrite::result));
         // Unwired: an ordinary sum still goes to the projective layer, where 1+1 is 2 and not 0^(0·0).
         assertEquals(ProjectiveRationalLiteral.of(2, 1), new AdditionOperationExpr(ONE, ONE).simplify());
     }
@@ -233,7 +234,7 @@ class TractionRulesTest {
      */
     @Test
     void theNegationRuleIsProvisionalAndDisagreesWithTheCoordinates() {
-        assertEquals(Optional.of(new TractionLiteral(ZERO, OMEGA)), TractionRules.provisionalNegation(ZERO));
+        assertEquals(Optional.of(new TractionLiteral(ZERO, OMEGA)), TractionRules.provisionalNegation(ZERO).map(Rewrite::result));
         assertEquals(ZERO, ZERO.negated());
         assertTrue(TractionRules.provisionalNegation(new AtomExpr("x")).isEmpty());
     }

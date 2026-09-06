@@ -8,6 +8,11 @@ import sibarum.cott.engine.operation.binary.ExponentialOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
+import sibarum.cott.engine.base.rule.Rewrite;
+import sibarum.cott.engine.base.rule.Rule;
+import sibarum.cott.engine.derivation.Derivation;
+import sibarum.cott.engine.derivation.Deriver;
+import sibarum.cott.engine.derivation.Step;
 import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
 
 import java.util.ArrayList;
@@ -23,9 +28,8 @@ import java.util.Optional;
  * session's names, answer the real-valued calls, simplify, render. Every step is somebody else's, and the order
  * is the only thing here.
  *
- * <p>Phase 2 has not been written, so {@code simplify()} currently combines coordinates and stands everywhere
- * else. An answer like {@code 2^3} therefore comes back as {@code 2^3} rather than as 8, which is the engine
- * being honest about having no rule rather than a fault in this path.
+ * <p>Where the theory has no answer the term stands, and that is the engine being honest rather than a fault
+ * in this path: {@code 0·w} comes back as {@code 0ω} because Problem 1 is open.
  *
  * <h2>Where the real functions are answered</h2>
  * A {@link Real} call is folded here and not in the engine, because it is not theory: it is a catalogue of
@@ -57,6 +61,82 @@ public final class Cott {
      */
     public static IExpr reduce(IExpr e) {
         return calls(e).simplify();
+    }
+
+    /**
+     * The whole solve, kept: normalize, parse, expand, and every rewrite from there to the answer.
+     *
+     * <p>The real-valued calls are in the same chain as the algebra rather than in one of their own, because
+     * an audit of "the answer" that stopped at the engine boundary would leave out the one place this engine
+     * approximates — which is exactly the step a reader most needs to see.
+     */
+    public static Derivation derive(String entry) {
+        return derive(entry, Bindings.EMPTY);
+    }
+
+    /** As {@link #derive(String)}, in a session's vocabulary. */
+    public static Derivation derive(String entry, Bindings session) {
+        IExpr from = session.expand(Parser.parse(Notation.normalize(entry, session), session));
+        List<Step> steps = new ArrayList<>();
+        IExpr current = from;
+        while (true) {
+            // Calls first, for the same reason reduce does it: an answered sin(2) is a coordinate the
+            // arithmetic around it can then combine, and an unanswered one stops that arithmetic correctly.
+            IExpr term = current;
+            Optional<Rewrite> next = call(term).or(() -> Deriver.step(term));
+            if (next.isEmpty()) {
+                return new Derivation(from, current, steps);
+            }
+            steps.add(new Step(current, next.get().result(), next.get().rule()));
+            current = next.get().result();
+        }
+    }
+
+    /** One real-valued call answered, anywhere in the expression, with the whole expression rebuilt. */
+    private static Optional<Rewrite> call(IExpr e) {
+        if (e instanceof CallExpr c) {
+            for (int i = 0; i < c.args().size(); i++) {
+                Optional<Rewrite> inner = call(c.args().get(i));
+                if (inner.isPresent()) {
+                    List<IExpr> args = new ArrayList<>(c.args());
+                    args.set(i, inner.get().result());
+                    return Optional.of(new Rewrite(new CallExpr(c.name(), args), inner.get().rule()));
+                }
+            }
+            Real fn = Real.of(c.name());
+            IExpr answered = fn == null ? null : answer(fn, c.args());
+            return answered == null ? Optional.empty() : Optional.of(new Rewrite(answered, approximation(fn)));
+        }
+        return children(e).stream()
+                .map(child -> call(child.expr()).map(r -> new Rewrite(child.rebuild().apply(r.result()), r.rule())))
+                .flatMap(Optional::stream)
+                .findFirst();
+    }
+
+    private static Rule approximation(Real fn) {
+        return new Rule(fn.label() + " of a real reading, rounded to " + Real.PLACES + " places",
+                "Real: a catalogue, not theory", Rule.Status.APPROXIMATE);
+    }
+
+    /** The sub-expressions a call could be hiding in, each with the way to put it back. */
+    private record Child(IExpr expr, java.util.function.UnaryOperator<IExpr> rebuild) {
+    }
+
+    private static List<Child> children(IExpr e) {
+        return switch (e) {
+            case AdditionOperationExpr(IExpr l, IExpr r) -> List.of(
+                    new Child(l, x -> new AdditionOperationExpr(x, r)),
+                    new Child(r, x -> new AdditionOperationExpr(l, x)));
+            case MultiplicationOperationExpr(IExpr l, IExpr r) -> List.of(
+                    new Child(l, x -> new MultiplicationOperationExpr(x, r)),
+                    new Child(r, x -> new MultiplicationOperationExpr(l, x)));
+            case ExponentialOperationExpr p -> List.of(
+                    new Child(p.base(), x -> new ExponentialOperationExpr(x, p.exponent())),
+                    new Child(p.exponent(), x -> new ExponentialOperationExpr(p.base(), x)));
+            case NegationOperationExpr(IExpr operand) -> List.of(new Child(operand, NegationOperationExpr::new));
+            case ReciprocalOperationExpr(IExpr operand) -> List.of(new Child(operand, ReciprocalOperationExpr::new));
+            default -> List.of();
+        };
     }
 
     /** Fold every {@link Real} call whose arguments all have a real reading. */

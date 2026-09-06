@@ -15,7 +15,7 @@ public record AdditionOperationExpr(IExpr left, IExpr right) implements IBinaryO
     public IExpr simplify() {
         IExpr l = left.simplify();
         IExpr r = right.simplify();
-        return TractionRules.sum(l, r).orElseGet(() -> l.plus(r));
+        return TractionRules.sum(l, r).map(sibarum.cott.engine.base.rule.Rewrite::result).orElseGet(() -> l.plus(r));
     }
 
     /**

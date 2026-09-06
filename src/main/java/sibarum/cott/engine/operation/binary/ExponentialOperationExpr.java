@@ -11,7 +11,7 @@ public record ExponentialOperationExpr(IExpr base, IExpr exponent) implements IB
     public IExpr simplify() {
         IExpr b = base.simplify();
         IExpr e = exponent.simplify();
-        return TractionRules.power(b, e)
+        return TractionRules.power(b, e).map(sibarum.cott.engine.base.rule.Rewrite::result)
                 .orElseGet(() -> b.equals(base) && e.equals(exponent) ? this : new ExponentialOperationExpr(b, e));
     }
 

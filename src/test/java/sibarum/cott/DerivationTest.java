@@ -1,0 +1,116 @@
+package sibarum.cott;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.base.rule.Rule;
+import sibarum.cott.engine.derivation.Derivation;
+import sibarum.cott.engine.derivation.Deriver;
+import sibarum.cott.engine.derivation.Step;
+import sibarum.cott.engine.traction.rule.TractionRules;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * The answer comes with its proof, and the proof is of what actually happened.
+ *
+ * <p>The load-bearing test here is {@link #aDerivationEndsWhereSimplifyDoes}. A tracing evaluator that runs
+ * its own copy of the rules can drift from the real one, and a proof of something the engine did not do is
+ * worse than no proof at all — so the two are pinned together on every expression the round-trip test uses.
+ */
+class DerivationTest {
+
+    private static Derivation of(String entry) {
+        return Cott.derive(entry);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "1+1", "2-1", "1÷2", "5÷10", "2.5", "0w", "1-1", "x-x", "2·3", "1÷2w", "0^(1+w)", "sin(0)",
+            "cos(π÷3)", "sin(2)", "x+3x", "2^3", "0*0", "0^2*0^3", "0^5÷0^2", "0^2-0^3", "w+w", "(-1)*(-1)",
+            "x^2", "2^-1", "0^w", "sin(x)+1",
+    })
+    void aDerivationEndsWhereSimplifyDoes(String entry) {
+        IExpr parsed = Parser.parse(Notation.normalize(entry));
+        assertEquals(Cott.reduce(parsed), of(entry).to(), entry);
+    }
+
+    /** And the engine's own derivation agrees with its own simplify, without the syntax layer involved. */
+    @ParameterizedTest
+    @ValueSource(strings = {"0*0", "0^2*0^3", "1-1", "w+w", "2^3", "0*w", "0^2÷0^2"})
+    void theEngineDerivationEndsWhereItsSimplifyDoes(String entry) {
+        IExpr parsed = Parser.parse(Notation.normalize(entry));
+        assertEquals(parsed.simplify(), Deriver.derive(parsed).to(), entry);
+    }
+
+    /** The chain is a chain: each step starts where the last one ended. */
+    @Test
+    void theStepsJoinUp() {
+        Derivation d = of("0^2*0^3");
+        assertFalse(d.steps().isEmpty());
+        IExpr at = d.from();
+        for (Step step : d.steps()) {
+            assertEquals(at, step.before());
+            at = step.after();
+        }
+        assertEquals(d.to(), at);
+    }
+
+    @Test
+    void anAnswerFromThePrimitivesAloneSaysSo() {
+        Derivation d = of("0*0");
+        assertEquals("0^2", Render.show(d.to()));
+        assertTrue(d.isProven());
+        assertTrue(d.assumptions().isEmpty());
+        assertEquals(TractionRules.PRODUCT, d.steps().getLast().rule());
+    }
+
+    /**
+     * An approximation is not a proof, and the status column is what says so. This is the question the whole
+     * apparatus exists to answer per-answer rather than per-document.
+     */
+    @Test
+    void anApproximationIsDeclared() {
+        Derivation d = of("sin(0)+1");
+        assertEquals("1", Render.show(d.to()));
+        assertFalse(d.isProven());
+        assertEquals(1, d.assumptions().size());
+        assertEquals(Rule.Status.APPROXIMATE, d.assumptions().iterator().next().status());
+    }
+
+    /** A term the theory has not settled takes no steps, and the record says nothing happened. */
+    @Test
+    void aStandingTermHasAnEmptyDerivation() {
+        Derivation d = of("0w");
+        assertTrue(d.stands());
+        assertEquals(d.from(), d.to());
+        assertEquals("0ω", Render.show(d.to()));
+    }
+
+    /**
+     * The projective layer is in the trace. Every bug found in this engine so far has been coordinate
+     * arithmetic rather than a traction rule, and a derivation that recorded only the interesting-looking
+     * layer would have missed all of them.
+     */
+    @Test
+    void theCoordinatesReportThemselves() {
+        Derivation d = of("w+w");
+        assertEquals("2ω", Render.show(d.to()));
+        assertEquals(1, d.steps().size());
+        assertSame(Deriver.PROJECTIVE, d.steps().getFirst().rule());
+    }
+
+    /** The unwired rules carry the status that keeps them unwired. */
+    @Test
+    void theProvisionalRulesDeclareWhatTheyAre() {
+        assertEquals(Rule.Status.MAYBE, TractionRules.ADDITION_LAW.status());
+        assertEquals(Rule.Status.CHOSEN, TractionRules.NEGATION.status());
+        assertEquals(Rule.Status.CHOSEN, TractionRules.MINUS_ONE.status());
+        assertEquals(Rule.Status.OPEN, TractionRules.STANDS.status());
+        assertTrue(TractionRules.PRODUCT.isProven());
+    }
+}

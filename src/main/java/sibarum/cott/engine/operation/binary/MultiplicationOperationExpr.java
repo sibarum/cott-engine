@@ -16,7 +16,7 @@ public record MultiplicationOperationExpr(IExpr left, IExpr right) implements IB
     public IExpr simplify() {
         IExpr l = left.simplify();
         IExpr r = right.simplify();
-        return TractionRules.product(l, r).orElseGet(() -> l.times(r));
+        return TractionRules.product(l, r).map(sibarum.cott.engine.base.rule.Rewrite::result).orElseGet(() -> l.times(r));
     }
 
     @Override

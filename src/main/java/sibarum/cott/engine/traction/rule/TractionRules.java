@@ -1,6 +1,8 @@
 package sibarum.cott.engine.traction.rule;
 
 import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.base.rule.Rewrite;
+import sibarum.cott.engine.base.rule.Rule;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.binary.ExponentialOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
@@ -39,6 +41,31 @@ public final class TractionRules {
     private static final ProjectiveRationalLiteral ONE = ProjectiveRationalLiteral.ONE;
     private static final ProjectiveRationalLiteral NEG_ONE = ProjectiveRationalLiteral.NEG_ONE;
     private static final ProjectiveRationalLiteral OMEGA = ProjectiveRationalLiteral.OMEGA;
+
+    /** The table in rule-combinations.md, as the things a derivation cites. */
+    public static final Rule PRODUCT =
+            new Rule("0^a · 0^b = 0^(a+b)", "E1", Rule.Status.PROVEN);
+    public static final Rule QUOTIENT =
+            new Rule("0^a ÷ 0^b = 0^(a-b)", "E1 + E3", Rule.Status.PROVEN);
+    public static final Rule DIFFERENCE =
+            new Rule("0^a - 0^b = 0^(a÷b)", "E10, total", Rule.Status.PROVEN);
+    public static final Rule INTEGER_POWER =
+            new Rule("(0^a)^n = 0^(a·n), integer n", "E1, repeated multiplication", Rule.Status.PROVEN);
+    public static final Rule NEGATIVE_POWER =
+            new Rule("(0^a)^-n = 0^(-a·n)", "E3", Rule.Status.PROVEN);
+    public static final Rule BASE_ZERO =
+            new Rule("0^E is a traction; 0^1 = 0 and 0^0 = 1", "E4, E5", Rule.Status.PROVEN);
+
+    /** Not a rewrite at all: the cell is open, and saying so is what keeps the layer below from answering. */
+    public static final Rule STANDS =
+            new Rule("the term stands", "theory-problems.md #1", Rule.Status.OPEN);
+
+    public static final Rule ADDITION_LAW =
+            new Rule("0^a + 0^b = 0^(a·b)", "the mirror of E10", Rule.Status.MAYBE);
+    public static final Rule NEGATION =
+            new Rule("-(0^a) = 0^(a+w)", "E1 and -1 = 0^w", Rule.Status.CHOSEN);
+    public static final Rule MINUS_ONE =
+            new Rule("-1 = 0^w", "E6 and E7, the leap", Rule.Status.CHOSEN);
 
     private TractionRules() {
     }
@@ -122,15 +149,15 @@ public final class TractionRules {
      * product, {@code a = b} for the quotient. Both are the additive erasure in the exponent, which is
      * Problem 1 and is not this class's to answer. {@code 0·w} is the product case at {@code a = 1, b = -1}.
      */
-    public static Optional<IExpr> product(IExpr left, IExpr right) {
+    public static Optional<Rewrite> product(IExpr left, IExpr right) {
         if (right instanceof ReciprocalOperationExpr(IExpr by)) {
             return pair(left, by).map(ab -> ab.a().equals(ab.b())
-                    ? stands(left, right)
-                    : traction(minus(ab.a(), ab.b())));
+                    ? new Rewrite(stands(left, right), STANDS)
+                    : new Rewrite(traction(minus(ab.a(), ab.b())), QUOTIENT));
         }
         return pair(left, right).map(ab -> negates(ab.a(), ab.b())
-                ? stands(left, right)
-                : traction(plus(ab.a(), ab.b())));
+                ? new Rewrite(stands(left, right), STANDS)
+                : new Rewrite(traction(plus(ab.a(), ab.b())), PRODUCT));
     }
 
     /**
@@ -155,7 +182,7 @@ public final class TractionRules {
      * <p>Addition itself is not here. {@code 0^a + 0^b -> 0^(a·b)} is Maybe and is
      * {@link #provisionalSum}.
      */
-    public static Optional<IExpr> sum(IExpr left, IExpr right) {
+    public static Optional<Rewrite> sum(IExpr left, IExpr right) {
         if (!(right instanceof NegationOperationExpr(IExpr taken))) {
             return Optional.empty();
         }
@@ -163,9 +190,9 @@ public final class TractionRules {
         // multiplicative IDENTITY -- not whatever the coordinates happen to compute. a÷a at a = (2,1) is the
         // pair (2,2), which is the value one at coordinates that are not one, and 0^(2,2) is not the point
         // zero. Reading the erasure off the term is what makes subtraction total: y - y is 0 for every y.
-        return pair(left, taken).map(ab -> ab.a().equals(ab.b())
+        return pair(left, taken).map(ab -> new Rewrite(ab.a().equals(ab.b())
                 ? traction(ONE)
-                : traction(over(ab.a(), ab.b())));
+                : traction(over(ab.a(), ab.b())), DIFFERENCE));
     }
 
     /**
@@ -181,20 +208,20 @@ public final class TractionRules {
      * any E, so it is recognised rather than derived. That is what turns a typed {@code 0^2} into one, and
      * what makes {@code 0^0} the value 1 by E5 and {@code 0^1} the point zero by E4.
      */
-    public static Optional<IExpr> power(IExpr base, IExpr exponent) {
+    public static Optional<Rewrite> power(IExpr base, IExpr exponent) {
         if (ZERO.equals(base)) {
-            return Optional.of(traction(exponent));
+            return Optional.of(new Rewrite(traction(exponent), BASE_ZERO));
         }
         if (!isNonZeroInteger(exponent)) {
             return Optional.empty();
         }
         BigInteger n = ((ProjectiveRationalLiteral) exponent).numerator();
         if (n.signum() > 0 && combines(base)) {
-            return Optional.of(repeated(base, n));
+            return Optional.of(new Rewrite(repeated(base, n), INTEGER_POWER));
         }
         // A NEGATIVE power is 1/y^n, and E3 grants that at base zero only. For a general base it is a
         // convention rather than a consequence, so 2^-1 stands -- as it did in the engine before this one.
-        return exponentOfZero(base).map(a -> traction(times(a, exponent)));
+        return exponentOfZero(base).map(a -> new Rewrite(traction(times(a, exponent)), NEGATIVE_POWER));
     }
 
     /**
@@ -237,10 +264,10 @@ public final class TractionRules {
      * Empty at {@code b = 1÷a}, where the exponent product is the multiplicative erasure. That cell has no
      * recognisable form at the value level, which is one more reason the law is only Maybe.
      */
-    public static Optional<IExpr> provisionalSum(IExpr left, IExpr right) {
+    public static Optional<Rewrite> provisionalSum(IExpr left, IExpr right) {
         return pair(left, right).flatMap(ab -> reciprocates(ab.a(), ab.b())
-                ? Optional.empty()
-                : Optional.of(traction(times(ab.a(), ab.b()))));
+                ? Optional.<Rewrite>empty()
+                : Optional.of(new Rewrite(traction(times(ab.a(), ab.b())), ADDITION_LAW)));
     }
 
     /**
@@ -252,8 +279,8 @@ public final class TractionRules {
      * a zero numerator negates to itself. Three answers for one term, and the disagreement is between the
      * layers rather than inside either.
      */
-    public static Optional<IExpr> provisionalNegation(IExpr operand) {
-        return exponentOfZero(operand).map(a -> traction(plus(a, OMEGA)));
+    public static Optional<Rewrite> provisionalNegation(IExpr operand) {
+        return exponentOfZero(operand).map(a -> new Rewrite(traction(plus(a, OMEGA)), NEGATION));
     }
 
     // ---------------------------------------------------------------- the exponent arithmetic

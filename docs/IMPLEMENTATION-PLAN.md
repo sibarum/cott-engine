@@ -212,6 +212,44 @@ The lesson for whatever replaces it: a client reads what the engine says and doe
 it. Anything that pattern-matches the carrier's shape will have to be rewritten every time the
 carrier moves, and the carrier is going to move again.
 
+### Derivations — the answer with its proof
+
+Added after phase 2, because information conservation is the theory's founding commitment and an evaluator
+that returns only an answer discards the derivation that produced it.
+
+`Cott.derive(entry)` returns a `Derivation`: the expression as it arrived, the expression it settled on, and
+every rewrite between, each carrying the `Rule` that licensed it — the rule as the docs write it, where it is
+justified, and its status. So an answer can be asked whether it depends on anything the theory has not
+settled, per answer rather than per document:
+
+```
+cos(π÷3)·2  =>  1   [assumes: cos of a real reading, rounded to 15 places  [APPROXIMATE]]
+    = 0.5·2        cos of a real reading, rounded to 15 places
+    = 1            the coordinates combine  [projective arithmetic, PROVEN]
+```
+
+Four decisions in the shape of it:
+
+**Small steps, whole terms.** One rewrite per line, the entire expression each time, so it reads as a chain of
+equalities the way the docs argue rather than as a log of what the evaluator did to itself.
+
+**One set of rules, not two.** `TractionRules` returns a `Rewrite` — result plus justification — and
+`simplify()` drops the justification. A tracing evaluator running its own copy of the rules can drift from the
+real one, and a proof of something the engine did not do is worse than no proof. `DerivationTest` pins them:
+the last term of a derivation is what `simplify()` returns, over every expression the round-trip test uses.
+
+**`simplify()` is untouched.** It answers in one recursive pass, which is what a plotter sampling a thousand
+points needs. The derivation is a second entry point over the same rules, not a mode.
+
+**The projective layer reports itself.** Every defect found in this engine has been coordinate arithmetic
+rather than a traction rule — `w+w` landing on 1, `0·w` answered by two pairs multiplying before any rule was
+consulted, `(-1)·(-1)` reaching zero. A derivation that recorded only the interesting-looking layer would have
+missed all three.
+
+The granularity is one step per rule firing; the exponent arithmetic a rule does internally is folded into its
+step. Finer is available later by having the rules return their result unsimplified, and would be worth it if
+a defect is ever traced to a step that a derivation could not show.
+
 ### What this plan deliberately does not do
 
 It does not resolve `0·w`, supply a power rule off the integers, choose between the Maybe
