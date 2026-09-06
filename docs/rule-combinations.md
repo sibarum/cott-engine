@@ -13,13 +13,13 @@ E2 is withdrawn; the rows that rested on it are listed under "Gone with E2" belo
 
 Both operands lifted, result given as a power of 0.
 
-| value op        | exponent op | rule    | status  |
-|-----------------|-------------|---------|---------|
-| `0^a · 0^b`     | `a + b`     | E1      | Proven  |
-| `0^a ÷ 0^b`     | `a - b`     | E1 + E3 | Proven  |
-| `0^a + 0^b`     | `a · b`     | —       | Maybe   |
-| `0^a - 0^b`     | `a ÷ b`     | E10     | Proven, and total |
-| `(0^a)^n`       | `a · n`     | E1      | Proven for integer n only |
+| value op        | exponent op | rule    | status  | in the engine |
+|-----------------|-------------|---------|---------|---------------|
+| `0^a · 0^b`     | `a + b`     | E1      | Proven  | wired |
+| `0^a ÷ 0^b`     | `a - b`     | E1 + E3 | Proven  | wired |
+| `0^a + 0^b`     | `a · b`     | —       | Maybe   | provisional, unwired |
+| `0^a - 0^b`     | `a ÷ b`     | E10     | Proven, and total | wired |
+| `(0^a)^n`       | `a · n`     | E1      | Proven for integer n only | wired |
 
 The first four are one statement: `0^` exchanges the additive and multiplicative floors,
 and the inverses follow. `·` swaps with `+`, `÷` swaps with `-`.

@@ -26,8 +26,7 @@ class BindingsTest {
     void aValueIsSubstituted() {
         Bindings s = Bindings.EMPTY.define("k = 3");
         assertEquals("3", ev(s, "k"));
-        // Substitution is the subject; 3^2 stands because the integer power rule is phase 2.
-        assertEquals("3^2", ev(s, "k^2"));
+        assertEquals("9", ev(s, "k^2"));
         assertEquals("6", ev(s, "2k"));           // juxtaposition still multiplies by a name
         assertEquals("3x", ev(s, "kx"));
     }
@@ -35,12 +34,10 @@ class BindingsTest {
     @Test
     void aFunctionIsApplied() {
         Bindings s = Bindings.EMPTY.define("f(t) = t^2+1");
-        // The body arrives with its argument in it. The arithmetic on top of that is phase 2, so these stand
-        // at the shape substitution produced rather than at a number.
-        assertEquals("2^2+1", ev(s, "f(2)"));
+        assertEquals("5", ev(s, "f(2)"));
         assertEquals("x^2+1", ev(s, "f(x)"));
         assertEquals("x^2+1+(y^2+1)", ev(s, "f(x)+f(y)"));
-        assertEquals("2(2^2+1)", ev(s, "2f(2)"));       // and a call is an ordinary operand
+        assertEquals("10", ev(s, "2f(2)"));       // and a call is an ordinary operand
     }
 
     /** A definition may use what was defined before it, and the expansion goes all the way down. */
@@ -96,15 +93,14 @@ class BindingsTest {
     @Test
     void aFunctorAppliesWhatItIsGiven() {
         Bindings s = Bindings.EMPTY.define("g(t) = t^2").define("iter(f(), n) = f(f(n))");
-        assertEquals("(3^2)^2", ev(s, "iter(g, 3)"));
+        assertEquals("81", ev(s, "iter(g, 3)"));
         assertEquals("(x^2)^2", ev(s, "iter(g, x)"));   // g of g of x, unfolded and left as COTT leaves it
         // The built-in catalogue is passable too, and for the same reason it needs no special case: what is
         // passed is a NAME, and the lookup that resolves it is the one every other name goes through.
         assertEquals("sin(sin(x))", ev(s, "iter(sin, x)"));
         assertEquals("0", ev(s, "iter(sin, 0)"));
         // And the functor is an ordinary definition otherwise: it composes, and its own name is a word.
-        assertEquals("(((3^2)^2)^2)^2",
-                ev(s.define("four(f(), n) = iter(f, iter(f, n))"), "four(g, 3)"));
+        assertEquals("43046721", ev(s.define("four(f(), n) = iter(f, iter(f, n))"), "four(g, 3)"));
     }
 
     /**

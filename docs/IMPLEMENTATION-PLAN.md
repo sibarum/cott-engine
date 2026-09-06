@@ -117,6 +117,30 @@ Promotion finally gets a consumer here: the exponent rules need both operands as
 **Done when:** every row of the table is either implemented or has a test asserting the term
 stands, with a comment naming the problem that blocks it.
 
+**Landed.** `TractionRules`, one method per row, consulted by the operation nodes before the
+projective layer gets them — that order is "the finer reading wins". 132 tests green, none
+skipped. Four things worth carrying forward:
+
+*Standing has to be said, not merely not-said.* A rule that declines lets the projective layer
+answer, and the projective layer is perfectly willing to multiply `0` by `ω`. The undecided
+cells return the term unchanged instead of returning nothing.
+
+*The erasure is read off the term.* `y - y` materialises as the multiplicative **identity**, not
+as whatever the coordinates compute: `a÷a` at `a = (2,1)` is the pair `(2,2)`, which is the value
+one at coordinates that are not one, and `0^(2,2)` is not the point zero. Reading it off the term
+is what makes subtraction total.
+
+*The integer power rule is repeated multiplication, and that is all it is.* `2^3` is 8 by
+multiplying three copies, `(0^2)^3` is `0^6` because the product rule turns the copies into an
+exponent sum. One mechanism, not two — which is exactly the proof in the docs. It is only applied
+where the copies join back up, since `x^2` is not improved by becoming `x·x`.
+
+*The leap is not wired.* `-1 = 0^w` is Chosen, but reading it makes `(-1)·(-1)` into `0^(w+w)`,
+and the coordinates put `w+w` at 1, so the engine would answer that the square of minus one is
+zero. Three of the four points read; the fourth is kept where the two layers cannot meet, with
+`provisionalMinusOne` and a test recording what it would have done. This is problem 5, which the
+implementation found.
+
 ### Phase 3 — syntax layer
 
 Retarget the survivors, ~84 sites total. Order by coupling, lowest first:

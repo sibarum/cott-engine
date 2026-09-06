@@ -1,6 +1,7 @@
 package sibarum.cott.engine.operation.binary;
 
 import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.traction.rule.TractionRules;
 
 import java.util.Optional;
 
@@ -8,7 +9,10 @@ public record ExponentialOperationExpr(IExpr base, IExpr exponent) implements IB
 
     @Override
     public IExpr simplify() {
-        return this;
+        IExpr b = base.simplify();
+        IExpr e = exponent.simplify();
+        return TractionRules.power(b, e)
+                .orElseGet(() -> b.equals(base) && e.equals(exponent) ? this : new ExponentialOperationExpr(b, e));
     }
 
     @Override

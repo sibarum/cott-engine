@@ -46,12 +46,19 @@ class TractionLiteralTest {
         assertEquals(Optional.empty(), traction.evaluate());
     }
 
+    /**
+     * This used to be {@code 0^1 · 0^1}, chosen because nothing could answer it. E1 answers it now — that is
+     * phase 2 — so the term that stands here is one the theory has genuinely not settled: an exponent sum that
+     * is an erasure, which is Problem 1.
+     */
     @Test
-    void anOperationOnATractionStandsAsATerm() {
-        TractionLiteral traction = new TractionLiteral(ZERO, ONE);
-        IExpr product = traction.times(traction);
+    void anOperationTheTheoryHasNotSettledStandsAsATerm() {
+        TractionLiteral zero = new TractionLiteral(ZERO, ONE);
+        TractionLiteral omega = new TractionLiteral(ZERO, at(-1, 1));
+        IExpr product = zero.times(omega);
 
         assertEquals(product, product.simplify());
+        assertEquals(product.simplify(), product.simplify().simplify());
     }
 
     @Test

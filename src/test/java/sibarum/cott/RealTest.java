@@ -33,7 +33,9 @@ class RealTest {
         // calculator that prints that is reporting the arithmetic's error as the answer.
         assertEquals("0", ev("sin(π)"));
         assertEquals("0", ev("cos(π÷2)"));
-        assertEquals("-1", ev("cos(π)"));
+        // The display's minus is U+2212, the glyph Notation normalizes to and the parser reads natively --
+        // the same reason the display prints · rather than the * that was typed.
+        assertEquals("−1", ev("cos(π)"));
     }
 
     /** The reciprocals and the inverses, including the branch acot was given deliberately. */
@@ -70,7 +72,7 @@ class RealTest {
     @Test
     void degreesAndRadians() {
         assertEquals("1", ev("sin(deg(90))"));
-        assertEquals("-1", ev("cos(deg(180))"));
+        assertEquals("−1", ev("cos(deg(180))"));
         assertEquals(ev("acos(−1)"), ev("deg(180)"));   // half a turn, both computed
         assertEquals("2", ev("rad(2)"));
         assertEquals("1", ev("sin(rad(π÷2))"));
@@ -170,7 +172,6 @@ class RealTest {
      * twenty-four-place one, every digit correct and none of them useful.
      */
     @Test
-    @org.junit.jupiter.api.Disabled("needs the integer power rule to square anything -- phase 2")
     void theWindowHoldsDownstreamOfACall() {
         assertEquals("1", ev("sin(π÷4)^2+cos(π÷4)^2"));
         assertEquals("0.826821810432", ev("sin(2)^2"));

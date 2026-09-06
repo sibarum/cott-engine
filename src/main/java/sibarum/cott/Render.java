@@ -111,7 +111,7 @@ public final class Render {
         BigInteger n = p.numerator();
         BigInteger d = p.denominator();
         if (d.equals(BigInteger.ONE)) {
-            return n.toString();
+            return signed(n.toString());
         }
         if (d.signum() == 0) {
             if (n.equals(BigInteger.ONE)) {
@@ -125,9 +125,21 @@ public final class Render {
         return rational(n, d);
     }
 
-    /** A leading coefficient: bracketed when it is spelled as a quotient, bare otherwise. */
+    /** A leading coefficient. */
     private static String coefficient(BigInteger n) {
-        return n.toString();
+        return signed(n.toString());
+    }
+
+    /**
+     * One minus sign, and it is the display's own.
+     *
+     * <p>{@link BigInteger} and {@link BigDecimal} write an ASCII hyphen, and {@link Notation#normalize} turns
+     * that into U+2212 on the way back in — so a negative literal and a negation node were printing one value
+     * two different ways. Both re-parsed correctly, which is exactly why it went unnoticed: the defect was at
+     * the string, and the string is where a display lives.
+     */
+    private static String signed(String s) {
+        return s.startsWith("-") ? "−" + s.substring(1) : s;
     }
 
     /**
@@ -151,7 +163,7 @@ public final class Render {
      * place the printer is not an exact inverse, and it is deliberate.
      */
     private static String rational(BigInteger n, BigInteger d) {
-        String fraction = n + "÷" + d;
+        String fraction = signed(n.toString()) + "÷" + signed(d.toString());
         String decimal = decimal(n, d);
         return decimal != null && decimal.length() < fraction.length() ? decimal : fraction;
     }
@@ -167,7 +179,7 @@ public final class Render {
         BigDecimal value = new BigDecimal(n)
                 .divide(new BigDecimal(d), SHOWN, RoundingMode.HALF_EVEN)
                 .stripTrailingZeros();
-        return value.signum() == 0 && n.signum() != 0 ? null : value.toPlainString();
+        return value.signum() == 0 && n.signum() != 0 ? null : signed(value.toPlainString());
     }
 
     private static boolean isPowerOfTen(BigInteger d) {

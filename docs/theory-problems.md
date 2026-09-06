@@ -203,7 +203,36 @@ Its one remaining customer is the Maybe addition law `0^a + 0^b = 0^(a·b)`, whi
 justification anyway (the mirror of E10). So adopting or rejecting the general involution now
 costs much less than it did — and buys much less.
 
-### 5) Nilpotents
+### 5) The two layers disagree at the four points
+
+Found by implementing the rules, and it is the sharpest form of the `0·w` question rather than a separate
+one. The engine has a projective coordinate layer — the rationals with omega, where a value is a pair — and
+a traction layer, where a value is `0^a`. Both can answer some of the same expressions, and they do not
+always agree.
+
+```
+w + w        coordinates: (1,0) + (1,0) = (0,0), which is 1
+0·w          coordinates: (0,1) · (1,0) = (0,0), which is 1
+             tractions:   0^(1 + -1), an erasure -- Problem 1, undecided
+(-1)·(-1)    coordinates: (-1,1) · (-1,1) = (1,1), which is 1
+             tractions:   0^w · 0^w = 0^(w+w) = 0^1 = 0, by E1 and the leap
+1 + w        coordinates: (1,1) + (1,0) = (1,0), which is w
+```
+
+The last line is why the negation rule cannot simply be switched on: `-0 = 0^(1+w)` becomes `0^w`, which is
+`-1`. And the third is why `-1 = 0^w` is not used as a reading in the engine at all — wiring it makes the
+square of minus one zero.
+
+So the coordinate layer has already answered Problem 1, in the materialise direction, by the
+`(0,0) -> (1,1)` normalisation in its constructor. That normalisation is deliberate and has a test on it.
+Either it is the answer, in which case Problem 1 is settled and the docs should say so; or the coordinates
+are a model that is wrong about omega, in which case `w + w = 1` needs to go and `0·w` stays open.
+
+Nothing here is decided. What the engine does meanwhile: the traction rules run first and leave the
+undecided cells standing, three of the four points read as powers of zero, and the fourth — the leap — is
+kept where the two layers cannot meet.
+
+### 6) Nilpotents
 
 `0^(1/n)` is nonzero by injectivity but n copies of it multiply to `0^1 = 0`. So traction has
 nilpotents of every order. This survived E2's deletion intact, because repeated multiplication

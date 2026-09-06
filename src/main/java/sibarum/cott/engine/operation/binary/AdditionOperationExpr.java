@@ -1,6 +1,7 @@
 package sibarum.cott.engine.operation.binary;
 
 import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.traction.rule.TractionRules;
 
 import java.util.Optional;
 
@@ -12,7 +13,9 @@ public record AdditionOperationExpr(IExpr left, IExpr right) implements IBinaryO
      */
     @Override
     public IExpr simplify() {
-        return left.simplify().plus(right.simplify());
+        IExpr l = left.simplify();
+        IExpr r = right.simplify();
+        return TractionRules.sum(l, r).orElseGet(() -> l.plus(r));
     }
 
     /**
