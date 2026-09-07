@@ -39,11 +39,28 @@ class TractionRulesTest {
 
     // ---------------------------------------------------------------- reading the four points
 
+    /**
+     * The two on the traction axis read; the two additive units do not.
+     *
+     * <p>1 and -1 are the additive units, 0 and w the multiplicative ones, and a value is a + 0^b with one of
+     * each. Reading an additive unit as a power of zero mixes the two axes, and it does not terminate: E10
+     * turned 0 - 1 into 0^(1÷0), E1+E3 read that exponent as 0^0 ÷ 0^1, and that is 0^(0-1) again.
+     * E5 is untouched as a rule about the TERM 0^0 -- see {@link #anIntegerPowerFlattens}.
+     */
     @Test
-    void threeOfTheFourPointsReadAsPowersOfZero() {
+    void theTwoMultiplicativeUnitsReadAsPowersOfZero() {
         assertEquals(Optional.of(ONE), TractionRules.exponentOfZero(ZERO));          // E4: 0 = 0^1
-        assertEquals(Optional.of(ZERO), TractionRules.exponentOfZero(ONE));          // E5: 1 = 0^0
         assertEquals(Optional.of(NEG_ONE), TractionRules.exponentOfZero(OMEGA));     // Proven: w = 0^-1
+
+        assertEquals(Optional.empty(), TractionRules.exponentOfZero(ONE));
+        assertEquals(Optional.empty(), TractionRules.exponentOfZero(NEG_ONE));
+    }
+
+    /** And with them unread, the cycle that would not terminate does not arise. */
+    @Test
+    void subtractingAnAdditiveUnitFromAMultiplicativeOneSettles() {
+        IExpr mixed = new AdditionOperationExpr(ZERO, new NegationOperationExpr(ONE));
+        assertEquals(NEG_ONE, mixed.simplify());
     }
 
     /**

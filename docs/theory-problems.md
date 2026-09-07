@@ -263,9 +263,15 @@ same condition rule-combinations.md names for negation to be an involution, and 
 The engine meanwhile: traction rules first, undecided cells standing, three of the four points read as
 powers of zero, and the leap kept out of the reading so ordinary arithmetic keeps answering.
 
-### 6) When may a point be re-read as a power of zero?
+### 6) When may a point be re-read as a power of zero? — RESOLVED
 
-Found by trying to fix what looked like a traversal-order bug, and it is not one.
+The answer: only the multiplicative units. 1 and -1 are the additive units, 0 and w the multiplicative
+ones, and a value is `a + 0^b` with one of each. Reading an additive unit as a power of zero mixes the two
+axes, and nothing needs it -- the operands that are on the traction axis are already written that way. So
+`exponentOfZero` reads 0 and w and no longer reads 1, and the traversal now tries a shape before descending
+into it. Both are in the engine.
+
+What follows is the finding that led there, kept because the failure mode is instructive.
 
 **The symptom.** E10 matches the shape `Addition(x, Negation(y))`. The engine reduces innermost-first, so it
 turns `Negation(1)` into the literal `-1` before it ever looks at the sum — and by then the shape E10 needs
@@ -302,11 +308,13 @@ are at least two ways to answer it:
   something: `0·w` would go to the coordinates and answer 1, undoing the one cell phase 2 was careful to
   leave standing.
 
-The first looks right and costs least, but it decides `0 - 1`, `1 ÷ 0` and the precedence of a definition
-over a rule, which is not a decision the engine should take by an accident of traversal order. Nothing is
-changed until it is made: the engine still reduces innermost-first, so E10 is still not reaching the four
-points, and anything the engine says about `0`, `1`, `w`, `-1` under subtraction is the coordinate model
-talking.
+Neither was needed. Not mixing the axes is cheaper than both and settles it without ranking one rule over
+another: the cycle needed `1` read as `0^0`, and that reading was never legitimate.
+
+What it corrected, beyond terminating: `w - w` was answering 1, because the coordinates sent `(1,0)+(-1,0)`
+to `(0,0)` and the constructor sends that to one. E10 now reaches it and gives `0^(-1÷-1)`, whose exponent
+is the multiplicative erasure, so it materialises to `0^1` and the answer is 0. Subtracting a thing from
+itself gives zero at omega too, which is what totality was supposed to mean.
 
 ### 7) Nilpotents
 

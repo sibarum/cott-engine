@@ -96,11 +96,19 @@ public final class Deriver {
      * {@link TractionRules#STANDS} — and recording it would be both a lie and a loop.
      */
     public static Optional<Rewrite> step(IExpr e) {
-        Optional<Rewrite> inner = inChildren(e);
-        if (inner.isPresent()) {
-            return inner;
+        // OUTERMOST FIRST, and the order is load-bearing. A rule that matches on a shape can have that shape
+        // taken away by a rewrite inside it: E10 matches Addition(x, Negation(y)), and reducing Negation(1) to
+        // the literal -1 first leaves an ordinary sum it can never see again. That is why E10 was reaching
+        // tractions and never the four points -- 0^3 has no coordinate negation to collapse into, and 1 does.
+        //
+        // Descending second is not a compromise. A rule whose operands are not ready declines, the children
+        // are reduced, and the next turn tries the shape again; trying it first only ever costs a failed
+        // match.
+        Optional<Rewrite> mine = here(e).filter(rewrite -> !rewrite.result().equals(e));
+        if (mine.isPresent()) {
+            return mine;
         }
-        return here(e).filter(rewrite -> !rewrite.result().equals(e));
+        return inChildren(e);
     }
 
     /** The first rewrite available inside {@code e}, with the whole expression rebuilt around it. */

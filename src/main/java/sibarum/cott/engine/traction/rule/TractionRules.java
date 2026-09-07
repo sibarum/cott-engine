@@ -85,9 +85,12 @@ public final class TractionRules {
         if (ZERO.equals(e)) {
             return Optional.of(ONE);        // E4
         }
-        if (ONE.equals(e)) {
-            return Optional.of(ZERO);       // E5
-        }
+        // 1 is NOT read as 0^0 here, though E5 says it is. 1 and -1 are the additive units; 0 and w are the
+        // multiplicative ones, and a value is a + 0^b with one of each. Reading an additive unit as a power
+        // of zero is mixing the two, and it is what made 0 - 1 non-terminating: E10 turned it into 0^(1÷0),
+        // then E1+E3 read that exponent as 0^0 ÷ 0^1, which is 0^(0-1) again. Nothing needs both operands
+        // rewritten into powers of zero -- the ones on the traction axis are already written that way.
+        // E5 is untouched as a rule ABOUT the term 0^0; see point().
         if (OMEGA.equals(e)) {
             return Optional.of(NEG_ONE);    // Proven: w = 0^-1 = 1/0
         }
