@@ -81,7 +81,9 @@ class DerivationTest {
     @Test
     void anApproximationIsDeclared() {
         Derivation d = of("sin(0)+1");
-        assertEquals("1", Render.show(d.to()));
+        // 0+1 and not 1: sin(0) is the point zero, which is a multiplicative unit, and 1 is an additive one.
+        // The sum is the canonical form a + 0^b and does not collapse.
+        assertEquals("0+1", Render.show(d.to()));
         assertFalse(d.isProven());
         assertEquals(1, d.assumptions().size());
         assertEquals(Rule.Status.APPROXIMATE, d.assumptions().iterator().next().status());

@@ -60,7 +60,8 @@ class TractionRulesTest {
     @Test
     void subtractingAnAdditiveUnitFromAMultiplicativeOneSettles() {
         IExpr mixed = new AdditionOperationExpr(ZERO, new NegationOperationExpr(ONE));
-        assertEquals(NEG_ONE, mixed.simplify());
+        // It settles rather than looping, and what it settles on is the canonical form: the two axes do not mix.
+        assertEquals(new AdditionOperationExpr(ZERO, NEG_ONE), mixed.simplify());
     }
 
     /**
@@ -253,7 +254,8 @@ class TractionRulesTest {
      */
     @Test
     void theNegationRuleIsProvisionalAndDisagreesWithTheCoordinates() {
-        assertEquals(Optional.of(new TractionLiteral(ZERO, OMEGA)), TractionRules.provisionalNegation(ZERO).map(rewrite -> rewrite.result().simplify()));
+        assertEquals(Optional.of(new TractionLiteral(ZERO, new AdditionOperationExpr(ONE, OMEGA))),
+                TractionRules.provisionalNegation(ZERO).map(rewrite -> rewrite.result().simplify()));
         assertEquals(ZERO, ZERO.negated());
         assertTrue(TractionRules.provisionalNegation(new AtomExpr("x")).isEmpty());
     }

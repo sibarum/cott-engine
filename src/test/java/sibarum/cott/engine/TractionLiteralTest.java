@@ -36,7 +36,8 @@ class TractionLiteralTest {
     @Test
     void anExponentCanBeAnyExpression() {
         IExpr sum = new AdditionOperationExpr(ONE, ZERO);
-        assertEquals(ZERO, new TractionLiteral(ZERO, sum).simplify());
+        // The exponent 1+0 does not combine -- additive unit plus multiplicative unit -- so this stands.
+        assertEquals(new TractionLiteral(ZERO, sum), new TractionLiteral(ZERO, sum).simplify());
         assertEquals(new TractionLiteral(ZERO, at(2, 1)),
                 new TractionLiteral(ZERO, new AdditionOperationExpr(ONE, ONE)).simplify());
     }

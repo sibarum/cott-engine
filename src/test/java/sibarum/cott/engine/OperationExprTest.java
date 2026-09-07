@@ -82,7 +82,9 @@ class OperationExprTest {
     @Test
     void evaluateIsEmptyOnlyWhereThereIsNoProjectionAtAll() {
         assertEquals(Optional.empty(), new AdditionOperationExpr(ONE, OPAQUE).evaluate());
-        assertEquals(Optional.of(0.0), new AdditionOperationExpr(ONE, OMEGA).evaluate());
+        // 1 + w stands, so its shadow is 1 + w's shadow, which is 1. It used to be 0, because the sum
+        // collapsed to omega first and took the 1 with it.
+        assertEquals(Optional.of(1.0), new AdditionOperationExpr(ONE, OMEGA).evaluate());
         assertEquals(Optional.of(0.0), new ReciprocalOperationExpr(ZERO).evaluate());
     }
 }

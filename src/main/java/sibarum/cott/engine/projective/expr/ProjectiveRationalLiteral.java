@@ -37,6 +37,17 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
         }
     }
 
+    /**
+     * Whether this sits on the traction axis rather than the additive one.
+     *
+     * <p>The point zero and omega are the multiplicative units, and a zero in either coordinate is what says
+     * so: {@code (0, d)} is a power of zero and {@code (n, 0)} is a multiple of omega. Everything else is an
+     * ordinary rational, which is a multiple of the additive unit.
+     */
+    public boolean onTractionAxis() {
+        return numerator.signum() == 0 || denominator.signum() == 0;
+    }
+
     /** The ordinary way to write one down. */
     public static ProjectiveRationalLiteral of(long numerator, long denominator) {
         return new ProjectiveRationalLiteral(BigInteger.valueOf(numerator), BigInteger.valueOf(denominator));
@@ -57,6 +68,15 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
             // place the general defect could not be missed.
             //
             // This does not reduce anything: 1/2 + 1/2 is (2,2), which is still not the literal one.
+            // Addition does not cross the axes. 1 and -1 are the additive units, 0 and w the multiplicative
+            // ones, and a value is a + 0^b with one of each; adding a multiple of 1 to a power of 0 is mixing
+            // them, and the sum is the pair, not a third thing. This layer used to collapse it -- 1 + w came
+            // out as w and 1 + 0 as 1 -- which is not an unresolved answer but a wrong one, and the second of
+            // them was quietly deciding whether the value 0 is an additive identity, which is problem 2.
+            boolean thatIsTraction = numerator1.signum() == 0 || denominator1.signum() == 0;
+            if (onTractionAxis() != thatIsTraction) {
+                return IExpr.super.plus(expr);
+            }
             if (this.denominator.equals(denominator1)) {
                 return new ProjectiveRationalLiteral(this.numerator.add(numerator1), this.denominator);
             }
