@@ -148,6 +148,33 @@ log_0(x) = 0^x  and  0^(0^x) = x
     rank lower than this, so the conflict is Maybe against Chosen. See theory-problems.md,
     problem 2.
 
+the two axes do not mix, and a value is a + 0^b
+    1 and -1 are the additive units; 0 and w are the multiplicative ones. Additive units add to
+    each other, multiplicative units multiply with each other, and a value is one of each --
+    a multiple of 1, plus a power of 0. Mixing them does not combine: 1 + w is 1 + w, 1 + 0 is
+    1 + 0, and neither is a third thing.
+
+    This is not a convention. It is forced by what the mixed reading costs.
+
+    Mixing means reading an additive unit as a power of zero, since that is the only way an
+    addition law can reach it: 1 = 0^0 by E5, so 1 + w becomes 0^0 + 0^-1, and the Maybe
+    addition law makes that 0^(0·-1) = 0^(-0).
+    That -0 is LOAD-BEARING. The answer depends on it -- if -0 is 0 then 0^(-0) is 0^0 is 1, so
+    w would be an additive identity; if -0 is anything else the sum is something else. So an
+    ordinary sum of two of the four points comes out resting on problem 2. Written as 0^(0-0)
+    it rests on problem 1 instead, a hostless additive erasure in an exponent. Every road out of
+    1 + w runs into something already open, and that is the argument: mixing makes ordinary
+    arithmetic depend on questions the theory has not answered, and not mixing does not.
+
+    The same reading fails a second way, independently. 0 - 1 read across the axes does not
+    terminate: E10 sends it to 0^(1÷0), E1+E3 reads that exponent as 0^0 ÷ 0^1, which is
+    0^(0-1) again. See theory-problems.md #6.
+
+    In the engine: exponentOfZero reads 0 and w and not 1 or -1, and the coordinate addition
+    declines when one operand has a zero coordinate and the other does not. What this cost, and
+    it is the point of it: 1 + 0 used to answer 1, which is the claim that the value 0 is an
+    additive identity -- problem 2 -- being settled by a collapse rather than by a rule.
+
 log_a(b) · log_b(a) = 1
     The reciprocal law. It is a consequence of the general-base log rule that went with E2 --
     log_(0^a)(0^b) = b÷a is antisymmetric in a and b, and this is exactly that antisymmetry --

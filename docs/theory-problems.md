@@ -311,6 +311,11 @@ are at least two ways to answer it:
 Neither was needed. Not mixing the axes is cheaper than both and settles it without ranking one rule over
 another: the cycle needed `1` read as `0^0`, and that reading was never legitimate.
 
+And the non-termination is the second reason to refuse that reading rather than the first. The first is
+that it makes ordinary arithmetic load-bearing on an open question: `1 + w` read across the axes is
+`0^(0·-1)`, which is `0^(-0)`, and the answer turns on what `-0` is — problem 2. A sum of two of the four
+points should not depend on that. See equivalence-classes.md, "the two axes do not mix".
+
 What it corrected, beyond terminating: `w - w` was answering 1, because the coordinates sent `(1,0)+(-1,0)`
 to `(0,0)` and the constructor sends that to one. E10 now reaches it and gives `0^(-1÷-1)`, whose exponent
 is the multiplicative erasure, so it materialises to `0^1` and the answer is 0. Subtracting a thing from
