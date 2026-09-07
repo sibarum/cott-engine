@@ -147,6 +147,61 @@ log_0(x) = 0^x  and  0^(0^x) = x
     notation-and-terminology.md. What does supply the premise is the Maybe addition law, one
     rank lower than this, so the conflict is Maybe against Chosen. See theory-problems.md,
     problem 2.
+
+log_a(b) · log_b(a) = 1
+    The reciprocal law. It is a consequence of the general-base log rule that went with E2 --
+    log_(0^a)(0^b) = b÷a is antisymmetric in a and b, and this is exactly that antisymmetry --
+    so it is strictly weaker than E2 and buys back one identity rather than the law.
+    It still needs the power law to PROVE: a = b^c gives b = a^(1÷c) only through
+    (b^c)^(1÷c) = b. Adopted here on its own, for what it settles below.
+    Note it survives c = 0, where the classical version dies: 1÷0 is w, a value this type has,
+    so log_a(b) = w rather than undefined. That is the whole of what the next item uses.
+
+x^0 on the closure set is the 4-cycle 0 -> 1 -> w -> -1 -> 0
+    a = b^0 gives log_b(a) = 0, so log_a(b) = 1÷0 = w by the reciprocal law, so a^w = b. The
+    map a -> a^w is a permutation of {0,1,-1,w}: injective by E6, closed by E7. Three of its
+    four values are already known, and the fourth is then forced -- the same counting that
+    forced the leap.
+
+        1 -> 0      E5. 0^0 = 1 is 0 -> 1 in b -> b^0, so 1 -> 0 in its inverse
+        0 -> -1     the leap, 0^w = -1
+        w -> 1      forced: the only alternative is w -> w, and w^w = w would give
+                    log_w(w) = w against log_x(x) = 1, so w = 1
+        -1 -> w     forced by counting, nothing left to choose
+
+    Inverting gives x^0:
+
+        x       0     1     w     -1
+        x^0     1     w     -1     0
+
+    So 0^0 = 1 (E5, and it is the anchor rather than a consequence), 1^0 = w, w^0 = -1 and
+    (-1)^0 = 0. NOT x^0 = 1: the map has no fixed point, which agrees with this engine already
+    refusing that reading -- zero copies is the empty product.
+
+    THE SQUARE OF IT IS A FREE PREDICTION. Applying ^0 twice gives 0 -> w, 1 -> -1, w -> 0,
+    -1 -> 1, which is x -> -1÷x. There is nothing to tune, and it holds at all four:
+    (0^0)^0 = 1^0 = w and -1÷0 = w; (1^0)^0 = w^0 = -1 and -1÷1 = -1; (w^0)^0 = (-1)^0 = 0
+    and -1÷w = 0; ((-1)^0)^0 = 0^0 = 1 and -1÷-1 = 1. One disagreement anywhere would end the
+    cycle, and there is none.
+
+    Structurally: order the four as the cycle does -- 0, 1, w, -1 -- as the corners of a
+    square. Then 1÷x swaps the opposite pair 0 and w and is a diagonal reflection; -x is the
+    other diagonal; -1÷x is the half-turn, which is why it is this cycle squared; 0^ swaps
+    adjacent pairs and is an edge reflection. Every operation the closure set has is a symmetry
+    of that square, and ^0 is the quarter-turn that generates the group. All of them together
+    are D4, of order 8.
+    The permutations above are exact. The GEOMETRY is not established: 0 and w share a rational
+    shadow, so the four are not at compass points of anything yet, and the square is
+    combinatorial until something says otherwise.
+
+    What it costs, and one thing it may buy. It rests on the reciprocal law and on the leap,
+    which is why it is filed here and not under Proven. 1^0 = w is the value to check against
+    the Q model before this is leaned on. And naming the square of the cycle "-1÷x" requires
+    -0 and -w to be defined at all: if that identification holds it FORCES -0 = 0 and -w = w,
+    and therefore that negation is not multiplication by -1 -- against the negation rule above.
+    That is evidence on problem 2 by a route that has nothing to do with the retracted argument
+    there; it is group structure on four points, not a premise about the additive identity.
+    Flagged, not adopted.
 ```
 
 ### Maybe
@@ -181,11 +236,19 @@ x^0 = 1^x
     The refutation read (0^u)^0 = 0^(0·u) and (0^0)^x = 0^(0·x) and compared them by E6.
     Both readings were E2 at v = 0. The second line of the old refutation, "1^0 = 2, not 1",
     rested on 1^x = 1 + u, which went with E2 as well.
-    Status: no rule reaches x^0 at all. This is problem 3.
+    REFUTED AGAIN, conditionally: the 4-cycle above gives x^0 = 1 at x = 0 and 1^x = 1^0 = w,
+    which differ. So this is False if the cycle stands, by a route with no E2 in it -- but the
+    cycle is Chosen, so this is one rank weaker than the old refutation rather than a return
+    to it.
 
 x^w = (-1)^x
-    The same shape at v = w, withdrawn for the same reason. This is problem 3.
+    The same shape at v = w, withdrawn for the same reason.
+    REFUTED AGAIN on the same terms: at x = 1 the cycle gives 1^w = 0 while (-1)^1 = -1.
 ```
+
+Both are still filed here rather than under False, because what refutes them is Chosen. Off
+the closure set they are untouched either way -- the cycle reaches four points, and problem 3
+is about everything else.
 
 ### Withdrawn with E2
 

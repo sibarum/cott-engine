@@ -156,6 +156,19 @@ rule at all. If no, negation keeps `a + w` and the addition law needs restating 
 not quietly make `0` an identity — for instance by being a rule about terms rather than values,
 which is the distinction finding 5 in rule-combinations.md already relies on.
 
+**A second line of evidence, from somewhere else entirely.** The `x^0` 4-cycle squares to the
+permutation `0 <-> w, 1 <-> -1`. Calling that permutation `-1÷x` — which is what it looks like,
+and what makes it the half-turn of the square the four points form — requires `-0` and `-w` to
+be defined, and it *forces* `-0 = 0` and `-w = w`. That is against the negation rule, and so
+against route (ii).
+
+This is not the retracted argument returning. That one read `+(x-x) = ∅` as "0 is the additive
+identity" and was wrong about it; this one is group structure on four points and does not touch
+the additive identity at all. Two independent routes now point the same way, and neither is
+strong enough on its own: the 4-cycle is Chosen, and the identification of its square with
+`-1÷x` is exactly the thing at issue. But it is no longer only the Maybe addition law pulling
+against the negation rule.
+
 ### 3) There is no power rule off the integers
 
 This replaces the old "T(0) and T(w)", and it is larger than that problem was.
@@ -188,7 +201,18 @@ undefined. See derivations.md.
 
 **Two "False" entries became "Open".** They were refuted using E2 at exactly the two points
 E2 was unconstrained, which was already flagged as suspicious when it was the old problem 3.
-Nothing now argues for or against `x^0 = 1^x` or `x^w = (-1)^x`.
+Nothing now argues for or against `x^0 = 1^x` or `x^w = (-1)^x` — except the 4-cycle below,
+which refutes both if it is kept.
+
+**`v = 0` is settled on the closure set, and only there.** `x^0` is the 4-cycle
+`0 -> 1 -> w -> -1 -> 0`, forced by the reciprocal law plus E6 and E7 — see
+equivalence-classes.md, Chosen. That reaches exactly four points, by a counting argument that
+is closure's and cannot extend past it. So `2^0` is untouched, and this problem is now about
+`v = w` and about everything off the closure set rather than about `v = 0` as such.
+
+Worth noting what the 4-cycle does *not* need: a power law. It reaches `v = 0` by inverting
+the log rather than by raising anything, which is why it can settle a point E2 never
+constrained even though E2 is gone.
 
 ### 4) The involution off the closure set
 

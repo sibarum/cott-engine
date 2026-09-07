@@ -33,6 +33,23 @@ out in the same way E2 was — every other row lifts both operands, and this one
 operand and takes the right one raw, because `a` is an exponent and `n` is a count. But it no
 longer reaches a general `v`, so the floor-mixing it used to license is gone with it.
 
+### The exponent zero, on the closure set
+
+| value op | value | rule | status | in the engine |
+|----------|-------|------|--------|---------------|
+| `0^0` | `1` | E5 | Proven | wired |
+| `1^0` | `w` | the 4-cycle | Chosen | not wired |
+| `w^0` | `-1` | the 4-cycle | Chosen | not wired |
+| `(-1)^0` | `0` | the 4-cycle | Chosen | not wired |
+
+`x^0` is a 4-cycle `0 -> 1 -> w -> -1 -> 0` on the closure set, forced by the reciprocal law
+together with E6 and E7 — see equivalence-classes.md, Chosen. It is the first map on those four
+points that is not an involution, and with `0^` it generates D4, with `^0` as the quarter-turn.
+
+Off the closure set there is still nothing: `2^0` stands, and no counting argument reaches it.
+The rule is a lookup on four values, so wiring it is a table rather than a derivation — which is
+also a warning, since a table is exactly the kind of rule that cannot be checked by reading it.
+
 ### Gone with E2
 
 ```
