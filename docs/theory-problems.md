@@ -263,7 +263,52 @@ same condition rule-combinations.md names for negation to be an involution, and 
 The engine meanwhile: traction rules first, undecided cells standing, three of the four points read as
 powers of zero, and the leap kept out of the reading so ordinary arithmetic keeps answering.
 
-### 6) Nilpotents
+### 6) When may a point be re-read as a power of zero?
+
+Found by trying to fix what looked like a traversal-order bug, and it is not one.
+
+**The symptom.** E10 matches the shape `Addition(x, Negation(y))`. The engine reduces innermost-first, so it
+turns `Negation(1)` into the literal `-1` before it ever looks at the sum — and by then the shape E10 needs
+is gone. So E10 fires between tractions, where `Negation(0^3)` has no coordinate negation to collapse into,
+and never between the four points, where it does. `0^2 - 0^3` answers by E10; `w - 1` answers by
+coordinates, and the two layers do not agree there.
+
+**The fix that is not a fix.** Try the shape before descending, and E10 fires — and then nothing
+terminates:
+
+```
+0 - 1                       the shape E10 wants
+  = 0^(1÷0)                 E10, reading 0 = 0^1 and 1 = 0^0
+  = 0^(0^0 ÷ 0^1)           the exponent is a quotient of two points, so E1+E3 can read it too
+  = 0^(0^(0-1))             and 0-1 is where this started
+```
+
+`0 - 1` and `1÷0` rewrite into each other, without end. Every one of the four points can always be re-read
+as a power of zero — that is what E4, E5 and `w = 0^-1` say — so any rule that consumes points and produces
+an exponent built out of points can go round again. It is the first paragraph of equivalence-classes.md
+happening in the engine: rewrites are two-way, and a value is either terminating or belongs to an
+equivalence class.
+
+Innermost-first was not avoiding this. It was hiding it, by letting the coordinates reduce `1÷0` to omega
+before any rule could see it as a quotient of tractions.
+
+**So the question is not the traversal.** It is when a point may be re-read as a power of zero, and there
+are at least two ways to answer it:
+
+- **E9 outranks the derived readings.** `w := 1÷0` is a definition, so `1÷0` is omega and the chain stops
+  at `0^w` — which is `-1` by the leap, agreeing with what the coordinates said all along. A definition
+  beating a derived reading is principled, and it terminates.
+- **The traction rules apply only where an operand is already a traction.** Also terminates, and gives up
+  something: `0·w` would go to the coordinates and answer 1, undoing the one cell phase 2 was careful to
+  leave standing.
+
+The first looks right and costs least, but it decides `0 - 1`, `1 ÷ 0` and the precedence of a definition
+over a rule, which is not a decision the engine should take by an accident of traversal order. Nothing is
+changed until it is made: the engine still reduces innermost-first, so E10 is still not reaching the four
+points, and anything the engine says about `0`, `1`, `w`, `-1` under subtraction is the coordinate model
+talking.
+
+### 7) Nilpotents
 
 `0^(1/n)` is nonzero by injectivity but n copies of it multiply to `0^1 = 0`. So traction has
 nilpotents of every order. This survived E2's deletion intact, because repeated multiplication
