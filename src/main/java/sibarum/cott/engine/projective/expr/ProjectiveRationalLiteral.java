@@ -90,22 +90,57 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
 
     /**
      * The sign is carried by the numerator, so that {@code ONE.negated()} is {@code NEG_ONE} rather
-     * than a second spelling of it. Zero negates to itself; omega does not.
+     * than a second spelling of it. Omega does not negate to itself, and neither does zero.
+     * <p>
+     * A zero numerator has no sign to turn, so the sign goes on the denominator instead: {@code -0} is
+     * {@code (0, -1)}, which is a different literal from {@code (0, 1)}. Negating the numerator would have
+     * returned the same pair and lost the negation entirely -- and it did, so the engine used to answer
+     * {@code -0 = 0}, which is not what negation is. {@code -0} is {@code 0·(-1)}: the coordinates agree,
+     * since {@code (0,1)·(-1,1)} is {@code (0,-1)}, so the two routes to it land on the same literal.
+     * <p>
+     * Note this is not {@code 0 - 0}. That is the additive erasure and discharges to the additive identity;
+     * negation is multiplication by -1 and is a different question. See theory-problems.md, problem 2.
      */
     @Override
     public IExpr negated() {
+        if (this.numerator.signum() == 0) {
+            return new ProjectiveRationalLiteral(this.numerator, this.denominator.negate());
+        }
         return new ProjectiveRationalLiteral(this.numerator.negate(), this.denominator);
     }
 
     @Override
     public IExpr times(IExpr expr) {
         if (expr instanceof ProjectiveRationalLiteral(BigInteger numerator1, BigInteger denominator1)) {
-            return new ProjectiveRationalLiteral(
-                    this.numerator.multiply(numerator1),
-                    this.denominator.multiply(denominator1));
+            BigInteger n = this.numerator.multiply(numerator1);
+            BigInteger d = this.denominator.multiply(denominator1);
+            // A product whose numerator comes out zero has nowhere to put its sign, so the sign goes on the
+            // denominator -- the same place negation puts it. Without this, 0·(-1) was (0,1), which is 0, and
+            // -0 was (0,-1): two routes to one value landing on two literals, and one of them saying that
+            // negating zero does nothing.
+            if (n.signum() == 0 && d.signum() != 0) {
+                int sign = orientation() * orientationOf(numerator1, denominator1);
+                return new ProjectiveRationalLiteral(n, sign < 0 ? d.abs().negate() : d.abs());
+            }
+            return new ProjectiveRationalLiteral(n, d);
         } else {
             return IExpr.super.times(expr);
         }
+    }
+
+    /**
+     * Which way this pair faces: the sign of the coordinate that carries it.
+     * <p>
+     * A nonzero numerator carries the sign. A zero numerator has none to carry, so the denominator does --
+     * which is what makes {@code (0,-1)} a different literal from {@code (0,1)} and gives {@code -0} somewhere
+     * to live.
+     */
+    private int orientation() {
+        return orientationOf(numerator, denominator);
+    }
+
+    private static int orientationOf(BigInteger n, BigInteger d) {
+        return n.signum() != 0 ? n.signum() : (d.signum() != 0 ? d.signum() : 1);
     }
 
     /**

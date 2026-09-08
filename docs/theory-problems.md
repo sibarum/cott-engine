@@ -144,7 +144,13 @@ notation-and-terminology.md.
 So `0 - 0 = 0^(1/1) = 0^1 = 0` says what the expression `0 - 0` is worth. Reading it as `-0`
 needs the value `0` to be the additive identity, and E10 does not supply that.
 
-**What the conflict actually is.** Two routes to `-0`:
+**And `-0` is not the ambiguous part.** `-0` is `0·(-1)`, because negation is multiplication by −1.
+`0 - 0` is the additive erasure and discharges to the additive identity. Those are two different
+questions, and treating them as two routes to one value is what made `-0` look undetermined. It is not:
+the canonical form is `0(-1)`, and in the coordinates it is the literal `(0,-1)`.
+
+What is left is a conflict about the addition law, which happens to show up at `-0` because that is where
+the two claims meet:
 
 ```
 (i)  0 - 0 = 0^(1÷1) = 0^1 = 0                   E10 with totality, THEN "0 is the additive
@@ -348,11 +354,20 @@ to `(0,0)` and the constructor sends that to one. E10 now reaches it and gives `
 is the multiplicative erasure, so it materialises to `0^1` and the answer is 0. Subtracting a thing from
 itself gives zero at omega too, which is what totality was supposed to mean.
 
-### 7) Nilpotents
+### 7) Nilpotents — WITHDRAWN, there are none
 
-`0^(1/n)` is nonzero by injectivity but n copies of it multiply to `0^1 = 0`. So traction has
-nilpotents of every order. This survived E2's deletion intact, because repeated multiplication
-is E1 and never needed E2.
+This was filed as a curiosity: `0^(1/n)` is nonzero by injectivity, n copies of it multiply to `0^1 = 0`,
+so traction "has nilpotents of every order".
 
-This is not a problem, but nothing in the theory accounts for them yet, and it puts traction
-outside the commutative rings that wheels and meadows are built on.
+The word was wrong and it is withdrawn. A nilpotent is a nonzero element whose power reaches an
+**annihilator**, and zero annihilates nothing here — it has a reciprocal, and `0^1` is a rung of the
+traction axis rather than a floor. Reaching it is not dying. Nor does the axis end there: even granting
+`0^(n/n) = 0^1`, the value `0^(4/3)` is further up it and no power of `0^(1/3)` accounts for it. Nothing
+is killed and nothing is lost, which is the point of the theory rather than an exception to it.
+
+Eliminating nilpotency was the basis of the whole construction, so a Proven item asserting the opposite
+should never have been written. It is gone from equivalence-classes.md, with the observation kept and the
+label dropped.
+
+The engine's disagreement dissolves with it. It reached `0^(3÷3)` and stopped, and the docs called that a
+failure to prove nilpotency; there was nothing there to prove.

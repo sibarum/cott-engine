@@ -113,6 +113,12 @@ public final class Render {
         if (d.equals(BigInteger.ONE)) {
             return signed(n.toString());
         }
+        // -0 is the pair (0, -1), a different literal from 0 and worth its own name for the same reason
+        // omega has one: the coordinate is exact, and a name that reads back as itself is better than
+        // 0÷-1, which is what the quotient spelling would give.
+        if (n.signum() == 0 && d.equals(BigInteger.ONE.negate())) {
+            return "−0";
+        }
         if (d.signum() == 0) {
             if (n.equals(BigInteger.ONE)) {
                 return "ω";

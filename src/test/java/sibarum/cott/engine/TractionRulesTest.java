@@ -265,7 +265,9 @@ class TractionRulesTest {
     void theNegationRuleIsProvisionalAndDisagreesWithTheCoordinates() {
         assertEquals(Optional.of(new TractionLiteral(ZERO, new AdditionOperationExpr(ONE, OMEGA))),
                 TractionRules.provisionalNegation(ZERO).map(rewrite -> rewrite.result().simplify()));
-        assertEquals(ZERO, ZERO.negated());
+        // The carrier used to say -0 = 0, which made three answers for one term. It says -0 = (0,-1) now,
+            // so the disagreement is down to two: 0·(-1) against 0^(1+w), and the second needs the leap.
+        assertEquals(ProjectiveRationalLiteral.of(0, -1), ZERO.negated());
         assertTrue(TractionRules.provisionalNegation(new AtomExpr("x")).isEmpty());
     }
 }

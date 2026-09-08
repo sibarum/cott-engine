@@ -110,12 +110,24 @@ w·x = 0^(u-1)
     to the identity of its own operation. The additive erasure in the exponent is what the lift MAKES
     of it; the kind that decides is the kind of the operation it came from. See theory-problems.md #1.
 
-0^(1/n) is nilpotent
-    n copies of 0^(1/n) multiply to 0^(1/n + ... + 1/n) = 0^1 = 0, by E1 and E4 -- the
-    integer power rule, so this survives the deletion intact.
-    But 0^(1/n) != 0 = 0^1 by E6, since 1/n != 1.
-    So traction has nilpotents of every order. Note this puts it outside the
-    commutative rings that wheels and meadows are built on.
+there are no nilpotents, and the word is withdrawn
+    This file used to claim, under Proven, that 0^(1/n) is nilpotent: n copies of it multiply
+    to 0^(1/n + ... + 1/n) = 0^1 = 0, and 0^(1/n) != 0 by E6, so traction was said to have
+    nilpotents of every order.
+
+    WITHDRAWN. Eliminating nilpotency is the whole basis of the theory, and the word imports
+    the one assumption traction rejects: a nilpotent is a nonzero element whose power reaches
+    an ANNIHILATOR. Zero annihilates nothing here -- it has a reciprocal, w, and 0^1 is one
+    rung of the traction axis rather than a floor. Reaching it is not dying.
+
+    And the axis does not stop there. Even granting 0^(n/n) = 0^1, the value 0^(4/3) is still
+    up the axis and no power of 0^(1/3) is going to account for it. Nothing has been killed,
+    nothing has been lost, and 0^ is still injective. A word that says otherwise was never
+    describing this type.
+
+    What survives is the observation and not the label: 0^(1/n) is a value distinct from 0
+    whose n-th power is 0, and that puts traction outside the commutative rings wheels and
+    meadows are built on -- because in those, reaching zero is terminal, and here it is not.
 ```
 
 ### Chosen
@@ -135,13 +147,22 @@ log_0(x) = 0^x  and  0^(0^x) = x
     deletion, but it has lost most of its customers: the results that were built on the
     general form went with E2.
 
--(0^a) = 0^(a+w),  so  -0 = 0^(1+w)
-    E1 and 0^w = -1: negation is multiplication by -1, which adds w to the exponent.
-    Inherits the leap, and nothing above it is stronger.
-    Note 0^(1+w) != 0^1 by E6, since w != 0. So -0 is a magnitude-zero point distinct from
-    0 -- an opposite orientation, the way omega is -- rather than 0 itself. That is consistent
-    with the Proven -0 != w, and it is what settles the old value-of--0 question in this
-    branch.
+-0 = 0·(-1), and the canonical form stops there
+    Negation is multiplication by -1. So -0 is 0·(-1), and it is NOT 0 - 0: that is the
+    additive erasure, which discharges to the additive identity and is a different question
+    entirely. Conflating the two is what made -0 look ambiguous.
+    Pushing further is available and is not the canonical form: 0·(-1) = 0^1 · 0^w = 0^(1+w)
+    by E1 and the leap, and 0^(1+w) != 0^1 by E6 since w != 0. So -0 is a magnitude-zero point
+    with the opposite orientation, the way omega is, and not 0 itself -- consistent with the
+    Proven -0 != w. But the form to write is 0(-1).
+    In the coordinates it has a literal of its own: (0,-1), where the sign sits on the
+    denominator because a zero numerator has none to carry. Negating the numerator returned the
+    same pair, so the engine used to answer -0 = 0; both negation and multiplication now put
+    the sign where it fits, and 0·(-1) and -0 land on the same literal.
+
+-(0^a) = 0^(a+w)
+    E1 and 0^w = -1, for a traction rather than for the point. Inherits the leap, and nothing
+    above it is stronger.
     An earlier version of this file claimed the opposite, that negation is NOT multiplication
     by -1, deriving -0 = 0 from E10 plus "0 is the additive identity". RETRACTED: universal
     invariance does not supply that premise. +(x-x) = ∅ is about the erasure form, and the

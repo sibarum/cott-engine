@@ -44,12 +44,22 @@ class ProjectiveRationalLiteralTest {
         assertEquals(at(1, 2).plus(at(1, 2)), at(2, 1).times(at(1, 2)));
     }
 
+    /**
+     * The sign goes on whichever coordinate can carry it.
+     *
+     * <p>A nonzero numerator carries it. A zero numerator cannot, so the denominator does: -0 is (0,-1), a
+     * different literal from (0,1). Negating the numerator returned the same pair and lost the negation, and
+     * the engine answered -0 = 0 -- which is not what negation is. -0 is 0·(-1), and the product agrees.
+     */
     @Test
-    void negationCarriesTheSignOnTheNumerator() {
+    void negationPutsTheSignWhereItFits() {
         assertEquals(NEG_ONE, ONE.negated());
         assertEquals(ONE, NEG_ONE.negated());
-        assertEquals(ZERO, ZERO.negated());
         assertEquals(at(-1, 0), OMEGA.negated());
+
+        assertEquals(at(0, -1), ZERO.negated());
+        assertEquals(ZERO, ZERO.negated().negated());
+        assertEquals(at(0, -1), ZERO.times(NEG_ONE));
     }
 
     @Test
