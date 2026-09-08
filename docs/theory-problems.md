@@ -218,18 +218,26 @@ rule at all. If no, negation keeps `a + w` and the addition law needs restating 
 not quietly make `0` an identity — for instance by being a rule about terms rather than values,
 which is the distinction finding 5 in rule-combinations.md already relies on.
 
-**A second line of evidence, from somewhere else entirely.** The `x^0` 4-cycle squares to the
-permutation `0 <-> w, 1 <-> -1`. Calling that permutation `-1÷x` — which is what it looks like,
-and what makes it the half-turn of the square the four points form — requires `-0` and `-w` to
-be defined, and it *forces* `-0 = 0` and `-w = w`. That is against the negation rule, and so
-against route (ii).
+**A second line of evidence — WITHDRAWN, and the record kept.** It ran: the `x^0` 4-cycle squares
+to the permutation `0 <-> w, 1 <-> -1`; calling that permutation `-1÷x` — which is what it looks
+like, and what makes it the half-turn of the square the four points form — requires `-0` and `-w`
+to be defined, and it *forces* `-0 = 0` and `-w = w`; that is against the negation rule, and so
+against route (ii). It was offered as an independent route because it is group structure on four
+points rather than a premise about the additive identity, so it was not the retracted `+(x-x) = ∅`
+argument returning.
 
-This is not the retracted argument returning. That one read `+(x-x) = ∅` as "0 is the additive
-identity" and was wrong about it; this one is group structure on four points and does not touch
-the additive identity at all. Two independent routes now point the same way, and neither is
-strong enough on its own: the 4-cycle is Chosen, and the identification of its square with
-`-1÷x` is exactly the thing at issue. But it is no longer only the Maybe addition law pulling
-against the negation rule.
+It does not reach. The identification of the square with `-1÷x` holds at `1` and `-1` at either
+level, and at `0` and `w` it holds only on the rational shadow: `-1÷w = 0^(w+1) = -0` and
+`-1÷0 = 0^(w-1) = -w`, which are the permutation's values there only because `-0` and `0` share a
+projection. So the forcing happens downstairs, where `-0 = 0` is true anyway and no negation rule
+is in play. Upstairs the identification just fails at those two points; it does not force anything,
+and in particular it does not contradict `-0 = 0^(1+w)`. Both statements are true, at different
+levels, and they were only ever in conflict because nothing recorded which level each was on.
+
+Nothing above the line changes: this section is resolved, and the conflict this was evidence *in*
+does not exist. What the withdrawal removes is the impression left by this record that something
+independent still pulls against negation-as-multiplication-by-−1. Nothing does. The same withdrawal
+is recorded in the `x^0` entry in equivalence-classes.md.
 
 ### 3) There is no power rule off the integers
 

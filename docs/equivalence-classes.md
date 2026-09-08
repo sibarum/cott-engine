@@ -238,30 +238,44 @@ x^0 on the closure set is the 4-cycle 0 -> 1 -> w -> -1 -> 0
     (-1)^0 = 0. NOT x^0 = 1: the map has no fixed point, which agrees with this engine already
     refusing that reading -- zero copies is the empty product.
 
-    THE SQUARE OF IT IS A FREE PREDICTION. Applying ^0 twice gives 0 -> w, 1 -> -1, w -> 0,
-    -1 -> 1, which is x -> -1÷x. There is nothing to tune, and it holds at all four:
-    (0^0)^0 = 1^0 = w and -1÷0 = w; (1^0)^0 = w^0 = -1 and -1÷1 = -1; (w^0)^0 = (-1)^0 = 0
-    and -1÷w = 0; ((-1)^0)^0 = 0^0 = 1 and -1÷-1 = 1. One disagreement anywhere would end the
-    cycle, and there is none.
+    THE SQUARE OF IT IS 0 <-> w, 1 <-> -1. Applying ^0 twice gives 0 -> w, 1 -> -1, w -> 0,
+    -1 -> 1, and there is nothing to tune about THAT: it is the cycle, squared.
+
+    CALLING IT x -> -1÷x IS A FURTHER STEP, AND IT IS NOT FREE. Worked in this theory's own
+    arithmetic, using -1 = 0^w and E1+E3, it holds at two of the four and not at the other two:
+
+        (1^0)^0    = w^0    = -1    -1÷1  = 0^w ÷ 0^0 = 0^w      = -1     holds
+        ((-1)^0)^0 = 0^0    = 1     -1÷-1 = 0^w ÷ 0^w = 0^0      = 1      holds
+        (w^0)^0    = (-1)^0 = 0     -1÷w  = 0^w ÷ 0^-1 = 0^(w+1) = -0     only if -0 = 0
+        (0^0)^0    = 1^0    = w     -1÷0  = 0^w ÷ 0^1 = 0^(w-1)  = -w     only if -w = w
+
+    The last two rows are true on the rational shadow, where -0 and 0 have the same projection,
+    and false upstairs, where -0 != 0 by E6. This said "it holds at all four" and "one
+    disagreement anywhere would end the cycle, and there is none". Two of the four were being
+    read off the shadow, and there was nothing upstairs at those points to disagree with.
 
     Structurally: order the four as the cycle does -- 0, 1, w, -1 -- as the corners of a
-    square. Then 1÷x swaps the opposite pair 0 and w and is a diagonal reflection; -x is the
-    other diagonal; -1÷x is the half-turn, which is why it is this cycle squared; 0^ swaps
-    adjacent pairs and is an edge reflection. Every operation the closure set has is a symmetry
-    of that square, and ^0 is the quarter-turn that generates the group. All of them together
-    are D4, of order 8.
+    square. Then 1÷x swaps the opposite pair 0 and w and is a diagonal reflection; 0^ swaps
+    adjacent pairs and is an edge reflection; and the cycle squared swaps both diagonal pairs
+    at once, which is the half-turn. Every operation the closure set has is a symmetry of that
+    square, and ^0 is the quarter-turn that generates the group. All of them together are D4,
+    of order 8. Naming the other diagonal "-x" and the half-turn "-1÷x" is the shadow-level
+    reading above, and it is not carried upstairs.
     The permutations above are exact. The GEOMETRY is not established: 0 and w share a rational
     shadow, so the four are not at compass points of anything yet, and the square is
     combinatorial until something says otherwise.
 
-    What it costs, and one thing it may buy. It rests on the reciprocal law and on the leap,
-    which is why it is filed here and not under Proven. 1^0 = w is the value to check against
-    the Q model before this is leaned on. And naming the square of the cycle "-1÷x" requires
-    -0 and -w to be defined at all: if that identification holds it FORCES -0 = 0 and -w = w,
-    and therefore that negation is not multiplication by -1 -- against the negation rule above.
-    That is evidence on problem 2 by a route that has nothing to do with the retracted argument
-    there; it is group structure on four points, not a premise about the additive identity.
-    Flagged, not adopted.
+    What it costs. It rests on the reciprocal law and on the leap, which is why it is filed here
+    and not under Proven. 1^0 = w is the value to check against the Q model before this is
+    leaned on.
+
+    WHAT IT WAS THOUGHT TO BUY, WITHDRAWN. This was filed as evidence on problem 2: naming the
+    square of the cycle "-1÷x" requires -0 and -w to be defined at all, and if that
+    identification holds it FORCES -0 = 0 and -w = w, against the negation rule above. The
+    forcing is real, but it happens on the shadow -- which is the only level where the
+    identification holds at those two points, and where -0 = 0 already, so nothing is at stake
+    there. Upstairs the identification simply fails at 0 and w instead of forcing anything. It
+    never reached the negation rule, and it is no longer evidence on problem 2.
 ```
 
 ### Maybe

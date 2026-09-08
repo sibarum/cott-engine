@@ -181,13 +181,17 @@ It is derived from the reciprocal law: `a = b^0` gives `log_b(a) = 0`, hence `lo
 `a^ω = b`; the map `a ↦ a^ω` is a permutation of the four by E6 and E7; three of its values are known and
 the fourth is forced, with `ω ↦ ω` excluded because it would give `log_ω(ω) = ω` against `log_x(x) = 1`.
 
-Two consequences with no free parameters, both of which hold:
+One consequence with no free parameters:
 
-- `P² = (x ↦ -1/x)`, the half-turn. Checked at all four points.
 - `⟨P, E⟩ ≅ D₄`. Ordering the four as `0, 1, ω, -1` — the cycle's own order — as the corners of a square:
-  `1/x` and `-x` are the two diagonal reflections, `-1/x` the half-turn, `E` an edge reflection, and `P` the
-  quarter-turn that generates the group. Every operation the theory has on the closure set is a symmetry of
-  that square.
+  `1/x` is the diagonal reflection fixing `1` and `-1`, `E` an edge reflection, `P` the quarter-turn that
+  generates the group, and `P²` the half-turn, since it swaps both diagonal pairs at once. Every operation
+  the theory has on the closure set is a symmetry of that square.
+
+Naming the other diagonal `-x`, and the half-turn `-1/x`, is a statement about the projection and not about
+`T`. Both need `-0 = 0` and `-ω = ω`: in the theory's own arithmetic `-1/ω = 0^(ω+1) = -0` where `P²(ω) = 0`,
+and `-1/0 = 0^(ω-1) = -ω` where `P²(0) = ω`. Downstairs those are equal and the naming is exact; upstairs
+`-0 ≠ 0` by E6, and it fails at both. The `1` and `-1` cases hold at either level.
 
 The permutation facts are exact. The geometry is *not* established: `0` and `ω` share a rational projection,
 so nothing yet places those four at the corners of anything.
