@@ -191,6 +191,35 @@ class TractionRulesTest {
         assertEquals(leap, leap.simplify());
     }
 
+    /**
+     * The {@code x^0} 4-cycle, wired. Chosen, so a derivation that uses it says so.
+     *
+     * <p>Applying it four times returns to where it started, which is the cycle checked end to end rather
+     * than value by value. {@code 0^0 = 1} is E5 and comes from {@link #point} instead.
+     */
+    @Test
+    void theZeroPowerCycleIsWiredAndCloses() {
+        assertEquals(OMEGA, new ExponentialOperationExpr(ONE, ZERO).simplify());
+        assertEquals(NEG_ONE, new ExponentialOperationExpr(OMEGA, ZERO).simplify());
+        assertEquals(ZERO, new ExponentialOperationExpr(NEG_ONE, ZERO).simplify());
+        assertEquals(ONE, new ExponentialOperationExpr(ZERO, ZERO).simplify());   // E5
+
+        IExpr round = ONE;
+        for (int i = 0; i < 4; i++) {
+            round = new ExponentialOperationExpr(round, ZERO).simplify();
+        }
+        assertEquals(ONE, round);
+    }
+
+    /** Off the closure set it reaches nothing: the counting argument is E7's and cannot extend. */
+    @Test
+    void theZeroPowerReachesNothingOffTheClosureSet() {
+        IExpr two = new ExponentialOperationExpr(at(2, 1), ZERO);
+        assertEquals(two, two.simplify());
+        IExpr atom = new ExponentialOperationExpr(new AtomExpr("x"), ZERO);
+        assertEquals(atom, atom.simplify());
+    }
+
     // ---------------------------------------------------------------- the multiplicative erasure
 
     /**

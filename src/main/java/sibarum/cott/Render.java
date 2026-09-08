@@ -182,6 +182,12 @@ public final class Render {
         if (d.signum() <= 0 || !isPowerOfTen(d)) {
             return null;
         }
+        // A zero numerator has no decimal spelling that keeps its denominator: 0÷10 as a decimal is 0, which
+        // reads back as (0,1) and is a different literal. So (0,10) keeps the quotient — it is zero at those
+        // coordinates, written 0÷10, and none of it is the point zero.
+        if (n.signum() == 0) {
+            return null;
+        }
         BigDecimal value = new BigDecimal(n)
                 .divide(new BigDecimal(d), SHOWN, RoundingMode.HALF_EVEN)
                 .stripTrailingZeros();

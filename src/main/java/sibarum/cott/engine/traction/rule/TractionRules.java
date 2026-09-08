@@ -75,6 +75,15 @@ public final class TractionRules {
             new Rule("0^a + 0^b = 0^(a·b)", "the mirror of E10", Rule.Status.MAYBE);
     public static final Rule NEGATION =
             new Rule("-(0^a) = 0^(a+w)", "E1 and -1 = 0^w", Rule.Status.CHOSEN);
+    /**
+     * {@code x^0} on the closure set: the 4-cycle 0 -> 1 -> w -> -1 -> 0.
+     * <p>
+     * Chosen, because it rests on the reciprocal law and on the leap. {@code 0^0 = 1} is E5 and is reached by
+     * {@link #point} instead, so this covers the other three.
+     */
+    public static final Rule ZERO_POWER =
+            new Rule("1^0 = w, w^0 = -1, (-1)^0 = 0", "the x^0 4-cycle, from the reciprocal law", Rule.Status.CHOSEN);
+
     public static final Rule MINUS_ONE =
             new Rule("-1 = 0^w", "E6 and E7, the leap", Rule.Status.CHOSEN);
 
@@ -252,6 +261,19 @@ public final class TractionRules {
     public static Optional<Rewrite> power(IExpr base, IExpr exponent) {
         if (ZERO.equals(base)) {
             return Optional.of(new Rewrite(traction(exponent), BASE_ZERO));
+        }
+        if (ZERO.equals(exponent)) {
+            // x^0 on the closure set. 0^0 is E5 and was taken by the branch above; these three are the rest
+            // of the 4-cycle, and they are Chosen -- a derivation that uses one says so.
+            if (ONE.equals(base)) {
+                return Optional.of(new Rewrite(OMEGA, ZERO_POWER));
+            }
+            if (OMEGA.equals(base)) {
+                return Optional.of(new Rewrite(NEG_ONE, ZERO_POWER));
+            }
+            if (NEG_ONE.equals(base)) {
+                return Optional.of(new Rewrite(ZERO, ZERO_POWER));
+            }
         }
         if (!isNonZeroInteger(exponent)) {
             return Optional.empty();

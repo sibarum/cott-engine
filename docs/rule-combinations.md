@@ -38,17 +38,18 @@ longer reaches a general `v`, so the floor-mixing it used to license is gone wit
 | value op | value | rule | status | in the engine |
 |----------|-------|------|--------|---------------|
 | `0^0` | `1` | E5 | Proven | wired |
-| `1^0` | `w` | the 4-cycle | Chosen | not wired |
-| `w^0` | `-1` | the 4-cycle | Chosen | not wired |
-| `(-1)^0` | `0` | the 4-cycle | Chosen | not wired |
+| `1^0` | `w` | the 4-cycle | Chosen | wired |
+| `w^0` | `-1` | the 4-cycle | Chosen | wired |
+| `(-1)^0` | `0` | the 4-cycle | Chosen | wired |
 
 `x^0` is a 4-cycle `0 -> 1 -> w -> -1 -> 0` on the closure set, forced by the reciprocal law
 together with E6 and E7 — see equivalence-classes.md, Chosen. It is the first map on those four
 points that is not an involution, and with `0^` it generates D4, with `^0` as the quarter-turn.
 
 Off the closure set there is still nothing: `2^0` stands, and no counting argument reaches it.
-The rule is a lookup on four values, so wiring it is a table rather than a derivation — which is
-also a warning, since a table is exactly the kind of rule that cannot be checked by reading it.
+The rule is a lookup on four values, so it is a table rather than a derivation — which is a warning, since
+a table cannot be checked by reading it. What checks it instead is the cycle closing: four applications of
+`^0` return to where they started, and that is one assertion covering all four rows.
 
 ### The logarithm
 
