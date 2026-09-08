@@ -244,21 +244,43 @@ public final class TractionRules {
 
     /**
      * {@code 0^a · 0^b -> 0^(a+b)} (E1), and {@code 0^a ÷ 0^b -> 0^(a-b)} (E1 + E3), division arriving as a
-     * product with a reciprocal in it.
+     * product with a reciprocal in it, written either way round.
      * <p>
-     * Empty where the exponent operation is an erasure and the term therefore stands: {@code b = -a} for the
-     * product, {@code a = b} for the quotient. Both are the additive erasure in the exponent, which is
-     * Problem 1 and is not this class's to answer. {@code 0·w} is the product case at {@code a = 1, b = -1}.
+     * Where the exponent operation is an erasure the term discharges to 1: {@code b = -a} for the product,
+     * {@code a = b} for the quotient. Both present as the ADDITIVE erasure in the exponent, and both are
+     * multiplicative at the value level -- {@code y·(1÷y)} and {@code y÷y} -- so the identity they discharge
+     * to is multiplication's. The kind of an erasure is the kind of the operation it came from, not the kind
+     * the lift hands it. {@code 0·w} is the product case at {@code a = 1, b = -1}, and it is 1; see
+     * theory-problems.md #1.
      */
     public static Optional<Rewrite> product(IExpr left, IExpr right) {
         if (right instanceof ReciprocalOperationExpr(IExpr by)) {
-            return pair(left, by).map(ab -> ab.a().equals(ab.b())
-                    ? new Rewrite(ONE, ERASURE)
-                    : new Rewrite(traction(minus(ab.a(), ab.b())), QUOTIENT));
+            return quotient(left, by);
+        }
+        // A division written the other way round is still a division: (1÷y)·x is x÷y, the same rule with the
+        // roles swapped. The pattern used to require the reciprocal on the RIGHT, so E1+E3 did not recognise
+        // Multiplication(Reciprocal(y), x) at all -- and the two orders disagreed. 0^5÷0^3 answered 0^2 while
+        // (1÷0^3)·0^5 stood, and (1÷y)·y stood where y÷y discharged. Multiplication was not commutative
+        // because half of division was invisible. This is the same defect E10 had, on the other axis.
+        if (left instanceof ReciprocalOperationExpr(IExpr by)) {
+            return quotient(right, by);
         }
         return pair(left, right).map(ab -> negates(ab.a(), ab.b())
                 ? new Rewrite(ONE, ERASURE)
                 : new Rewrite(traction(plus(ab.a(), ab.b())), PRODUCT));
+    }
+
+    /**
+     * {@code E(a) ÷ E(b) = E(a − b)}, E1 + E3, given the term divided and the term divided BY.
+     * <p>
+     * At {@code a = b} the exponent is the additive erasure, but the value-level operation is division, so
+     * what it discharges to is the multiplicative identity. A product of two reciprocals is not a division of
+     * two positives and declines here, the way a sum of two negations declines in {@link #sum}.
+     */
+    private static Optional<Rewrite> quotient(IExpr of, IExpr by) {
+        return pair(of, by).map(ab -> ab.a().equals(ab.b())
+                ? new Rewrite(ONE, ERASURE)
+                : new Rewrite(traction(minus(ab.a(), ab.b())), QUOTIENT));
     }
 
     /**

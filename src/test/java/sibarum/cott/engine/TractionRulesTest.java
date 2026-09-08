@@ -153,6 +153,26 @@ class TractionRulesTest {
         assertEquals(pow0(3, 1), quotient.simplify());
     }
 
+    /**
+     * E1 matches a division written either way round. {@code (1÷y)·x} is {@code x÷y}, and the pattern used to
+     * require the reciprocal on the right -- so {@code 0^5÷0^3} answered {@code 0^2} while {@code (1÷0^3)·0^5}
+     * stood, and {@code y÷y} discharged to 1 while {@code (1÷y)·y} stood. Multiplication was not commutative
+     * because half of division was invisible. The same defect E10 had, on the other axis.
+     */
+    @Test
+    void aDivisionIsRecognisedFromEitherSide() {
+        IExpr forward = new MultiplicationOperationExpr(pow0(5, 1), new ReciprocalOperationExpr(pow0(3, 1)));
+        IExpr backward = new MultiplicationOperationExpr(new ReciprocalOperationExpr(pow0(3, 1)), pow0(5, 1));
+        assertEquals(pow0(2, 1), forward.simplify());
+        assertEquals(forward.simplify(), backward.simplify());
+
+        // and the erasure from either side: y·(1÷y) and (1÷y)·y are both 1
+        IExpr erasureForward = new MultiplicationOperationExpr(pow0(3, 1), new ReciprocalOperationExpr(pow0(3, 1)));
+        IExpr erasureBackward = new MultiplicationOperationExpr(new ReciprocalOperationExpr(pow0(3, 1)), pow0(3, 1));
+        assertEquals(ONE, erasureForward.simplify());
+        assertEquals(ONE, erasureBackward.simplify());
+    }
+
     /** {@code 0^a - 0^b -> 0^(a÷b)}, E10, and total. */
     @Test
     void subtractionDividesTheExponents() {

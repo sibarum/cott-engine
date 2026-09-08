@@ -16,7 +16,7 @@ Both operands lifted, result given as a power of 0.
 | value op        | exponent op | rule    | status  | in the engine |
 |-----------------|-------------|---------|---------|---------------|
 | `0^a · 0^b`     | `a + b`     | E1      | Proven  | wired |
-| `0^a ÷ 0^b`     | `a - b`     | E1 + E3 | Proven  | wired |
+| `0^a ÷ 0^b`     | `a - b`     | E1 + E3 | Proven  | wired, either side |
 | `0^a + 0^b`     | `a · b`     | —       | Maybe   | provisional, unwired |
 | `0^a - 0^b`     | `a ÷ b`     | E10     | Proven, and total | wired, either side |
 | `(0^a)^n`       | `a · n`     | E1      | Proven for integer n only | wired |
@@ -31,6 +31,11 @@ It matches from either side. `-x + y` is `y - x`, and the pattern used to requir
 right, so half of subtraction was invisible to E10: `0 + (-0)` matched and answered 0, the erasure, while
 `(-0) + 0` fell through to the identity and answered `-0`. Addition was not commutative on those terms as a
 result.
+
+Row 2 matches from either side for the same reason, and it had the same defect until it was fixed:
+`(1÷y)·x` is `x÷y`, and the pattern required the reciprocal on the right, so `0^5 ÷ 0^3` answered `0^2`
+while `(1÷0^3)·0^5` stood, and `y÷y` discharged to 1 while `(1÷y)·y` stood. Multiplication was not
+commutative on those terms as a result.
 
 Row 5 is what is left of E2, and it is a theorem of E1 rather than a rule of its own: an
 integer power is repeated multiplication, so row 1 applied n times gives it. It is the odd row
