@@ -160,6 +160,16 @@ log_0(x) = 0^x  and  0^(0^x) = x
     same pair, so the engine used to answer -0 = 0; both negation and multiplication now put
     the sign where it fits, and 0·(-1) and -0 land on the same literal.
 
+    A consequence, observed and KEPT rather than filed as a defect: 1 + 1÷(-1) is -0 and not 0.
+    1÷(-1) is (1,-1) -- minus one with the sign on the denominator, which is what the reciprocal
+    has always produced -- and the sum cross-multiplies like this: the numerators
+    cancel, 1·(-1) + 1·1 = 0, and the -1 in the denominator does not. So what survives the
+    cancellation is the ORIENTATION: the magnitude goes and the sign stays, which is the kind of
+    conservation this theory is built on rather than an accident to be normalised away.
+    It does mean (-1,1) and (1,-1) are both minus one and behave differently in a sum. Left as
+    it is until it produces a contradiction; do not "fix" it by moving signs between the slots,
+    which is the one thing this carrier does not do.
+
 -(0^a) = 0^(a+w)
     E1 and 0^w = -1, for a traction rather than for the point. Inherits the leap, and nothing
     above it is stronger.
