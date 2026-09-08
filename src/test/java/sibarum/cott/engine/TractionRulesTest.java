@@ -161,6 +161,24 @@ class TractionRulesTest {
     }
 
     /**
+     * E10 matches a subtraction written either way round. {@code -x + y} is {@code y - x}, and the pattern
+     * used to require the negation on the right -- so {@code 0 + (-0)} matched and answered 0, the erasure,
+     * while {@code (-0) + 0} did not match, fell through to the identity, and answered -0. Addition was not
+     * commutative because half of subtraction was invisible.
+     */
+    @Test
+    void aSubtractionIsRecognisedFromEitherSide() {
+        IExpr forward = new AdditionOperationExpr(pow0(2, 1), new NegationOperationExpr(pow0(3, 1)));
+        IExpr backward = new AdditionOperationExpr(new NegationOperationExpr(pow0(3, 1)), pow0(2, 1));
+        assertEquals(new TractionLiteral(ZERO, at(2, 3)), forward.simplify());
+        assertEquals(forward.simplify(), backward.simplify());
+
+        // and the erasure from either side
+        assertEquals(ZERO, new AdditionOperationExpr(ZERO, new NegationOperationExpr(ZERO)).simplify());
+        assertEquals(ZERO, new AdditionOperationExpr(new NegationOperationExpr(ZERO), ZERO).simplify());
+    }
+
+    /**
      * Totality is the branch this engine is on: at {@code a = b} the exponent is a multiplicative erasure and
      * materialises as 1, so {@code y - y} is {@code 0^1}, the point zero. It does not discharge.
      */

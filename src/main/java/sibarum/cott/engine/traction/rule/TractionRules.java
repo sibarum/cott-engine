@@ -272,14 +272,31 @@ public final class TractionRules {
      * {@link #provisionalSum}.
      */
     public static Optional<Rewrite> sum(IExpr left, IExpr right) {
-        if (!(right instanceof NegationOperationExpr(IExpr taken))) {
-            return Optional.empty();
+        if (right instanceof NegationOperationExpr(IExpr taken)) {
+            return difference(left, taken);
         }
-        // At a = b the exponent is the multiplicative erasure, and what it materialises as is the
-        // multiplicative IDENTITY -- not whatever the coordinates happen to compute. a÷a at a = (2,1) is the
-        // pair (2,2), which is the value one at coordinates that are not one, and 0^(2,2) is not the point
-        // zero. Reading the erasure off the term is what makes subtraction total: y - y is 0 for every y.
-        return pair(left, taken).map(ab -> new Rewrite(ab.a().equals(ab.b())
+        // A subtraction written the other way round is still a subtraction: -x + y is y - x, the same rule
+        // with the roles swapped. The pattern used to match only Addition(x, Negation(y)), so E10 did not
+        // recognise Addition(Negation(x), y) at all -- and the two disagreed. 0 + (-0) matched and answered
+        // 0, the erasure; (-0) + 0 did not match, fell through to the identity, and answered -0. Addition was
+        // not commutative because half of subtraction was invisible.
+        if (left instanceof NegationOperationExpr(IExpr taken)) {
+            return difference(right, taken);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * {@code E(a) - E(b) = E(a ÷ b)}, E10, given the term subtracted FROM and the term taken away.
+     * <p>
+     * At {@code a = b} the exponent is the multiplicative erasure, and what it materialises as is the
+     * multiplicative IDENTITY -- not whatever the coordinates happen to compute. {@code a÷a} at
+     * {@code a = (2,1)} is the pair {@code (2,2)}, which is one at coordinates that are not one, and
+     * {@code 0^(2,2)} is not the point zero. Reading the erasure off the term is what makes subtraction
+     * total: {@code y - y} is 0 for every y.
+     */
+    private static Optional<Rewrite> difference(IExpr from, IExpr taken) {
+        return pair(from, taken).map(ab -> new Rewrite(ab.a().equals(ab.b())
                 ? traction(ONE)
                 : traction(over(ab.a(), ab.b())), DIFFERENCE));
     }

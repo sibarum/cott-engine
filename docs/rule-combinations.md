@@ -27,6 +27,11 @@ and the inverses follow. `·` swaps with `+`, `÷` swaps with `-`.
 Row 4 is total. `0^a - 0^a = 0^(a÷a)` materialises as `0^1 = 0` rather than discharging, so
 subtraction always has an answer. This is the branch the Q model satisfies.
 
+It matches from either side. `-x + y` is `y - x`, and the pattern used to require the negation on the
+right, so half of subtraction was invisible to E10: `0 + (-0)` matched and answered 0, the erasure, while
+`(-0) + 0` fell through to the identity and answered `-0`. Addition was not commutative on those terms as a
+result.
+
 Row 5 is what is left of E2, and it is a theorem of E1 rather than a rule of its own: an
 integer power is repeated multiplication, so row 1 applied n times gives it. It is the odd row
 out in the same way E2 was — every other row lifts both operands, and this one lifts the left
