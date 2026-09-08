@@ -81,9 +81,7 @@ class DerivationTest {
     @Test
     void anApproximationIsDeclared() {
         Derivation d = of("sin(0)+1");
-        // 0+1 and not 1: sin(0) is the point zero, which is a multiplicative unit, and 1 is an additive one.
-        // The sum is the canonical form a + 0^b and does not collapse.
-        assertEquals("0+1", Render.show(d.to()));
+        assertEquals("1", Render.show(d.to()));
         assertFalse(d.isProven());
         assertEquals(1, d.assumptions().size());
         assertEquals(Rule.Status.APPROXIMATE, d.assumptions().iterator().next().status());
@@ -92,16 +90,16 @@ class DerivationTest {
     /**
      * A term the theory has not settled takes no steps, and the record says nothing happened.
      *
-     * <p>This used to be {@code 0w}, which is 1 now. What stands instead is the canonical mixed form: whether
-     * the value 0 is an additive identity is problem 2, and until it is answered 1 + 0 is a pair and not a
-     * number.
+     * <p>This has been rewritten twice. It was 0w, which is 1 now; then 1+0, which is 1 as well, since 0 is
+     * invariant under addition. What stands is 1+w -- w is invariant under neither operation, so the sum has
+     * no single value and is the canonical form a + 0^b at a = 1, b = -1.
      */
     @Test
     void aStandingTermHasAnEmptyDerivation() {
-        Derivation d = of("1+0");
+        Derivation d = of("1+w");
         assertTrue(d.stands());
         assertEquals(d.from(), d.to());
-        assertEquals("1+0", Render.show(d.to()));
+        assertEquals("1+ω", Render.show(d.to()));
     }
 
     /**

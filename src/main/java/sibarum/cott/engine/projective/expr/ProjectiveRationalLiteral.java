@@ -68,13 +68,26 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
             // place the general defect could not be missed.
             //
             // This does not reduce anything: 1/2 + 1/2 is (2,2), which is still not the literal one.
-            // Addition does not cross the axes. 1 and -1 are the additive units, 0 and w the multiplicative
-            // ones, and a value is a + 0^b with one of each; adding a multiple of 1 to a power of 0 is mixing
-            // them, and the sum is the pair, not a third thing. This layer used to collapse it -- 1 + w came
-            // out as w and 1 + 0 as 1 -- which is not an unresolved answer but a wrong one, and the second of
-            // them was quietly deciding whether the value 0 is an additive identity, which is problem 2.
-            boolean thatIsTraction = numerator1.signum() == 0 || denominator1.signum() == 0;
-            if (onTractionAxis() != thatIsTraction) {
+            // 0 IS invariant under addition, the way 1 is under multiplication. So x + 0 is x, and there is
+            // nothing to decide about it.
+            //
+            // An earlier version of this declined every sum that crossed between the additive units and the
+            // multiplicative ones, which made 1 + 0 stand as a pair. That was too strong: it took a rule
+            // about w and applied it to 0. Each identity is invariant under its OWN operation; -1 and w are
+            // invariant under neither, which is what separates them from 0 and 1.
+            if (ZERO.equals(this)) {
+                return expr;
+            }
+            if (ZERO.equals(expr)) {
+                return this;
+            }
+            // What actually fails is omega annihilating the other operand. (1,1) + (1,0) cross-multiplies to
+            // (1·0 + 1·1, 1·0), which is (1,0) -- the 1 has been multiplied by a zero denominator and is
+            // gone. There is no single pair that is 1 + w, so the sum stands as the pair it is, which is the
+            // canonical form a + 0^b at a = 1 and b = -1.
+            boolean omegaHere = this.denominator.signum() == 0;
+            boolean omegaThere = denominator1.signum() == 0;
+            if (omegaHere != omegaThere) {
                 return IExpr.super.plus(expr);
             }
             if (this.denominator.equals(denominator1)) {

@@ -57,12 +57,16 @@ class TractionRulesTest {
         assertEquals(Optional.empty(), TractionRules.exponentOfZero(NEG_ONE));
     }
 
-    /** And with them unread, the cycle that would not terminate does not arise. */
+    /**
+     * And with them unread, the cycle that would not terminate does not arise.
+     *
+     * <p>0 - 1 settles on -1, because 0 is invariant under addition. It is not an E10 case: E10 needs both
+     * operands readable as powers of zero, and 1 is an additive unit.
+     */
     @Test
     void subtractingAnAdditiveUnitFromAMultiplicativeOneSettles() {
         IExpr mixed = new AdditionOperationExpr(ZERO, new NegationOperationExpr(ONE));
-        // It settles rather than looping, and what it settles on is the canonical form: the two axes do not mix.
-        assertEquals(new AdditionOperationExpr(ZERO, NEG_ONE), mixed.simplify());
+        assertEquals(NEG_ONE, mixed.simplify());
     }
 
     /**

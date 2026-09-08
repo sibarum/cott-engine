@@ -267,12 +267,12 @@ Not 100% sure yet, but the evidence is strong.
     Never stated independently, so it is held one rank below the primitives.
     Never used E2, so the deletion leaves it where it was.
 
-    It carries a consequence that was not noticed while it was only a mirror: it makes the
-    VALUE 0 the additive identity. x + 0 = 0^u + 0^1 = 0^(u·1) = 0^u = x, since 1 is the
-    multiplicative identity in the exponent. That is the premise the retracted -0 = 0
-    argument needed, and it collides with the negation rule above, which gives
-    -0 = 0^(1+w) != 0. So this law and negation-as-multiplication-by--1 cannot both stand,
-    and this one is the lower-ranked of the two. See theory-problems.md, problem 2.
+    It gives x + 0 = x, since 0^u + 0^1 = 0^(u·1) = 0^u -- but that is no longer news: 0 is
+    invariant under addition anyway, and 1 under multiplication. Each identity is invariant
+    under its own operation, and -1 and w under neither, which is why 1 + w stands.
+    What is left to settle is narrower and is the law itself: it says a sum of two traction
+    parts is a single traction part, and the canonical form a + 0^b holds one. Its erasure cell
+    has no recognisable value-level form either. Both are reasons it is still Maybe.
 ```
 
 ### Open

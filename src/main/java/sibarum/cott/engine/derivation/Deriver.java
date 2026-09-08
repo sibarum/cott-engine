@@ -156,10 +156,17 @@ public final class Deriver {
     /** A rewrite of this node itself: the traction rules first, then what the coordinates can do. */
     private static Optional<Rewrite> here(IExpr e) {
         return switch (e) {
+            // The rules come before the identities, and the order is not cosmetic. 0 - 0 is both "0 added to
+            // something" and the additive erasure, and the identity reading answers -0 while the erasure
+            // answers 0. The erasure is the more specific match and it is the right one, so it goes first.
             case MultiplicationOperationExpr(IExpr l, IExpr r) ->
-                    TractionRules.product(l, r).or(() -> projective(l.times(r), e));
+                    TractionRules.product(l, r)
+                            .or(() -> TractionRules.identity(l, r, true))
+                            .or(() -> projective(l.times(r), e));
             case AdditionOperationExpr(IExpr l, IExpr r) ->
-                    TractionRules.sum(l, r).or(() -> projective(l.plus(r), e));
+                    TractionRules.sum(l, r)
+                            .or(() -> TractionRules.identity(l, r, false))
+                            .or(() -> projective(l.plus(r), e));
             case ExponentialOperationExpr p -> TractionRules.power(p.base(), p.exponent());
             case TractionLiteral t -> TractionRules.point(t.base(), t.exp());
             case LogarithmOperationExpr l -> TractionRules.logarithm(l.base(), l.operand());

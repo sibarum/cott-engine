@@ -57,6 +57,10 @@ public final class TractionRules {
             new Rule("0^E is a traction", "E6: every value is 0^a for one a", Rule.Status.PROVEN);
     public static final Rule POINT =
             new Rule("0^1 = 0, 0^0 = 1, 0^-1 = w", "E4, E5, and w = 1÷0", Rule.Status.PROVEN);
+    public static final Rule PLUS_ZERO =
+            new Rule("x + 0 = x", "0 is invariant under addition", Rule.Status.PROVEN);
+    public static final Rule TIMES_ONE =
+            new Rule("x · 1 = x", "1 is invariant under multiplication", Rule.Status.PROVEN);
     public static final Rule LOG_INVERTS =
             new Rule("log_0(0^a) = a", "E8", Rule.Status.PROVEN);
 
@@ -197,6 +201,27 @@ public final class TractionRules {
         // The inverse of point(): 1 is 0^0 by E5, which exponentOfZero declines to say.
         if (ONE.equals(operand)) {
             return Optional.of(new Rewrite(ZERO, LOG_INVERTS));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The identities, each invariant under its own operation: {@code x + 0 = x} and {@code x · 1 = x}.
+     * <p>
+     * The coordinate layer already does this between two literals. This is the same statement for any x at
+     * all -- an atom, a traction, a call -- because it is a claim about the identity rather than about
+     * coordinate arithmetic.
+     * <p>
+     * -1 and w are invariant under neither operation, which is exactly what separates them from these two:
+     * {@code 1 + w} has no single value and stands as the pair it is.
+     */
+    public static Optional<Rewrite> identity(IExpr left, IExpr right, boolean product) {
+        IExpr unit = product ? ONE : ZERO;
+        if (unit.equals(right)) {
+            return Optional.of(new Rewrite(left, product ? TIMES_ONE : PLUS_ZERO));
+        }
+        if (unit.equals(left)) {
+            return Optional.of(new Rewrite(right, product ? TIMES_ONE : PLUS_ZERO));
         }
         return Optional.empty();
     }

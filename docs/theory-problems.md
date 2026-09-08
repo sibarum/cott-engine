@@ -2,7 +2,8 @@ Theory Problems
 ===
 
 Open problems, in the order they block things. Rule labels E1-E10 are from
-equivalence-classes.md. E2 is withdrawn, and problem 3 is now the largest of these.
+equivalence-classes.md. E2 is withdrawn. Problems 1, 2 and 6 are resolved and 7 is withdrawn; the record of each is kept because
+the shape of the mistake was usually the useful part. Problem 3 is the largest of what is left.
 
 ### 1) 0·w — RESOLVED: `0·w = 1`
 
@@ -130,9 +131,37 @@ materialising the additive one too — the same situation, the other operation �
 analogy: `0^(1 + -1)` has not been derived from it, and the two are not forced to agree, since
 the whole point of matching on terms is that context is allowed to decide.
 
-### 2) Negation, and which premise makes 0 the additive identity
+### 2) The identities — RESOLVED, and there was no problem here
 
-**A retraction first.** This section previously concluded that negation is not multiplication
+**0 is invariant under addition; 1 is invariant under multiplication.** Each identity is invariant under
+its own operation and that is the whole of it: `x + 0 = x`, `x · 1 = x`. `-1` and `w` are invariant under
+neither, which is exactly what separates them from those two.
+
+That is why `1 + w` survives and `0 + 1` does not. `0 + 1` is `1`, because 0 adds without effect. `1 + w`
+has no single value — w does not add without effect, and no pair is `1 + w` — so it stands as the canonical
+form `a + 0^b` at `a = 1`, `b = -1`.
+
+Negation is uncontested and never was the issue. `-0` is `0·(-1)`, the coordinates give the literal
+`(0,-1)`, `0 - 0` is the erasure and a different question, and nothing pulls against any of it.
+
+**This problem was stated wrongly twice, and both times it was the same mistake.** Kept below, because the
+mistake is worth not repeating.
+
+The second version claimed the Maybe addition law collided with negation-as-multiplication-by-−1, on the
+grounds that 0 being invariant under addition while multiplication by −1 moves it was a contradiction. It
+is not. Those are different operations, and an identity for one need not be an identity for the other —
+`1` is the multiplicative identity and addition moves it, and nobody calls that a contradiction. The
+hidden step was uniqueness of additive inverses (if 0 is the identity then `0 + (-0)` is both `-0` and
+`0`), and that needs the erasure `x + (-x)` to discharge to the **value** 0 — the additive identity and
+magnitude-zero run together, for the third time in these docs.
+
+What remains of the addition law is a plain question rather than a conflict: `0^a + 0^b = 0^(a·b)` says a
+sum of two traction parts is a single traction part, and the canonical form holds one. It stays filed under
+Maybe in equivalence-classes.md, where it always was.
+
+---
+
+**The first wrong version.** This section previously concluded that negation is not multiplication
 by −1, deriving `-0 = 0` from the totality of E10 plus `+(x-x) = ∅` read as "0 is the additive
 identity". That reading is wrong. Universal invariance is indexed by the operation, not by a
 position, and it is a statement about the erasure **form**: adding `x-x` to anything changes

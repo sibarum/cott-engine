@@ -36,8 +36,8 @@ class TractionLiteralTest {
     @Test
     void anExponentCanBeAnyExpression() {
         IExpr sum = new AdditionOperationExpr(ONE, ZERO);
-        // The exponent 1+0 does not combine -- additive unit plus multiplicative unit -- so this stands.
-        assertEquals(new TractionLiteral(ZERO, sum), new TractionLiteral(ZERO, sum).simplify());
+        // The exponent 1+0 is 1, since 0 is invariant under addition, and 0^1 is then the point zero by E4.
+        assertEquals(ZERO, new TractionLiteral(ZERO, sum).simplify());
         assertEquals(new TractionLiteral(ZERO, at(2, 1)),
                 new TractionLiteral(ZERO, new AdditionOperationExpr(ONE, ONE)).simplify());
     }

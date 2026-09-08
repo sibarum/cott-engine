@@ -103,7 +103,9 @@ It is an involution exactly when `2w = 0`, which the Maybe addition law supplies
 `w + w = 0^-1 + 0^-1 = 0^((-1)(-1)) = 0^1 = 0`. Note the awkwardness there — that same addition
 law makes the value `0` an additive identity, which contradicts this row. So the row that needs
 the addition law to be an involution is the row the addition law collides with. That is
-problem 2, and it is a conflict between two items, not a hole.
+problem 2, which is resolved: 0 is invariant under addition and 1 under multiplication, each under its
+own operation, and nothing was ever pulling against this row. What is left of the addition law is that it
+claims a sum of two traction parts is a single one.
 
 ### Degenerate cells
 
@@ -151,11 +153,10 @@ lifted.
    came from. 1 for a product or a quotient, 0 for a sum or a difference. That closed Problem 1, and
    the totality of E10 turns out to be the same statement seen from the other side.
 
-4) The negation conflict is NOT resolved by E10, and an earlier version of this file said it
-   was. E10 gives what `0 - 0` is worth; it does not make the value `0` an additive identity,
-   and universal invariance does not either. The premise that does is the Maybe addition law,
-   via `x + 0 = 0^(u·1) = x`. So the conflict is that law against `-(0^a) = 0^(a+w)`, which is
-   Maybe against Chosen. See theory-problems.md, problem 2.
+4) There is no negation conflict, and two earlier versions of this file said there was. 0 is invariant
+   under addition and 1 under multiplication, each under its own operation; -1 and w under neither, which
+   is why 1 + w stands. Negation is multiplication by -1 and nothing contradicts it. See
+   theory-problems.md, problem 2.
 
 5) Degenerate cells cannot be recognised by value, only by term shape. 1·1 is the value 1;
    1·(1÷1) is an erasure. Same class, different terms. So simplify() has to match on the

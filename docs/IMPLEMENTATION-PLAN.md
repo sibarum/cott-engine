@@ -80,12 +80,14 @@ Behind a flag, or marked provisional in tests:
 Blocked — leave the term standing, do not guess:
 
 ```
-0·w             theory-problems.md #1
--(0^a)          theory-problems.md #2 — no exponent rule at all now, not a disagreement
-x^0, x^w        theory-problems.md #3 — no rule; both were False on E2's authority
+x^w             theory-problems.md #3 — no rule; was False on E2's authority
 (0^a)^v, v ∉ ℤ  theory-problems.md #3 — same hole
 log_(0^a)(0^b)  went with E2; only log_0 (E8) is available
 ```
+
+Since withdrawn from that list: `0·w` is 1 (problem 1, the multiplicative erasure), `x^0` is the
+4-cycle on the closure set, and `-(0^a) = 0^(a+w)` is Chosen and uncontested — problem 2 turned
+out not to be a problem.
 
 **E2 was withdrawn on 2026-09-05**, keeping E10 and total subtraction: that is the branch the
 ℚ model satisfies. The engine is affected in three places.
@@ -99,10 +101,8 @@ by the back door at exactly the points the theory withdrew it.
 `n = 0` is not in the rule. Zero copies is the empty product, and calling it 1 is `x^0 = 1`,
 which the theory does not have.
 
-Negation keeps its rule. `-(0^a) -> 0^(a+w)` is Chosen, as it was — a retraction inside the E2
-commit had briefly called it false. It stays out of the implementable list only because it
-conflicts with the Maybe addition law (problem 2), so whichever of the two is implemented has
-to be the one behind the flag.
+Negation keeps its rule. `-(0^a) -> 0^(a+w)` is Chosen, and nothing conflicts with it -- problem 2 turned
+out not to be a problem. It is unwired because it inherits the leap, not because of a collision.
 
 Promotion finally gets a consumer here: the exponent rules need both operands as tractions, so
 `ProjRationalToTractionPromotionRule` needs a registry that runs before the binary rules.
