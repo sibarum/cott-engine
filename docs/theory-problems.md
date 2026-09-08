@@ -4,7 +4,34 @@ Theory Problems
 Open problems, in the order they block things. Rule labels E1-E10 are from
 equivalence-classes.md. E2 is withdrawn, and problem 3 is now the largest of these.
 
-### 1) 0·w
+### 1) 0·w — RESOLVED: `0·w = 1`
+
+**The answer, and it was in E9 all along.** `w := 1÷0`. So `0·w` is `0·(1÷0)`, which is `y·(1÷y)` — the
+multiplicative erasure — and an erasure discharges to the identity of its own operation. Multiplication's
+identity is 1.
+
+What made it look open for so long is that the erasure *changes kind* on the way into the exponent. At the
+value level the operation is multiplication; lifted, it is `0^(1 + -1)`, an additive erasure. The
+degenerate-cells table in rule-combinations.md said as much — "a multiplicative erasure at the value level
+lands as an additive erasure in the exponent" — and then filed the row as open anyway. **The kind that
+decides an erasure is the kind of the operation it came from, not the kind it arrives as.**
+
+Two things had to happen before this was safe to say. Withdrawing E2 detached `(-1)^0 = 0`, which was the
+consequence of *yes* that had been rejected on sight every time it appeared; and the `x^0` 4-cycle then
+derived `(-1)^0 = 0` independently, from the reciprocal law, with no E2 and no `0·w` in it. So the one
+objection became a corroboration.
+
+The projective coordinates agreed the whole time: `(0,1)·(1,0)` is `(0,0)`, which the constructor sends to
+one. That was filed as the coordinate layer overreaching. It was not.
+
+Consequences: `0^(0w)` is `0^1`, which is `0`. `0^a · 0^-a` and `0^a ÷ 0^a` discharge the same way, since
+`0^-a = 1÷0^a` by E3. `0wx` is no longer blocked — see the notation note in equivalence-classes.md.
+`w - w` is unaffected and stays `0`: that is subtraction, so the erasure is additive at the value level too,
+and it discharges to the additive identity.
+
+The record of how it stood while open is kept below, because the shape of the mistake is worth keeping.
+
+---
 
 **The clean statement.** For any `x = 0^u`, multiplication by zero shifts the exponent by one:
 

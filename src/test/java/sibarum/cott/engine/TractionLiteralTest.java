@@ -52,19 +52,16 @@ class TractionLiteralTest {
     }
 
     /**
-     * This used to be {@code 0^1 · 0^1}, chosen because nothing could answer it. E1 answers it now — that is
-     * phase 2 — so the term that stands here is one the theory has genuinely not settled: an exponent sum that
-     * is an erasure, which is Problem 1.
+     * {@code 0^1 · 0^-1} is the multiplicative erasure and discharges to 1.
+     *
+     * <p>This test has been rewritten twice, which is the interesting part. It was {@code 0^1 · 0^1}, chosen
+     * in phase 1 because nothing could answer it, until E1 could. Then it was this product, standing, because
+     * Problem 1 was open. Now w is 1÷0 and the product is a value times its own reciprocal.
      */
     @Test
-    void anOperationTheTheoryHasNotSettledStandsAsATerm() {
-        // 0^1 and 0^-1 are the points zero and omega, which they fold to first; their product is the erasure
-        // and stands there.
+    void anOperationTheTheoryHasSinceSettled() {
         IExpr product = new TractionLiteral(ZERO, ONE).times(new TractionLiteral(ZERO, at(-1, 1)));
-        IExpr stood = product.simplify();
-
-        assertEquals(new MultiplicationOperationExpr(ZERO, at(1, 0)), stood);
-        assertEquals(stood, stood.simplify());
+        assertEquals(ONE, product.simplify());
     }
 
     @Test

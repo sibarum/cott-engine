@@ -89,13 +89,19 @@ class DerivationTest {
         assertEquals(Rule.Status.APPROXIMATE, d.assumptions().iterator().next().status());
     }
 
-    /** A term the theory has not settled takes no steps, and the record says nothing happened. */
+    /**
+     * A term the theory has not settled takes no steps, and the record says nothing happened.
+     *
+     * <p>This used to be {@code 0w}, which is 1 now. What stands instead is the canonical mixed form: whether
+     * the value 0 is an additive identity is problem 2, and until it is answered 1 + 0 is a pair and not a
+     * number.
+     */
     @Test
     void aStandingTermHasAnEmptyDerivation() {
-        Derivation d = of("0w");
+        Derivation d = of("1+0");
         assertTrue(d.stands());
         assertEquals(d.from(), d.to());
-        assertEquals("0ω", Render.show(d.to()));
+        assertEquals("1+0", Render.show(d.to()));
     }
 
     /**
@@ -117,7 +123,6 @@ class DerivationTest {
         assertEquals(Rule.Status.MAYBE, TractionRules.ADDITION_LAW.status());
         assertEquals(Rule.Status.CHOSEN, TractionRules.NEGATION.status());
         assertEquals(Rule.Status.CHOSEN, TractionRules.MINUS_ONE.status());
-        assertEquals(Rule.Status.OPEN, TractionRules.STANDS.status());
         assertTrue(TractionRules.PRODUCT.isProven());
     }
 }

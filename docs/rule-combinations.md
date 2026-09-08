@@ -84,27 +84,31 @@ problem 2, and it is a conflict between two items, not a hole.
 
 A cell is degenerate when the exponent-level operation is an erasure form — `x - x` or `x ÷ x`.
 
-| value op | exponent op | erasure at | form in the exponent | behaviour |
-|----------|-------------|------------|----------------------|-----------|
-| `·`      | `a + b`     | `b = -a`   | additive             | open — Problem 1 |
-| `÷`      | `a - b`     | `a = b`    | additive             | open — same question |
-| `+`      | `a · b`     | `b = 1÷a`  | multiplicative       | no standard value form |
-| `-`      | `a ÷ b`     | `a = b`    | multiplicative       | materialises as 1: `y - y = 0` |
+| value op | exponent op | erasure at | kind at the VALUE level | behaviour |
+|----------|-------------|------------|-------------------------|-----------|
+| `·`      | `a + b`     | `b = -a`   | multiplicative          | discharges to 1 |
+| `÷`      | `a - b`     | `a = b`    | multiplicative          | discharges to 1 |
+| `+`      | `a · b`     | `b = 1÷a`  | additive                | no standard value form |
+| `-`      | `a ÷ b`     | `a = b`    | additive                | discharges to 0 |
 
-Rows 1, 2 and 4 are the erasure changing kind: a multiplicative erasure at the value level
-lands as an additive erasure in the exponent, and the other way round.
+The column that matters is the fourth, and getting it wrong is what kept Problem 1 open. An erasure is
+decided by the kind of the operation it came **from**, not the kind it arrives as. `0·w` is a product, so
+the erasure is multiplicative and discharges to 1 — even though the exponent it lands in reads `1 + -1`.
+`y - y` is a difference, so it discharges to 0, even though the exponent reads `a ÷ a`. The lift changes
+the kind, and the earlier version of this table sorted the rows by the kind after the lift.
 
-Row 4 is settled by the totality of E10: the erasure materialises. Rows 1 and 2 are still open,
-and that is Problem 1. Row 3 has no recognisable value-level form, which is one more reason the
-addition law is only Maybe.
+Every row is the erasure changing kind on the way into the exponent, which is why the fourth column and
+the second disagree throughout. Row 3 is the only one with no recognisable value-level form, and that is
+one more reason the addition law is only Maybe.
 
-What distinguishes the settled row from the open ones is not the *kind* of erasure — universal
-invariance holds for both kinds inside an exponent, so an exponent is not a slot of privileged
-kind. It is that these erasures have no **host**: `0^(1 + -1)` is an erasure form standing as
-the whole exponent, with nothing for it to be added to, which is why the invariance that
-governs `0^(a + (z-z))` says nothing about it. See theory-problems.md, problem 1.
+`0·w` is row 1 at `a = 1, b = -1`, and it discharges to 1. Problem 1 is closed; see
+theory-problems.md #1.
 
-`0·w` is row 1 at `a = 1, b = -1`. That is the whole of Problem 1.
+An earlier version of this section argued that what distinguished the settled row from the open ones was a
+**host** — that `0^(1 + -1)` is an erasure standing as the whole exponent with nothing to be added to,
+which is why universal invariance said nothing about it. That was true and beside the point: invariance
+says nothing about it either way, because the erasure was already decided at the value level before it was
+lifted.
 
 ### What these tables expose
 
@@ -118,9 +122,9 @@ governs `0^(a + (z-z))` says nothing about it. See theory-problems.md, problem 1
    rule at all rather than an unconstrained one. Those two were filed False on E2's authority;
    they are Open again. See problem 3.
 
-3) Discharge and materialise are no longer both in use without a rule. The multiplicative
-   erasure in row 4 materialises: that is the totality of E10, chosen. The additive one is
-   undecided, and that is Problem 1 -- but it is now one question rather than half a table.
+3) Discharge and materialise are one rule now: an erasure resolves to the identity of the operation it
+   came from. 1 for a product or a quotient, 0 for a sum or a difference. That closed Problem 1, and
+   the totality of E10 turns out to be the same statement seen from the other side.
 
 4) The negation conflict is NOT resolved by E10, and an earlier version of this file said it
    was. E10 gives what `0 - 0` is worth; it does not make the value `0` an additive identity,

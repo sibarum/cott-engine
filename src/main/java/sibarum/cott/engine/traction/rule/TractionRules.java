@@ -58,9 +58,16 @@ public final class TractionRules {
     public static final Rule POINT =
             new Rule("0^1 = 0, 0^0 = 1, 0^-1 = w", "E4, E5, and w = 1÷0", Rule.Status.PROVEN);
 
-    /** Not a rewrite at all: the cell is open, and saying so is what keeps the layer below from answering. */
-    public static final Rule STANDS =
-            new Rule("the term stands", "theory-problems.md #1", Rule.Status.OPEN);
+    /**
+     * The multiplicative erasure, discharged to the identity of its own operation.
+     * <p>
+     * y·(1÷y) is 1 and y÷y is 1, and 0·w is the first of those: w is 1÷0 by E9, so 0·w is a value times its
+     * own reciprocal. It reaches the exponent as the ADDITIVE erasure 1 + -1, which is what made it look like
+     * an open question for so long -- but the kind of an erasure is the kind of the operation it came from,
+     * and the lift is what changes it. See theory-problems.md #1.
+     */
+    public static final Rule ERASURE =
+            new Rule("y·(1÷y) = 1", "universal invariance, and w = 1÷0 by E9", Rule.Status.PROVEN);
 
     public static final Rule ADDITION_LAW =
             new Rule("0^a + 0^b = 0^(a·b)", "the mirror of E10", Rule.Status.MAYBE);
@@ -170,24 +177,12 @@ public final class TractionRules {
     public static Optional<Rewrite> product(IExpr left, IExpr right) {
         if (right instanceof ReciprocalOperationExpr(IExpr by)) {
             return pair(left, by).map(ab -> ab.a().equals(ab.b())
-                    ? new Rewrite(stands(left, right), STANDS)
+                    ? new Rewrite(ONE, ERASURE)
                     : new Rewrite(traction(minus(ab.a(), ab.b())), QUOTIENT));
         }
         return pair(left, right).map(ab -> negates(ab.a(), ab.b())
-                ? new Rewrite(stands(left, right), STANDS)
+                ? new Rewrite(ONE, ERASURE)
                 : new Rewrite(traction(plus(ab.a(), ab.b())), PRODUCT));
-    }
-
-    /**
-     * The term, unchanged, for a cell the theory has not settled.
-     * <p>
-     * Returned rather than declining, and the difference matters: an empty answer means "no traction reading
-     * here, let the projective layer have it", and the projective layer would then answer anyway. {@code 0·w}
-     * is a product of two coordinate pairs as well as an erasure between two exponents, and the coordinates
-     * are perfectly willing to multiply them. Standing has to be said, not merely not-said.
-     */
-    private static IExpr stands(IExpr left, IExpr right) {
-        return new MultiplicationOperationExpr(left, right);
     }
 
     /**

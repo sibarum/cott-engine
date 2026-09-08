@@ -165,36 +165,45 @@ class TractionRulesTest {
         assertEquals(new TractionLiteral(ZERO, at(6, 3)), byCoordinates.simplify());
     }
 
-    // ---------------------------------------------------------------- the cells that stand
+    // ---------------------------------------------------------------- the multiplicative erasure
 
     /**
-     * {@code 0·w} is the exponent sum {@code 1 + -1}, an erasure with no host, and it is Problem 1. It has to
-     * STAND rather than decline: the projective layer is perfectly willing to multiply the two coordinate
-     * pairs, and answers 1 if the rule merely says nothing.
+     * {@code 0·w} discharges to 1, and Problem 1 is closed.
+     *
+     * <p>w is {@code 1÷0} by E9, so {@code 0·w} is a value times its own reciprocal -- the multiplicative
+     * erasure, which discharges to the identity of its own operation. It arrives in the exponent as the
+     * ADDITIVE erasure {@code 1 + -1}, and that is what made it look open for so long: the lift changes the
+     * kind of an erasure, and the kind that decides it is the operation it came FROM.
      */
     @Test
-    void zeroTimesOmegaStands() {
-        IExpr product = new MultiplicationOperationExpr(ZERO, OMEGA);
-        assertEquals(product, product.simplify());
-        assertEquals(product.simplify(), product.simplify().simplify());
+    void zeroTimesOmegaDischargesToOne() {
+        assertEquals(ONE, new MultiplicationOperationExpr(ZERO, OMEGA).simplify());
+        assertEquals(ONE, new MultiplicationOperationExpr(OMEGA, ZERO).simplify());
     }
 
-    /** The same erasure away from the points: {@code 0^a · 0^-a}. */
+    /** The same erasure away from the points: {@code 0^a · 0^-a} is y·(1÷y) by E3. */
     @Test
-    void anExponentSumThatErasesStands() {
-        IExpr product = new MultiplicationOperationExpr(pow0(2, 1), pow0(-2, 1));
-        assertEquals(product, product.simplify());
-        // and by the term rather than the value: (2,2) and (-2,2) add to (0,4), which is not the point zero,
-        // yet the pair is still an erasure and the term still stands.
-        IExpr coordinates = new MultiplicationOperationExpr(pow0(2, 2), pow0(-2, 2));
-        assertEquals(coordinates, coordinates.simplify());
+    void anExponentSumThatErasesDischarges() {
+        assertEquals(ONE, new MultiplicationOperationExpr(pow0(2, 1), pow0(-2, 1)).simplify());
+        // and by the TERM rather than the value: (2,2) and (-2,2) add to (0,4), which is not the point zero,
+        // yet the pair is still an erasure and still discharges.
+        assertEquals(ONE, new MultiplicationOperationExpr(pow0(2, 2), pow0(-2, 2)).simplify());
     }
 
-    /** {@code 0^a ÷ 0^a} is the same question, one row down the degenerate table. */
+    /** {@code 0^a ÷ 0^a} is y÷y, the same erasure written the other way. */
     @Test
-    void aQuotientOfEqualPowersStands() {
+    void aQuotientOfEqualPowersDischarges() {
         IExpr quotient = new MultiplicationOperationExpr(pow0(2, 1), new ReciprocalOperationExpr(pow0(2, 1)));
-        assertEquals(quotient, quotient.simplify());
+        assertEquals(ONE, quotient.simplify());
+    }
+
+    /**
+     * But an ordinary quotient keeps its coordinates. {@code (2÷3)÷(2÷3)} is one AT (6,6), and sending it to
+     * the literal one would be reducing -- which is the thing this carrier does not do.
+     */
+    @Test
+    void anOrdinaryQuotientKeepsTheCoordinatesItArrivesAt() {
+        assertEquals(at(6, 6), at(2, 3).dividedBy(at(2, 3)));
     }
 
     /** No rule reaches a power off the integers — {@code x^0}, {@code x^w}, and everything between. */

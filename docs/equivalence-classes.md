@@ -104,9 +104,11 @@ w·x = 0^(u-1)
 0·0 = 0^2, so 0² != 0
     The 0·x rule at u=1; and 0^2 != 0^1 by E6.
 
-0·w = 0^(1 + -1)
-    The 0·x rule at u=-1. The ONLY product with zero whose exponent is an erasure.
-    This is Problem 1 in one line. See theory-problems.md.
+0·w = 1
+    The 0·x rule at u=-1 gives 0^(1 + -1), the only product with zero whose exponent is an erasure.
+    RESOLVED: w is 1÷0 by E9, so 0·w is y·(1÷y), the multiplicative erasure, and an erasure discharges
+    to the identity of its own operation. The additive erasure in the exponent is what the lift MAKES
+    of it; the kind that decides is the kind of the operation it came from. See theory-problems.md #1.
 
 0^(1/n) is nilpotent
     n copies of 0^(1/n) multiply to 0^(1/n + ... + 1/n) = 0^1 = 0, by E1 and E4 -- the
@@ -301,7 +303,7 @@ and `0^(0w)` alone.
 
 ```
 0wx
-    Under the product reading 0·w·x it is undefined, because 0·w is (Proven, above).
-    Under the reading (0·w)^x it is undefined for the same reason.
-    Either way it inherits Problem 1 and cannot be used until that is settled.
+    No longer blocked. 0·w is 1, so the product reading 0·w·x is x, and the reading (0·w)^x is 1^x.
+    Those are different, so the notation still needs a choice of grouping -- but it is a notation
+    question now rather than an open value.
 ```
