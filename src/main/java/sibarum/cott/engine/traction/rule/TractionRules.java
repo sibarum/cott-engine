@@ -57,6 +57,8 @@ public final class TractionRules {
             new Rule("0^E is a traction", "E6: every value is 0^a for one a", Rule.Status.PROVEN);
     public static final Rule POINT =
             new Rule("0^1 = 0, 0^0 = 1, 0^-1 = w", "E4, E5, and w = 1÷0", Rule.Status.PROVEN);
+    public static final Rule LOG_INVERTS =
+            new Rule("log_0(0^a) = a", "E8", Rule.Status.PROVEN);
 
     /**
      * The multiplicative erasure, discharged to the identity of its own operation.
@@ -160,6 +162,32 @@ public final class TractionRules {
         }
         if (OMEGA.equals(e)) {
             return Optional.of(NEG_ONE);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * {@code log_0(0^a) = a}, which is E8: log_0 inverts 0^.
+     * <p>
+     * It reads the points as powers of zero where {@link #exponentOfZero} will not, and that is not the axis
+     * rule being bent. What the axis rule forbids is reading an additive unit as a power of zero in order to
+     * make an ARITHMETIC rule fire, because the exponent that comes out can be read back and the pair cycles.
+     * Inverting is not arithmetic: no addition law is involved, the result is the exponent itself rather than
+     * one built out of points, and nothing anywhere produces a log for this to feed.
+     * <p>
+     * { log_0(-1) = w} is left out, being the leap.
+     */
+    public static Optional<Rewrite> logarithm(IExpr base, IExpr operand) {
+        if (!ZERO.equals(base)) {
+            return Optional.empty();
+        }
+        Optional<IExpr> exponent = exponentOfZero(operand);
+        if (exponent.isPresent()) {
+            return exponent.map(a -> new Rewrite(a, LOG_INVERTS));
+        }
+        // The inverse of point(): 1 is 0^0 by E5, which exponentOfZero declines to say.
+        if (ONE.equals(operand)) {
+            return Optional.of(new Rewrite(ZERO, LOG_INVERTS));
         }
         return Optional.empty();
     }

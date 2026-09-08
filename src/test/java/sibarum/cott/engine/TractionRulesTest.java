@@ -6,6 +6,7 @@ import sibarum.cott.engine.base.expr.IExpr;
 import sibarum.cott.engine.base.rule.Rewrite;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.binary.ExponentialOperationExpr;
+import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
@@ -163,6 +164,31 @@ class TractionRulesTest {
         // been read as the integer 2, the rule would have fired and produced 0^2.
         IExpr byCoordinates = new ExponentialOperationExpr(pow0(1, 1), at(6, 3));
         assertEquals(new TractionLiteral(ZERO, at(6, 3)), byCoordinates.simplify());
+    }
+
+    /**
+     * {@code log_0(0^a) = a}, E8. A primitive, and it had been left unimplemented since the general-base row
+     * was deleted with E2 -- the rule fell through the gap between the two.
+     */
+    @Test
+    void logBaseZeroInvertsThePowerOfZero() {
+        assertEquals(at(3, 1), new LogarithmOperationExpr(ZERO, pow0(3, 1)).simplify());
+        assertEquals(ONE, new LogarithmOperationExpr(ZERO, ZERO).simplify());        // 0 = 0^1
+        assertEquals(ZERO, new LogarithmOperationExpr(ZERO, ONE).simplify());        // 1 = 0^0, E5
+        assertEquals(NEG_ONE, new LogarithmOperationExpr(ZERO, OMEGA).simplify());   // w = 0^-1
+    }
+
+    /**
+     * It cannot loop, and the reason is structural rather than lucky: nothing in the engine PRODUCES a log
+     * node, so a log rule cannot be part of a cycle. The parser is the only source of them.
+     */
+    @Test
+    void logToAnyOtherBaseStands() {
+        IExpr general = new LogarithmOperationExpr(at(2, 1), at(8, 1));
+        assertEquals(general, general.simplify());
+        // and the leap is not taken here either: log_0(-1) = w needs -1 = 0^w.
+        IExpr leap = new LogarithmOperationExpr(ZERO, NEG_ONE);
+        assertEquals(leap, leap.simplify());
     }
 
     // ---------------------------------------------------------------- the multiplicative erasure

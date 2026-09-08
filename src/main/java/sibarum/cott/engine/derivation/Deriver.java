@@ -6,6 +6,7 @@ import sibarum.cott.engine.base.rule.Rewrite;
 import sibarum.cott.engine.base.rule.Rule;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.binary.ExponentialOperationExpr;
+import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
@@ -161,6 +162,7 @@ public final class Deriver {
                     TractionRules.sum(l, r).or(() -> projective(l.plus(r), e));
             case ExponentialOperationExpr p -> TractionRules.power(p.base(), p.exponent());
             case TractionLiteral t -> TractionRules.point(t.base(), t.exp());
+            case LogarithmOperationExpr l -> TractionRules.logarithm(l.base(), l.operand());
             // Uncovering an operand from under two negations is not the coordinates combining, and labelling
             // it that way would have put a false reason in a derivation. It is reversibility, which is what
             // COTT asks of every operation before anything else.

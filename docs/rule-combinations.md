@@ -50,6 +50,30 @@ Off the closure set there is still nothing: `2^0` stands, and no counting argume
 The rule is a lookup on four values, so wiring it is a table rather than a derivation — which is
 also a warning, since a table is exactly the kind of rule that cannot be checked by reading it.
 
+### The logarithm
+
+| value op        | value | rule | status | in the engine |
+|-----------------|-------|------|--------|---------------|
+| `log_0(0^a)`    | `a`   | E8   | Proven | wired |
+| `log_0(0)`      | `1`   | E8, E4 | Proven | wired |
+| `log_0(1)`      | `0`   | E8, E5 | Proven | wired |
+| `log_0(w)`      | `-1`  | E8, w = 1÷0 | Proven | wired |
+| `log_0(-1)`     | `w`   | the leap | Chosen | not wired |
+| `log_b(x)`, b != 0 | — | went with E2 | no rule | stands |
+
+E8 is the inverse of `0^` and nothing more. It reads the points where the arithmetic rules will not,
+and that is not the axis rule being bent: what the axis rule forbids is reading an additive unit as a
+power of zero to make an ARITHMETIC rule fire, because the exponent that comes out can be read back and
+the pair cycles. Inverting is not arithmetic, and no rule anywhere produces a log for this one to feed --
+the parser is the only source of them -- so it cannot be part of a cycle.
+
+Not wired, and it is the rule to watch if logs ever do loop: the Chosen `log_0(x) = 0^x`, which
+manufactures a power of zero out of any x.
+
+One thing the parser refuses that E8 arguably permits: `0^log_0(x)` is a sort error, because the `^` slot
+is checked for a value and a log returns an exponent. But an exponent is exactly what that slot wants, and
+by E8 the answer is `x`. The old engine refused it too, so this is inherited rather than introduced.
+
 ### Gone with E2
 
 ```

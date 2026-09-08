@@ -22,7 +22,7 @@ E4   0^1 = 0
 E5   0^0 = 1
 E6   0^ is injective              this is reversibility
 E7   0^ is closed on {0,1,-1,w}   this is what "the type is a closure" means
-E8   log_0 inverts 0^             a primitive in earnest now: log to a general base went with E2
+E8   log_0 inverts 0^             a primitive in earnest: log to a general base went with E2. WIRED
 E9   w := 1/0
 E10  0^a - 0^b = 0^(a/b)          exponent division is value subtraction. TOTAL: defined at
                                   a = b as well, where the multiplicative erasure a/b
