@@ -216,14 +216,28 @@ public final class TractionRules {
      * {@code 1 + w} has no single value and stands as the pair it is.
      */
     public static Optional<Rewrite> identity(IExpr left, IExpr right, boolean product) {
-        IExpr unit = product ? ONE : ZERO;
-        if (unit.equals(right)) {
-            return Optional.of(new Rewrite(left, product ? TIMES_ONE : PLUS_ZERO));
+        if (product) {
+            if (ONE.equals(right)) {
+                return Optional.of(new Rewrite(left, TIMES_ONE));
+            }
+            return ONE.equals(left) ? Optional.of(new Rewrite(right, TIMES_ONE)) : Optional.empty();
         }
-        if (unit.equals(left)) {
-            return Optional.of(new Rewrite(right, product ? TIMES_ONE : PLUS_ZERO));
+        // ANY magnitude-zero value adds without effect, not only the literal (0,1). -0 is (0,-1) and 0÷2 is
+        // (0,2); both are zero, and their differences are multiplicative -- an orientation and a root -- so
+        // neither has anything to contribute to a sum.
+        //
+        // And the result is the other operand UNCHANGED, which is what invariance means. Letting the
+        // coordinates do it instead gave the right value at worse coordinates: 1 - 0 is 1 + (0,-1), which
+        // cross-multiplies to (-1,-1) -- one, spelled -1÷-1.
+        if (isMagnitudeZero(right)) {
+            return Optional.of(new Rewrite(left, PLUS_ZERO));
         }
-        return Optional.empty();
+        return isMagnitudeZero(left) ? Optional.of(new Rewrite(right, PLUS_ZERO)) : Optional.empty();
+    }
+
+    private static boolean isMagnitudeZero(IExpr e) {
+        return e instanceof ProjectiveRationalLiteral(BigInteger n, BigInteger d)
+                && n.signum() == 0 && d.signum() != 0;
     }
 
     // ---------------------------------------------------------------- the settled rows

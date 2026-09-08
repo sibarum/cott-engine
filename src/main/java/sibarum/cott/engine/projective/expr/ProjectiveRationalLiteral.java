@@ -68,17 +68,21 @@ public record ProjectiveRationalLiteral(BigInteger numerator, BigInteger denomin
             // place the general defect could not be missed.
             //
             // This does not reduce anything: 1/2 + 1/2 is (2,2), which is still not the literal one.
-            // 0 IS invariant under addition, the way 1 is under multiplication. So x + 0 is x, and there is
-            // nothing to decide about it.
+
+            // 0 is invariant under addition, the way 1 is under multiplication, so x + 0 is x -- and it is x
+            // UNCHANGED, which is what invariance means. Any magnitude-zero value counts, not only (0,1): -0
+            // is (0,-1) and 0÷2 is (0,2), both are zero, and what distinguishes them is multiplicative -- an
+            // orientation, a root -- so none of it has anything to contribute to a sum.
             //
-            // An earlier version of this declined every sum that crossed between the additive units and the
-            // multiplicative ones, which made 1 + 0 stand as a pair. That was too strong: it took a rule
-            // about w and applied it to 0. Each identity is invariant under its OWN operation; -1 and w are
-            // invariant under neither, which is what separates them from 0 and 1.
-            if (ZERO.equals(this)) {
+            // Letting the coordinates do this instead gave the right value at a worse spelling: 1 - 0 is
+            // 1 + (0,-1), which cross-multiplies to (-1,-1) -- one, written -1÷-1.
+            //
+            // An earlier version declined every sum crossing between the additive units and the multiplicative
+            // ones, which made 1 + 0 stand as a pair. That took a rule about w and applied it to 0.
+            if (this.numerator.signum() == 0 && this.denominator.signum() != 0) {
                 return expr;
             }
-            if (ZERO.equals(expr)) {
+            if (numerator1.signum() == 0 && denominator1.signum() != 0) {
                 return this;
             }
             // What actually fails is omega annihilating the other operand. (1,1) + (1,0) cross-multiplies to

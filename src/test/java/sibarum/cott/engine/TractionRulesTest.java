@@ -106,6 +106,32 @@ class TractionRulesTest {
         assertEquals(Optional.empty(), TractionRules.exponentOfZero(at(0, 2)));
     }
 
+    /**
+     * {@code x + 0 = x} and {@code x · 1 = x}, and the sum returns x itself rather than x at other
+     * coordinates -- which is what invariance means and is why the identity is a rule and not left to the
+     * coordinate arithmetic.
+     */
+    @Test
+    void theIdentitiesReturnTheOtherOperandUnchanged() {
+        assertEquals(ONE, new AdditionOperationExpr(ONE, ZERO).simplify());
+        assertEquals(ONE, new AdditionOperationExpr(ZERO, ONE).simplify());
+        assertEquals(new AtomExpr("x"), new AdditionOperationExpr(new AtomExpr("x"), ZERO).simplify());
+        assertEquals(at(2, 3), new MultiplicationOperationExpr(at(2, 3), ONE).simplify());
+
+        // Any magnitude-zero value, not only (0,1): -0 and 0÷2 add without effect too. 1 - 0 is 1 + (0,-1),
+        // and letting the coordinates have it would give (-1,-1) -- one, written -1÷-1.
+        assertEquals(ONE, new AdditionOperationExpr(ONE, at(0, -1)).simplify());
+        assertEquals(ONE, new AdditionOperationExpr(ONE, at(0, 2)).simplify());
+        assertEquals(ONE, new AdditionOperationExpr(ONE, new NegationOperationExpr(ZERO)).simplify());
+    }
+
+    /** w is invariant under neither operation, which is why the sum stands. */
+    @Test
+    void omegaIsNotAnIdentity() {
+        IExpr sum = new AdditionOperationExpr(ONE, OMEGA);
+        assertEquals(sum, sum.simplify());
+    }
+
     // ---------------------------------------------------------------- the settled rows
 
     /** {@code 0^a · 0^b -> 0^(a+b)}, E1. */
