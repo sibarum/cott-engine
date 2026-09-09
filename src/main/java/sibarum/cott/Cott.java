@@ -13,7 +13,7 @@ import sibarum.cott.engine.base.rule.Rule;
 import sibarum.cott.engine.derivation.Derivation;
 import sibarum.cott.engine.derivation.Deriver;
 import sibarum.cott.engine.derivation.Step;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -174,11 +174,11 @@ public final class Cott {
      */
     static Optional<Double> real(IExpr e) {
         return switch (e) {
-            // A zero denominator is omega, which has no real reading. The CARRIER projects it onto zero's
-            // shadow, and that is right for a projection -- omega and zero do occupy the same coordinate on
-            // the real line -- but a shadow is not a value, and handing it to sin would answer a question
-            // nobody can ask. sin(ω) stands.
-            case ProjectiveRationalLiteral p -> p.denominator().signum() == 0 ? Optional.empty() : p.evaluate();
+            // Every rational has a real reading now, because omega is not one of them: it is 0^-1, a traction,
+            // and a traction has none. A shadow is not a value, and handing omega's to sin would answer a
+            // question nobody can ask -- so sin(ω) stands, and it stands because of what the carrier is
+            // rather than because of a guard here.
+            case RationalLiteral p -> p.evaluate();
             case AtomExpr a -> switch (a.name()) {
                 case "π" -> Optional.of(Math.PI);
                 case "e" -> Optional.of(Math.E);

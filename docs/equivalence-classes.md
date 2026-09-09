@@ -16,56 +16,98 @@ it says so, and the item is filed under Chosen or Maybe rather than Proven.
 
 ```
 E1   0^a · 0^b = 0^(a+b)          exponent addition is value multiplication
-E2   -- withdrawn --              was (0^u)^v = 0^(uv). See "The cost of E2".
+E2   -- not a primitive --        (0^u)^v = 0^(vu) at nonzero RATIONAL v is a theorem of
+                                  E1 + E6, needing E3 at negative v. Reinstated under Proven
+                                  as E2'. At v with a w-component there is no rule.
 E3   0^(-a) = 1/0^a               NOT derived from E1: that route needs a - a = 0, an erasure
 E4   0^1 = 0
 E5   0^0 = 1
-E6   0^ is injective              this is reversibility
+E6   0^ is injective              reversibility -- and this is what supplies uniqueness of roots
 E7   0^ is closed on {0,1,-1,w}   this is what "the type is a closure" means
 E8   log_0 inverts 0^             a primitive in earnest: log to a general base went with E2. WIRED
+E10  -- no longer a primitive --  0^a - 0^b = 0^(a/b) follows from E1 + E3 + E8 plus the
+                                  general involution, so it inherits that involution's status.
+                                  Filed under Chosen.
 E9   w := 1/0
-E10  0^a - 0^b = 0^(a/b)          exponent division is value subtraction. TOTAL: defined at
-                                  a = b as well, where the multiplicative erasure a/b
-                                  materialises as 1, so y - y = 0^1 = 0 rather than discharging
 ```
 
-The E2 slot is left empty rather than renumbered. E1 and E3-E10 are cited by number in the
-other docs and in the commit history, and renumbering would silently rewrite all of it.
+Both vacated slots keep their numbers rather than being renumbered. E1 and E3-E10 are cited by
+number in the other docs and in the commit history, and renumbering would silently rewrite all
+of it. E10 is listed out of order, after E9, so that the eight remaining primitives read without
+a gap in the middle.
 
-E10 and its totality are kept because this is the branch the Q model satisfies, so it is the
-branch known to be consistent. That protection gets used below: where a conflict has to break
-somewhere, it no longer breaks at E10.
+**The E10 protection is withdrawn.** This file used to say that E10 and its totality were kept
+because that is the branch the Q model satisfies, so it is the branch known to be consistent,
+and that where a conflict had to break somewhere it no longer broke at E10. Neither half stands.
+There is no Q model in this repository -- five prose references and no construction -- so the
+protection rested on an artifact nobody has. And E10 is now derived rather than primitive, so it
+cannot outrank the assumption it depends on. Conflicts that were arbitrated by E10 need
+re-examining; the one that mattered has already moved, and is under Chosen at `-0 != w`.
 
 Throughout, `x = 0^u`. Every traction value has such a u, and E6 makes it unique.
 
-### The cost of E2
+### What E2 cost, and what the restriction saves
 
-E2 said `(0^u)^v = 0^(uv)` for every v. What it was ever *proved* for is narrower than that,
-and that part is a theorem of E1 rather than a casualty of the deletion:
+E2 said `(0^u)^v = 0^(uv)` for every v, and was withdrawn on 2026-09-05 on two grounds: that it
+was only ever proved for integer v, and that the branch without it is the one the Q model
+satisfies. The withdrawal over-corrected. What the proof reaches is every **rational** v, and the
+second ground has since gone -- see the protection note above.
+
+**The one objection that mattered, answered.** This section used to say: `(0^(u/n))^n = 0^u`
+makes `0^(u/n)` AN n-th root of `0^u`, and identifying it with THE root `(0^u)^(1/n)` needs
+uniqueness of roots, "and nothing here supplies that." Something does, and it is E6.
 
 ```
-Integer powers still flatten
-    (0^u)^n = 0^u · ... · 0^u = 0^(u + ... + u) = 0^(nu), by E1, for positive integer n.
-    A positive integer power is repeated multiplication, so E1 does this on its own.
+Define a rational power the ordinary way: x^(p/q) is the y with y^q = x^p.
 
-    Negative n: E3 gives it at base 0. For a general base it needs y^(-n) = 1/y^n, which
-    is a convention here and not a consequence -- flagged, not assumed.
+    existence     y = 0^(pu/q) works, by E1 at integer q
+    uniqueness    y = 0^t with 0^(tq) = 0^(pu) gives tq = pu by E6, so t = pu/q
 
-    n = 0 is NOT included. Zero copies is the empty product, and calling that 1 is x^0 = 1,
-    which this theory does not have.
-
-    Non-integer v is NOT included. (0^(u/n))^n = 0^u makes 0^(u/n) AN n-th root of 0^u;
-    identifying it with THE root (0^u)^(1/n) needs uniqueness of roots, and nothing here
-    supplies that.
+So E2' at POSITIVE rational v is a theorem of E1 + E6. Injectivity IS root uniqueness:
+0^t is determined by t, so tq = pu has one solution and the q-th root is unique.
+Negative rational v additionally needs E3 for the reciprocal, which is where E3 earns
+its independence.
 ```
 
-So the deletion removes the power rule at `v = 0`, at `v = w`, and at every non-integer
-rational -- which is exactly where E2 was unconstrained anyway. The old note "E2 admits no
-translation on nonzero rationals" is what remains, restated: on the integers there was never
-a choice, and off them there was never a rule.
+**What stays out, and why each is excluded for its own reason.**
 
-What this costs is totality of `^`, and in a theory whose premise is totality that is a real
-cost rather than a tidy-up. See theory-problems.md, problem 3.
+```
+v = 0                 Zero copies is the empty product, and calling that 1 is x^0 = 1,
+                      which this theory does not have. This exclusion is load-bearing and
+                      not merely inherited: without it E2' gives 1^0 = (0^0)^0 = 0^0 = 1,
+                      against the cycle's 1^0 = w. The cycle keeps x^0.
+
+v with a w-component  x^w needs a PRODUCT of two exponents. Exponents are Q·1 + Q·w, which
+                      has addition and rational scaling and no product: w·w is (i·pi)^2,
+                      which is -pi^2 and not of the form a + bw. So this is not a rule the
+                      theory declines to state -- there is nothing there to state.
+
+v irrational          The same reason 0^pi was never on the table.
+```
+
+**What comes back.** `0^(u/n)` is THE unique n-th root of `0^u`. `(0^a)^(6/3)` is licensed, so
+the "integer as a term and not as a value" guard relaxes to "rational, and no w-component".
+`sqrt(-1)` names itself again by a shorter route than the withdrawn one: `(-1)^(1/2)` is
+`(0^w)^(1/2)` = `0^(w/2)`, where the base carries the w and the exponent is rational, so it is
+inside the fence -- see derivations.md. A logarithm to a general base returns on the same-line
+case, `log_(0^a)(0^b) = b/a` wherever `b/a` is rational, i.e. wherever a and b are parallel as
+exponents. And the reciprocal law is Proven at rational c, since `(b^c)^(1/c) = b` is now
+available there.
+
+**What does not.** `1^x = 1 + u`, `(-1)^x = 0^(wx)` and `0x = 0^(1^x)` all needed v general
+rather than rational, and stay withdrawn. `x^0 = 1^x` and `x^w = (-1)^x` stay Open: E2' excludes
+both points, so neither old refutation returns. And the `x^0` cycle is NOT promoted -- it uses
+the reciprocal law at `c = 0`, where `1/c` is w, which is exactly the case E2' cannot reach. E2'
+proves the reciprocal law everywhere the cycle does not need it.
+
+What is left of problem 3 is narrower than it was: not "no power rule off the integers" but no
+power rule off the rationals. The remaining hole is the w-direction, and that hole is now
+explained rather than merely reported -- there is no product on the exponents to write the rule
+with. See theory-problems.md, problem 3.
+
+**It cannot be wired yet.** `(-1)^2` is `(0^w)^2` = `0^(2w)`, and the coordinates put `w + w` at
+1 -- the same defect that keeps the leap unwired. E2' at integer v on base `-1` walks straight
+into it, so this waits on the exponent carrier along with the leap.
 
 ### Proven
 
@@ -81,17 +123,20 @@ w = 0^-1 = 1/0
 1 = 0^0 = 1^1
     E5; and 1^1 is one copy of 0^0, so 1^1 = 0^0 = 1 by the integer power rule.
 
-0^x = w^(-x)   and   w^x = 0^(-x),   for integer x only
-    w^(-x) = (0^-1)^(-x) = 0^x by the integer power rule, which reaches integer exponents
-    and no further. At a general traction exponent both lines went with E2.
+0^x = w^(-x)   and   w^x = 0^(-x),   for nonzero rational x
+    w^(-x) = (0^-1)^(-x) = 0^x by E2', which reaches rational exponents and no further. This
+    used to read "integer x only", because the integer power rule was all there was; E2'
+    widens it to the rationals. At an exponent with a w-component both lines still have no
+    rule. x = 0 is excluded with the rest of E2': it would give w^0 = 0^0 = 1, against the
+    cycle's w^0 = -1.
 
--0 != w
-    0 - 0 = 0^1 - 0^1 = 0^(1/1) = 0^1 = 0, by E10 and its totality.
-    -0 = w would require 1/1 = -1.
-    This rules out w and nothing more. It does NOT reach -0 = 0: reading the expression
-    0 - 0 as -0 needs the value 0 to be the additive identity, and universal invariance does
-    not say that -- it says the erasure FORM adds without effect. The value of -0 comes from
-    the negation rule under Chosen instead.
+E2'  (0^u)^v = 0^(vu),  for nonzero rational v
+    Positive v: x^(p/q) is the y with y^q = x^p; y = 0^(pu/q) exists by E1 at integer q, and
+    is unique because 0^(tq) = 0^(pu) gives tq = pu by E6. Negative v needs E3 as well.
+    Integer v is the special case that was never in doubt: repeated multiplication, so E1
+    gives it directly.
+    Excludes v = 0, v with a w-component, and irrational v, each for its own reason. See
+    "What E2 cost, and what the restriction saves".
 
 0·x = 0^(1+u)
     0^1 · 0^u = 0^(1+u), by E1 and E4.
@@ -136,6 +181,56 @@ Choices will be kept until disproven or all options exhausted.
 Everything derived from them is listed here too, not under Proven.
 
 ```
+E10  0^a - 0^b = 0^(a/b),  and it is E1 seen through the involution
+    Was a primitive. It is derived, and what it needs is the general involution:
+
+        0^(a/b) = log_0(a/b)               the general involution
+                = log_0(a · 1/b)
+                = log_0(a) + log_0(1/b)    E1 + E8
+                = log_0(a) - log_0(b)      E3 + E8
+                = 0^a - 0^b                the general involution, twice more
+
+    Everything but line 1 and line 5 is Proven. Those two are log_0(x) = 0^x, which is
+    forced on {0,1,-1,w} and asserted beyond -- theory-problems.md, problem 4. So E10's
+    status is exactly that involution's status: Proven on the four points, Chosen off them.
+    It needs no E2: the step from log_0(1/b) to -log_0(b) is E3 + E8 -- put x = 0^p, then
+    1/x = 0^(-p) by E3, so log_0(1/x) = -p = -log_0(x) -- and NOT the log power law.
+
+    THIS IS WHY E1 AND E10 MIRROR EACH OTHER. The docs have observed throughout that 0^
+    exchanges the floors "in both directions" -- · with +, / with -. That is not two
+    axioms that happen to be mirrors. It is one axiom seen through a map that swaps the
+    floors, and E10 is the image. E10 is not independent of E1 + E3 + E8 given the
+    involution. It does NOT collapse E3, which the derivation uses as a separate input.
+
+    WHAT THIS COSTS. E10 can no longer arbitrate against problem 4, since it depends on it,
+    and the protection it used to carry is withdrawn (see Primitives). What it buys is that
+    two open items become one decision: adopt the general involution and E10 comes free with
+    E1's own status; decline it and E10 is a four-point fact. There is no third branch where
+    E10 stands and the involution does not.
+
+    Totality at a = b is unaffected by the restatement: the multiplicative erasure a/b
+    materialises as 1, so y - y = 0^1 = 0 rather than discharging. That reading is about
+    the erasure and does not go through the involution.
+
+    One caveat on the derivation: it needs a and b to be powers of zero for E1 + E8 to reach
+    them, and that is an EXISTENCE assumption. E6 does not supply it -- E6 gives uniqueness.
+    It is the assumption stated at the head of this file, "every traction value has such a u",
+    and REVIEW.md P0-5 disputes it. Nothing in the derivation turns on it beyond what every
+    other rule here already assumes.
+
+-0 != w
+    MOVED FROM PROVEN, because its proof was E10 and its totality:
+        0 - 0 = 0^1 - 0^1 = 0^(1/1) = 0^1 = 0, and -0 = w would require 1/1 = -1.
+    E10 is Chosen now, so this is too. There is no Proven route to it and there never could
+    have been: -0 is DEFINED by the negation rule, which is Chosen, so a claim about what -0
+    is not cannot outrank it. The cleaner proof is the negation rule's own -- -0 = 0^(1+w)
+    and w = 0^-1, so -0 != w requires 1 + w != -1, i.e. w != -2, which holds because w is
+    not rational.
+
+    It still rules out w and nothing more. It does NOT reach -0 = 0: reading the expression
+    0 - 0 as -0 needs the value 0 to be the additive identity, and universal invariance does
+    not say that -- it says the erasure FORM adds without effect.
+
 0^w = -1
     Forced by E6 and E7 plus the other three values: 0^ already 2-cycles {0,1},
     so it must permute {-1,w}, and 0^-1 = w leaves only 0^w = -1.
@@ -212,10 +307,13 @@ log_a(b) · log_b(a) = 1
     The reciprocal law. It is a consequence of the general-base log rule that went with E2 --
     log_(0^a)(0^b) = b÷a is antisymmetric in a and b, and this is exactly that antisymmetry --
     so it is strictly weaker than E2 and buys back one identity rather than the law.
-    It still needs the power law to PROVE: a = b^c gives b = a^(1÷c) only through
-    (b^c)^(1÷c) = b. Adopted here on its own, for what it settles below.
-    Note it survives c = 0, where the classical version dies: 1÷0 is w, a value this type has,
-    so log_a(b) = w rather than undefined. That is the whole of what the next item uses.
+    It needs the power law to PROVE: a = b^c gives b = a^(1÷c) only through (b^c)^(1÷c) = b.
+    E2' now supplies that at nonzero rational c, so the law is PROVEN there and this entry is
+    only Chosen at the cases E2' cannot reach.
+    And that is exactly where the cycle uses it. Note the law survives c = 0, where the
+    classical version dies: 1÷0 is w, a value this type has, so log_a(b) = w rather than
+    undefined -- and c = 0 is the one point E2' excludes. So E2' proves the reciprocal law
+    everywhere the next item does not need it, and the cycle stays Chosen.
 
 x^0 on the closure set is the 4-cycle 0 -> 1 -> w -> -1 -> 0
     a = b^0 gives log_b(a) = 0, so log_a(b) = 1÷0 = w by the reciprocal law, so a^w = b. The
@@ -288,6 +386,11 @@ Not 100% sure yet, but the evidence is strong.
     addition of values is multiplication of exponents.
     Also follows from E1 plus the general involution, since an involution carrying
     + to · necessarily carries · to +.
+    That second route is now the interesting one, because it is the same move that derives
+    E10 under Chosen -- E1 conjugated by the involution. If the involution is adopted, this
+    law and E10 come from one place, and holding one while rejecting the other stops being
+    available. Worth checking before adopting either: E10 falls out of the conjugation as a
+    log identity, and this does not, so they may not be equally cheap.
     Never stated independently, so it is held one rank below the primitives.
     Never used E2, so the deletion leaves it where it was.
 
@@ -335,9 +438,11 @@ Nothing here is disproved. Each item lost its proof, and none of them has anothe
 (-1)^0 = 0^(0w) = 1^w       E2 at v = 0
 1^w = 0^(0w)                E2 at v = w
 wx = 0^((-1)^x)             built on (-1)^x; its E1 half survives as w·x = 0^(u-1)
-log_(0^a)(0^b) = 0^(b/a)    was E2 + E6. A logarithm to a general base is undefined again,
-                            which is why E8 is back to being a primitive in earnest
-(0^u)^v, v non-integer      no rule
+log_(0^a)(0^b) = 0^(b/a)    PARTLY BACK. Was E2 + E6, and E2' + E6 gives it wherever b/a is
+                            rational -- i.e. wherever a and b are parallel as exponents. Off
+                            that line it is still undefined, so E8 remains a primitive in
+                            earnest rather than a special case of a definable family
+(0^u)^v, v with a w-part    no rule, and none available: there is no product on the exponents
 ```
 
 The largest consequence: `1^x`, `(-1)^x` and `x^0` -- three of the four spellings that used to

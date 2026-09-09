@@ -9,7 +9,7 @@ import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.math.BigDecimal;
@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * points itself, which it could do because the carrier it printed was already a normal form; this one prints a
  * term that may not be reduced at all, so naming would be the printer answering a question the engine had not
  * been asked. The four points still print as their names where the CARRIER holds them that way — {@code ω} is
- * the coordinate pair (1, 0) and prints as {@code ω}, which is a spelling and not a rule.
+ * the traction pair (1, −1) and prints as {@code ω}, which is a spelling and not a rule.
  *
  * <h2>Coordinates do not reduce, so a spelling may not either</h2>
  * {@code (1, 2)} and {@code (5, 10)} are the same value at different coordinates and are different literals.
@@ -83,8 +83,8 @@ public final class Render {
             return arg(left, ADD) + "−" + arg(taken, MUL);
         }
         return switch (e) {
-            case ProjectiveRationalLiteral p -> coordinates(p);
-            case TractionLiteral t -> arg(t.base(), ATOM) + "^" + exponentAtom(t.exp());
+            case RationalLiteral p -> coordinates(p);
+            case TractionLiteral t -> traction(t);
             case AtomExpr a -> a.name();
             // A call is written the way it is typed. Its arguments are whole expressions and the call's own
             // brackets already separate them, so nothing inside needs brackets of its own.
@@ -101,34 +101,59 @@ public final class Render {
     }
 
     /**
-     * A coordinate pair as the display writes it.
+     * A rational coordinate as the display writes it: a unit denominator is the plain numeral, and everything
+     * else is a quotient, or a decimal where that is both shorter and faithful.
      *
-     * <p>A unit denominator is the plain numeral. A zero denominator is a multiple of omega, since omega is
-     * {@code 1÷0} and the pair {@code (n, 0)} is n of them — {@code (1, 0)} is the bare name. Everything else
-     * is a quotient, or a decimal where that is both shorter and faithful.
+     * <p>Omega is not here any more, and neither is {@code -0}. Both were spellings this pair had to carry
+     * when a zero denominator lived in it; omega is now {@code 0^-1}, which the traction pair spells, and
+     * {@code -0} is {@code -1·0}, which is the pair {@code (-1, 1)} and prints as the product it is.
      */
-    private static String coordinates(ProjectiveRationalLiteral p) {
+    private static String coordinates(RationalLiteral p) {
         BigInteger n = p.numerator();
         BigInteger d = p.denominator();
         if (d.equals(BigInteger.ONE)) {
             return signed(n.toString());
         }
-        // -0 is the pair (0, -1), a different literal from 0 and worth its own name for the same reason
-        // omega has one: the coordinate is exact, and a name that reads back as itself is better than
-        // 0÷-1, which is what the quotient spelling would give.
-        if (n.signum() == 0 && d.equals(BigInteger.ONE.negate())) {
-            return "−0";
-        }
-        if (d.signum() == 0) {
-            if (n.equals(BigInteger.ONE)) {
-                return "ω";
-            }
-            if (n.equals(BigInteger.ONE.negate())) {
-                return "−ω";
-            }
-            return juxtapose(coefficient(n), "ω");
-        }
         return rational(n, d);
+    }
+
+    /**
+     * A traction pair, {@code n·0^t}.
+     *
+     * <p>The two multiplicative units get their names: {@code 0^1} is {@code 0} and {@code 0^-1} is
+     * {@code ω}. That is a spelling and not a rule — the carrier holds those pairs, the way it used to hold
+     * {@code (1, 0)} and print it as omega — and it is what keeps {@code 2ω} out of the display as
+     * {@code 2·0^-1}. Everything else prints as the power it is.
+     *
+     * <p>A real part prints in front, joined the way a product is: {@code 2ω}, and {@code 2·0} with the sign
+     * shown, since {@code 20} would read back as twenty. {@code -1·0} prints that way too, which is exactly
+     * what it is — there is no {@code -0} among the units, and a name for it would suggest otherwise.
+     */
+    private static String traction(TractionLiteral t) {
+        String power = powerName(t.exponent());
+        if (t.isBare()) {
+            return power;
+        }
+        // A real part of exactly -1 is a sign and prints as one, the way -1 does: -ω rather than -1ω, and -0
+        // rather than -1·0. Both read back as the negation they are -- the printer is not claiming -0 is a
+        // fifth unit, any more than it claims -2 is one.
+        //
+        // Only where the traction part has a NAME, though. A leading minus binds looser than ^, so -0^2 reads
+        // back as (-0)^2, which is 0^2 -- a different value. That one keeps the coefficient: -1·0^2.
+        if (RationalLiteral.NEG_ONE.equals(t.real()) && !power.startsWith("0^")) {
+            return "−" + power;
+        }
+        return juxtapose(arg(t.real(), MUL), power);
+    }
+
+    private static String powerName(IExpr exponent) {
+        if (RationalLiteral.ONE.equals(exponent)) {
+            return "0";
+        }
+        if (RationalLiteral.NEG_ONE.equals(exponent)) {
+            return "ω";
+        }
+        return "0^" + exponentAtom(exponent);
     }
 
     /** A leading coefficient. */
@@ -246,25 +271,39 @@ public final class Render {
         return switch (e) {
             case AdditionOperationExpr a -> ADD;
             case MultiplicationOperationExpr m -> MUL;
-            case ProjectiveRationalLiteral p -> pair(p);
+            case RationalLiteral p -> coordinatePrecedence(p);
+            case TractionLiteral t -> tractionPrecedence(t);
             case AtomExpr a -> ATOM;
             case CallExpr c -> ATOM;          // a call is parenthesised, so it binds as tightly as a name
             case LogarithmOperationExpr l -> ATOM;
-            default -> POW;                   // negation, reciprocal, exponential, traction
+            default -> POW;                   // negation, reciprocal, exponential
         };
     }
 
     /** A pair binds as its spelling does: a numeral is a primary, a quotient is not, a signed one leads with -. */
-    private static int pair(ProjectiveRationalLiteral p) {
+    private static int coordinatePrecedence(RationalLiteral p) {
         if (p.numerator().signum() < 0) {
             return POW;   // the leading minus has to be kept off a juxtaposition
         }
         if (p.denominator().equals(BigInteger.ONE)) {
             return ATOM;
         }
-        if (p.denominator().signum() == 0) {
-            return p.numerator().equals(BigInteger.ONE) ? ATOM : MUL;
-        }
         return coordinates(p).indexOf('÷') < 0 ? ATOM : MUL;
+    }
+
+    /**
+     * A traction binds as its spelling does, and the spelling is read off the pair rather than off the
+     * string: {@code 0} and {@code ω} are names and bind as tightly as one, a bare power is a power, and a
+     * pair with a real part in front is the product it prints as.
+     */
+    private static int tractionPrecedence(TractionLiteral t) {
+        if (!t.isBare()) {
+            boolean leadingMinus = t.real() instanceof NegationOperationExpr
+                    || t.real() instanceof RationalLiteral r && r.numerator().signum() < 0;
+            return leadingMinus ? POW : MUL;
+        }
+        return RationalLiteral.ONE.equals(t.exponent()) || RationalLiteral.NEG_ONE.equals(t.exponent())
+                ? ATOM
+                : POW;
     }
 }

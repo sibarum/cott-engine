@@ -10,7 +10,6 @@ import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 import sibarum.cott.engine.traction.rule.TractionRules;
 
@@ -37,7 +36,7 @@ import java.util.Optional;
  * reduces the exponent on the next turn, because a rule that finished its own arithmetic would be doing work
  * no derivation could show -- and work that cannot be shown is work that does not happen here.
  *
- * <h2>The projective layer is in the trace too</h2>
+ * <h2>The coordinate layer is in the trace too</h2>
  * The steps that have gone wrong here were coordinate arithmetic, not traction rules — {@code w+w} landing on
  * 1, {@code 0·w} answered by two pairs multiplying before any rule was consulted. A derivation that recorded
  * only the interesting-looking layer would have missed every one of them, so the pairs report themselves as
@@ -46,8 +45,8 @@ import java.util.Optional;
 public final class Deriver {
 
     /** What the coordinates do on their own, which is a model's arithmetic rather than a claim of the theory. */
-    public static final Rule PROJECTIVE =
-            new Rule("the coordinates combine", "projective arithmetic", Rule.Status.PROVEN);
+    public static final Rule COORDINATES =
+            new Rule("the coordinates combine", "coordinate arithmetic", Rule.Status.PROVEN);
 
     /** Reversibility, which COTT asks of an operation before it asks anything else. */
     public static final Rule NEGATION_INVOLUTION =
@@ -93,23 +92,34 @@ public final class Deriver {
      * the real-valued calls, and those belong in the same chain as the algebra rather than in a chain of
      * their own.
      *
-     * <p>A rewrite that returns what it was given is not a step. That is how an open cell reports itself —
-     * {@link TractionRules#STANDS} — and recording it would be both a lie and a loop.
+     * <p>A rewrite that returns what it was given is not a step. That is how an open cell reports itself, and
+     * recording it would be both a lie and a loop.
+     *
+     * <h2>Three phases, and the order is load-bearing</h2>
+     * <ol>
+     * <li><b>The rules that match on a shape</b>, outermost first. A shape can be taken away by a rewrite
+     * inside it: E2 matches {@code Addition(x, Negation(y))}, and reducing {@code Negation(0)} to the pair
+     * {@code (-1, 1)} first leaves an ordinary sum it can never see again. That is why E2 was reaching
+     * tractions and never the four points.</li>
+     * <li><b>The operands.</b> A rule whose operands are not ready declines, they are reduced, and the next
+     * turn tries the shape again -- so trying the shape first only ever costs a failed match.</li>
+     * <li><b>The identities, and what the coordinates can do.</b> Last, because both need their operands
+     * settled to be right. {@code x + 0 = x} is not unconditional -- it does not hold where x is itself at
+     * the point zero's order -- and {@code 2·0 + 0} cannot be told apart from {@code x + 0} until the
+     * {@code 2·0} has become a pair. Running the identity first answered {@code 2·0} there, where
+     * distributivity answers {@code 3·0}.</li>
+     * </ol>
      */
     public static Optional<Rewrite> step(IExpr e) {
-        // OUTERMOST FIRST, and the order is load-bearing. A rule that matches on a shape can have that shape
-        // taken away by a rewrite inside it: E10 matches Addition(x, Negation(y)), and reducing Negation(1) to
-        // the literal -1 first leaves an ordinary sum it can never see again. That is why E10 was reaching
-        // tractions and never the four points -- 0^3 has no coordinate negation to collapse into, and 1 does.
-        //
-        // Descending second is not a compromise. A rule whose operands are not ready declines, the children
-        // are reduced, and the next turn tries the shape again; trying it first only ever costs a failed
-        // match.
-        Optional<Rewrite> mine = here(e).filter(rewrite -> !rewrite.result().equals(e));
-        if (mine.isPresent()) {
-            return mine;
+        Optional<Rewrite> shape = shape(e).filter(rewrite -> !rewrite.result().equals(e));
+        if (shape.isPresent()) {
+            return shape;
         }
-        return inChildren(e);
+        Optional<Rewrite> inside = inChildren(e);
+        if (inside.isPresent()) {
+            return inside;
+        }
+        return settle(e).filter(rewrite -> !rewrite.result().equals(e));
     }
 
     /** The first rewrite available inside {@code e}, with the whole expression rebuilt around it. */
@@ -125,8 +135,14 @@ public final class Deriver {
                     left(p.base(), x -> new ExponentialOperationExpr(x, p.exponent()))
                             .or(() -> left(p.exponent(), x -> new ExponentialOperationExpr(p.base(), x)));
             case TractionLiteral t ->
-                    left(t.base(), x -> new TractionLiteral(x, t.exp()))
-                            .or(() -> left(t.exp(), x -> new TractionLiteral(t.base(), x)));
+                    left(t.real(), x -> new TractionLiteral(x, t.exponent()))
+                            .or(() -> left(t.exponent(), x -> new TractionLiteral(t.real(), x)));
+            // A log's operands were never descended into, which went unnoticed while the only log rules read
+            // literals the parser produces directly. log(-1, 0) is the leap read backwards and the parser
+            // hands it Negation(1), so the cell could not be reached until this case existed.
+            case LogarithmOperationExpr l ->
+                    left(l.operand(), x -> new LogarithmOperationExpr(l.base(), x))
+                            .or(() -> left(l.base(), x -> new LogarithmOperationExpr(x, l.operand())));
             case NegationOperationExpr(IExpr operand) ->
                     left(operand, NegationOperationExpr::new);
             case ReciprocalOperationExpr(IExpr operand) ->
@@ -153,22 +169,20 @@ public final class Deriver {
         return Optional.empty();
     }
 
-    /** A rewrite of this node itself: the traction rules first, then what the coordinates can do. */
-    private static Optional<Rewrite> here(IExpr e) {
+    /**
+     * Phase one: a rule that matches on this node's shape.
+     * <p>
+     * These come before the identities, and the order is not cosmetic. {@code 0 - 0} is both "0 added to
+     * something" and the additive erasure, and the identity reading answers {@code -0} while the erasure
+     * answers 0. The erasure is the more specific match and it is the right one, so it goes first.
+     */
+    private static Optional<Rewrite> shape(IExpr e) {
         return switch (e) {
-            // The rules come before the identities, and the order is not cosmetic. 0 - 0 is both "0 added to
-            // something" and the additive erasure, and the identity reading answers -0 while the erasure
-            // answers 0. The erasure is the more specific match and it is the right one, so it goes first.
-            case MultiplicationOperationExpr(IExpr l, IExpr r) ->
-                    TractionRules.product(l, r)
-                            .or(() -> TractionRules.identity(l, r, true))
-                            .or(() -> projective(l.times(r), e));
-            case AdditionOperationExpr(IExpr l, IExpr r) ->
-                    TractionRules.sum(l, r)
-                            .or(() -> TractionRules.identity(l, r, false))
-                            .or(() -> projective(l.plus(r), e));
+            case MultiplicationOperationExpr(IExpr l, IExpr r) -> TractionRules.product(l, r);
+            case AdditionOperationExpr(IExpr l, IExpr r) -> TractionRules.sum(l, r);
             case ExponentialOperationExpr p -> TractionRules.power(p.base(), p.exponent());
-            case TractionLiteral t -> TractionRules.point(t.base(), t.exp());
+            case sibarum.cott.engine.rational.expr.RationalLiteral r -> TractionRules.zeroCoordinates(r);
+            case TractionLiteral t -> TractionRules.point(t);
             case LogarithmOperationExpr l -> TractionRules.logarithm(l.base(), l.operand());
             // Uncovering an operand from under two negations is not the coordinates combining, and labelling
             // it that way would have put a false reason in a derivation. It is reversibility, which is what
@@ -177,14 +191,35 @@ public final class Deriver {
                     Optional.of(new Rewrite(under, NEGATION_INVOLUTION));
             case ReciprocalOperationExpr(ReciprocalOperationExpr(IExpr under)) ->
                     Optional.of(new Rewrite(under, RECIPROCAL_INVOLUTION));
-            case NegationOperationExpr(IExpr operand) -> projective(operand.negated(), e);
-            case ReciprocalOperationExpr(IExpr operand) -> projective(operand.reciprocal(), e);
+            // The pair's own negation and reciprocal are named rules, not coordinates combining: negation
+            // distributes over the product and the reciprocal is E3. 1÷0 belongs to the same method, because
+            // a rational cannot hold it -- that is E9 being applied, and a derivation should say so.
+            case NegationOperationExpr(IExpr operand) -> TractionRules.negation(operand);
+            case ReciprocalOperationExpr(IExpr operand) -> TractionRules.reciprocal(operand);
+            default -> Optional.empty();
+        };
+    }
+
+    /**
+     * Phase three: the identities, and what the coordinates can do between two settled operands.
+     * <p>
+     * Last of the three, because both need their operands settled. The coordinates cannot combine what is not
+     * yet a literal, and {@code x + 0 = x} has a condition on x that cannot be checked until x is one.
+     */
+    private static Optional<Rewrite> settle(IExpr e) {
+        return switch (e) {
+            case MultiplicationOperationExpr(IExpr l, IExpr r) ->
+                    TractionRules.identity(l, r, true).or(() -> coordinates(l.times(r), e));
+            case AdditionOperationExpr(IExpr l, IExpr r) ->
+                    TractionRules.identity(l, r, false).or(() -> coordinates(l.plus(r), e));
+            case NegationOperationExpr(IExpr operand) -> coordinates(operand.negated(), e);
+            case ReciprocalOperationExpr(IExpr operand) -> coordinates(operand.reciprocal(), e);
             default -> Optional.empty();
         };
     }
 
     /** A coordinate answer, reported only where it actually combined rather than rebuilding the node. */
-    private static Optional<Rewrite> projective(IExpr result, IExpr before) {
-        return result.equals(before) ? Optional.empty() : Optional.of(new Rewrite(result, PROJECTIVE));
+    private static Optional<Rewrite> coordinates(IExpr result, IExpr before) {
+        return result.equals(before) ? Optional.empty() : Optional.of(new Rewrite(result, COORDINATES));
     }
 }

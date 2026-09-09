@@ -9,7 +9,8 @@ import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
+import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -131,10 +132,10 @@ public final class Parser {
             return e;
         }
         IExpr named = switch (c) {
-            case 'ω' -> ProjectiveRationalLiteral.OMEGA;
-            // i was 0^(ω/2), which this carrier cannot hold apart: ω/2 is (1,0)·(1,2) = (1,0) = ω, so that
-            // spelling would say -1. Until the theory gives i a form the coordinates can tell from omega, it
-            // stands as a name rather than being written down wrongly.
+            case 'ω' -> TractionLiteral.OMEGA;
+            // i is 0^(ω÷2), which this carrier CAN hold apart -- ω÷2 is the pair ((1,2), -1) and omega is (1, -1).
+            // What it cannot do is close the square: ω÷2 + ω÷2 is ((2,4), -1), and (2,4) is one at coordinates that
+            // are not one, so 0^(ω÷2)² lands beside 0^ω rather than on it. It needs uniqueness of roots, so i stands.
             case 'i' -> new AtomExpr("i");
             // π and e have no base-0 exponential form and are not derivable here, so they are atoms
             case 'π' -> new AtomExpr("π");
@@ -258,14 +259,14 @@ public final class Parser {
         String text = d.toString();
         int dot = text.indexOf('.');
         if (dot < 0) {
-            return new ProjectiveRationalLiteral(new BigInteger(text), BigInteger.ONE);
+            return new RationalLiteral(new BigInteger(text), BigInteger.ONE);
         }
         String digits = text.replace(".", "");
         if (digits.isEmpty() || text.indexOf('.', dot + 1) >= 0) {
             throw new SyntaxException("Error");
         }
         BigInteger scale = BigInteger.TEN.pow(text.length() - dot - 1);
-        return new ProjectiveRationalLiteral(new BigInteger(digits), scale);
+        return new RationalLiteral(new BigInteger(digits), scale);
     }
 
     private char peek() {

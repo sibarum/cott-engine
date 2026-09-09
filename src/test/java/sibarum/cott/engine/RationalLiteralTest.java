@@ -3,7 +3,8 @@ package sibarum.cott.engine;
 import org.junit.jupiter.api.Test;
 import sibarum.cott.engine.base.expr.IExpr;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.math.BigInteger;
@@ -13,15 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.NEG_ONE;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.OMEGA;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ONE;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ZERO;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.NEG_ONE;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.ONE;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.ZERO;
 
-class ProjectiveRationalLiteralTest {
+class RationalLiteralTest {
 
-    private static ProjectiveRationalLiteral at(int numerator, int denominator) {
-        return ProjectiveRationalLiteral.of(numerator, denominator);
+    private static RationalLiteral at(int numerator, int denominator) {
+        return RationalLiteral.of(numerator, denominator);
     }
 
     @Test
@@ -45,27 +46,21 @@ class ProjectiveRationalLiteralTest {
     }
 
     /**
-     * The sign goes on whichever coordinate can carry it.
+     * The sign goes on the numerator, and there is nowhere else for it to go.
      *
-     * <p>A nonzero numerator carries it. A zero numerator cannot, so the denominator does: -0 is (0,-1), a
-     * different literal from (0,1). Negating the numerator returned the same pair and lost the negation, and
-     * the engine answered -0 = 0 -- which is not what negation is. -0 is 0·(-1), and the product agrees.
+     * <p>The old pair had to put it on the denominator at a zero numerator, so that {@code -0} was
+     * {@code (0,-1)} and not {@code (0,1)}. That job is gone: the rational zero is an exponent or the point
+     * zero's spelling, {@code -0} is {@code -1·0} and lives in the traction pair, and the exponent zero has no
+     * orientation to carry.
      */
     @Test
-    void negationPutsTheSignWhereItFits() {
+    void negationTurnsTheNumerator() {
         assertEquals(NEG_ONE, ONE.negated());
         assertEquals(ONE, NEG_ONE.negated());
-        assertEquals(at(-1, 0), OMEGA.negated());
+        assertEquals(at(-2, 3), at(2, 3).negated());
 
-        assertEquals(at(0, -1), ZERO.negated());
+        assertEquals(ZERO, ZERO.negated());
         assertEquals(ZERO, ZERO.negated().negated());
-        assertEquals(at(0, -1), ZERO.times(NEG_ONE));
-    }
-
-    @Test
-    void zeroAndOmegaAreEachOthersReciprocal() {
-        assertEquals(OMEGA, ZERO.reciprocal());
-        assertEquals(ZERO, OMEGA.reciprocal());
     }
 
     @Test
@@ -75,25 +70,27 @@ class ProjectiveRationalLiteralTest {
         assertEquals(at(1, -1), NEG_ONE.reciprocal());
     }
 
+    /**
+     * {@code 1÷0} is not arithmetic here. Omega is {@code 0^-1}, which the traction pair spells, so the
+     * coordinate layer leaves the term standing and E9 answers it -- in view of the derivation, which is
+     * where an axiom being applied belongs.
+     */
+    @Test
+    void theReciprocalOfZeroStandsForE9() {
+        assertInstanceOf(ReciprocalOperationExpr.class, ZERO.reciprocal());
+        assertEquals(TractionLiteral.OMEGA, ZERO.reciprocal().simplify());
+    }
+
+    /** There is no {@code (0,0)}, and no rewrite of it to one: a zero denominator is not a rational. */
+    @Test
+    void aZeroDenominatorIsNotARational() {
+        assertThrows(IllegalArgumentException.class, () -> at(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> at(0, 0));
+    }
+
     @Test
     void multiplicationMultipliesBothCoordinates() {
         assertEquals(at(10, 21), at(2, 3).times(at(5, 7)));
-    }
-
-    @Test
-    void zeroOverZeroIsOne() {
-        assertEquals(ONE, at(0, 0));
-    }
-
-    @Test
-    void zeroTimesOmegaIsOne() {
-        assertEquals(ONE, ZERO.times(OMEGA));
-    }
-
-    @Test
-    void dividingZeroByItselfIsOne() {
-        assertEquals(ONE, ZERO.dividedBy(ZERO));
-        assertEquals(ONE, ONE.dividedBy(ONE));
     }
 
     @Test
@@ -120,30 +117,22 @@ class ProjectiveRationalLiteralTest {
     }
 
     @Test
-    void omegaSharesZerosShadow() {
-        assertEquals(ZERO.evaluate(), OMEGA.evaluate());
-        assertEquals(Optional.of(0.0), OMEGA.evaluate());
-        assertEquals(Optional.of(0.0), at(-1, 0).evaluate());
-    }
-
-    @Test
     void aLiteralIsAlreadySimplified() {
         assertSame(ONE, ONE.simplify());
     }
 
     @Test
     void anOperationWithSomethingElseStandsAsANode() {
-        TractionLiteral traction = new TractionLiteral(ZERO, ONE);
-        assertInstanceOf(AdditionOperationExpr.class, ONE.plus(traction));
+        assertInstanceOf(AdditionOperationExpr.class, ONE.plus(TractionLiteral.of(at(2, 1))));
     }
 
     @Test
     void coordinatesOutgrowAFixedWidthWithoutWrapping() {
         BigInteger huge = BigInteger.valueOf(Long.MAX_VALUE);
-        ProjectiveRationalLiteral value = new ProjectiveRationalLiteral(huge, huge);
+        RationalLiteral value = new RationalLiteral(huge, huge);
         IExpr squared = value.times(value);
 
-        assertEquals(new ProjectiveRationalLiteral(huge.multiply(huge), huge.multiply(huge)), squared);
+        assertEquals(new RationalLiteral(huge.multiply(huge), huge.multiply(huge)), squared);
         assertEquals(Optional.of(1.0), squared.evaluate());
     }
 
@@ -155,14 +144,15 @@ class ProjectiveRationalLiteralTest {
         }
 
         assertEquals(Optional.of(0.0), sum.evaluate());
-        assertInstanceOf(ProjectiveRationalLiteral.class, sum);
-        assertEquals(0, ((ProjectiveRationalLiteral) sum).numerator().signum());
+        assertInstanceOf(RationalLiteral.class, sum);
+        assertEquals(0, ((RationalLiteral) sum).numerator().signum());
     }
 
     @Test
     void aShadowIsReadOffTheCoordinatesAndNotOffTheirDoubles() {
         BigInteger tenToThe400 = BigInteger.TEN.pow(400);
-        assertEquals(Optional.of(1.0), new ProjectiveRationalLiteral(tenToThe400, tenToThe400).evaluate());
-        assertEquals(Optional.of(0.5), new ProjectiveRationalLiteral(tenToThe400, tenToThe400.multiply(BigInteger.TWO)).evaluate());
+        assertEquals(Optional.of(1.0), new RationalLiteral(tenToThe400, tenToThe400).evaluate());
+        assertEquals(Optional.of(0.5),
+                new RationalLiteral(tenToThe400, tenToThe400.multiply(BigInteger.TWO)).evaluate());
     }
 }

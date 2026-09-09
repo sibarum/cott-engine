@@ -161,9 +161,12 @@ class RealTest {
         // than as the reduced fraction the old carrier turned it into.
         assertEquals("2.5", ev("2.5"));
         assertEquals("1÷3", ev("1÷3"));
-        // 1÷2w is omega, not half of it: (1,2)·(1,0) = (1,0). Halving omega does not move it, because a zero
-        // denominator absorbs the factor. The same collapse is why i has no coordinate form -- see Parser.
-        assertEquals("ω", ev("1÷2w"));
+        // 1÷2w is HALF of omega now, and the pair says which half: ((1,2), -1). It used to be omega itself,
+        // because omega was the coordinate pair (1,0) and a zero denominator absorbed the factor -- so
+        // halving omega did not move it. Omega is 0^-1 here and the real part holds the 1÷2, which is also
+        // what makes 0^(w÷2) spellable; see Parser on i.
+        assertEquals("1÷2ω", ev("1÷2w"));
+        assertEquals("1÷2ω", ev(ev("1÷2w")));
     }
 
     /**

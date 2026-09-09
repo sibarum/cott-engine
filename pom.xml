@@ -10,10 +10,10 @@
 
     <name>cott-engine</name>
     <description>
-        Traction Theory as a direct evaluator. A value is a pair of projective coordinates kept
-        exactly as it arises, and a traction is a base raised to an exponent that is itself an
-        expression. Pure Java: no subprocess, no native code, no reflection, so it is GraalVM
-        native-image friendly and testable without a toolchain.
+        Traction Theory as a direct evaluator. A value is the traction pair n·0^t, a real part and
+        a traction part, whose coordinates are non-reducing rationals with no zero denominator and
+        may be expressions where a term has not resolved. Pure Java: no subprocess, no native code,
+        no reflection, so it is GraalVM native-image friendly and testable without a toolchain.
     </description>
 
     <properties>

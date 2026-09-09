@@ -2,26 +2,53 @@
 
 Traction Theory as a direct evaluator. Pure Java: no subprocess, no native code, no reflection.
 
-**This repository is mid-rewrite.** The carrier, the term language and the evaluator have been
-deleted and are being replaced. The syntax layer survives and still needs retargeting. It does
-not currently compile. See [docs/IMPLEMENTATION-PLAN.md](docs/IMPLEMENTATION-PLAN.md).
+The carrier is the traction pair of [docs/Traction-Theory.md](docs/Traction-Theory.md): a value is
+`n·0^t`, a real part and a traction part. `mvn test` is 187 green.
 
-## What changed and why
+## What the carrier is
 
-The previous engine represented a value as `pt(k, xp(grade, twist, torsion))` — a multiplicity
-over a three-slot exponent, with both slots closed in their canonical constructors. Two of those
-decisions turned out to be load-bearing in the wrong direction:
+```
+1 = (1,  0)      0 = (1,  1)      ω = (1, -1)      -1 = (-1, 0)
+```
 
-- **Rationals reduced.** The torsion slot existed only to work around it: `0/2` is a root of the
-  residue zero, but as a reduced rational it collapses to plain `0`, so it needed a slot of its
-  own. A non-reducing coordinate pair makes `(0,2)` and `(0,1)` different objects and deletes the
-  slot and its machinery outright.
-- **The exponent was bounded.** An exponent that fell outside the triple was "not merely
-  unreduced, it is unrepresentable." But `0·x = 0^(1+u)` puts arbitrary traction values in
-  exponents, so exponents have to nest.
+A real part and an exponent, both of them **expressions** rather than coordinates. Two things force
+that. The exponent has to nest — `0^(0^2)` is a term, and `0^(1+ω)` stands — and a term the theory
+has not resolved has to be *representable*: `-1·0` is the pair `(-1, 1)` and there is no rule for
+it, which a closed two-coordinate carrier could not express, because it would have to give that
+pair some value.
 
-The replacement carrier is a projective rational — a numerator/denominator pair kept exactly as
-it arises, never reduced — with a traction being a `base^exponent` pair over expressions.
+The coordinates are ordinary rationals, kept exactly as they arise and never reduced, and **a
+denominator is never zero**. That last one is the whole difference from the carrier before this
+one. Omega used to live in the coordinates as `(1, 0)`, because a coordinate pair was the only
+thing that could hold `1÷0`; it does not need to, since `ω` is `0^-1` and the pair spells that
+directly. What that bought:
+
+- **`ω+ω` is `2ω`** and **`(-1)·(-1)` is `1`**. Both used to break on cross-multiplication across a
+  zero denominator, which is the defect `docs/QUICK-REFERENCE.md` records as having bitten hardest.
+- **`ω÷2` is half of omega.** It used to be omega — a zero denominator absorbed the factor — which
+  is also why `i = 0^(ω÷2)` had no form. It has one now; what it still lacks is uniqueness of roots.
+- **`-0` stops being a literal.** It is `-1·0`, the pair `(-1, 1)`, and the sign lives in the real
+  coordinate rather than on a denominator. The three-way disagreement about `-0` is down to one
+  answer: the product, unresolved.
+- **`2·0` keeps the 2.** A rational zero annihilates and a real part therefore may not be one; where
+  a zero arrives there it rolls into the exponent, so `0·0^2` is `0^3`.
+
+## What the engine answers
+
+Every rewrite carries the rule that licensed it and that rule's status, so an answer can be asked
+whether it depends on anything the theory has not settled:
+
+```
+0·ω     => 1              proven — the multiplicative erasure, discharged
+0-1     => -1             proven
+2·0+0   => 3·0            proven — distributivity, not the identity
+0^2-0^3 => 0^(2÷3)        E2
+w^w     => 1              the unit exponentiation table  [CHOSEN]
+log(-1, 0) => ω           the unit logarithm table  [CHOSEN]
+-1·0    => -0             stands: no rule, and the conjecture -1·0 = ω is refuted in TractionRules
+0^(0^2) => 0^(0^2)        stands: the general involution is problem 4
+2^0     => 2^0            stands: x^0 is a 4-cycle on the four points and reaches nothing else
+```
 
 ## The theory
 
@@ -30,22 +57,21 @@ operations. The docs are the specification, and they are honest about status —
 filed as Proven, Chosen, Maybe, or False, and the open problems are listed rather than papered
 over.
 
+- [Traction-Theory.md](docs/Traction-Theory.md) — the statement of the theory this engine implements
+- [QUICK-REFERENCE.md](docs/QUICK-REFERENCE.md) — every rule with its status, and the ledger
+- [REVIEW.md](docs/REVIEW.md) — an outside reading, and the model behind it
 - [what-is-traction.md](docs/what-is-traction.md) — the theory, and what omega is
 - [what-is-a-supertype.md](docs/what-is-a-supertype.md) — why the carrier is subtracted from, not built up
 - [notation-and-terminology.md](docs/notation-and-terminology.md) — erasure, universal invariance, the relations
 - [equivalence-classes.md](docs/equivalence-classes.md) — the primitives, and every claim with its proof and status
-- [rule-combinations.md](docs/rule-combinations.md) — the full operation table; this is the spec for `simplify()`
+- [rule-combinations.md](docs/rule-combinations.md) — the operation table
 - [derivations.md](docs/derivations.md) — worked derivations
 - [theory-problems.md](docs/theory-problems.md) — what is open, and what each open question blocks
 
-The central unresolved term is `0·w`. It is the one product with zero whose exponent sum is an
-erasure, and `0^(0w)` is the same question wearing different clothes.
-
-The power law `(0^u)^v = 0^(uv)` was withdrawn on 2026-09-05, keeping E10 and total subtraction
-instead — the branch the author's ℚ model satisfies, and so the branch known to be consistent.
-What survives is the integer case, which is a theorem of E1 rather than a law of its own. The
-cost is that `x^v` has no rule at non-integer `v`, and that `1^w`, `(-1)^0` and `x^0` are no
-longer the same question as `0·w`.
+Four things in `Traction-Theory.md` are not wired, and
+[docs/IMPLEMENTATION-PLAN.md](docs/IMPLEMENTATION-PLAN.md) says why: the traction addition law, the
+general involution, the carrier's negation rule (which contradicts the doc's own four-unit table),
+and `-1·0`.
 
 ## Build
 

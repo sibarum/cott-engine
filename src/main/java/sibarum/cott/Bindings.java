@@ -395,7 +395,7 @@ public final class Bindings {
             case LogarithmOperationExpr l ->
                     new LogarithmOperationExpr(expand(l.base(), args, depth), expand(l.operand(), args, depth));
             case TractionLiteral t ->
-                    new TractionLiteral(expand(t.base(), args, depth), expand(t.exp(), args, depth));
+                    new TractionLiteral(expand(t.real(), args, depth), expand(t.exponent(), args, depth));
             case CallExpr c -> call(c, args, depth);
             default -> v;
         };

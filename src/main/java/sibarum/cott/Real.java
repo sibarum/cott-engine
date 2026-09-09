@@ -1,6 +1,6 @@
 package sibarum.cott;
 
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * The real-valued functions, and the one place in this engine that approximates.
  *
  * <h2>Why they are a catalogue and not terms</h2>
- * Everything else here is exact: a value is a pair of projective coordinates, an exponent is an expression, and a term
+ * Everything else here is exact: a value is a rational coordinate or a traction pair, an exponent is an expression, and a term
  * with no definite answer stands rather than being rounded into one. Trigonometry has no such reading — there is
  * no base-0 exponential form for {@code sin}, the same reason π and e are atoms — so these are not
  * theory, they are a table of functions the keypad can reach. Keeping them in one enum rather than scattering
@@ -142,7 +142,7 @@ public enum Real {
      * function declines to reduce, the same way every other unanswerable question here leaves its term
      * standing.
      */
-    ProjectiveRationalLiteral apply(List<Double> args) {
+    RationalLiteral apply(List<Double> args) {
         if (args.size() != arity) {
             return null;
         }
@@ -157,7 +157,7 @@ public enum Real {
         // A BigDecimal is a scaled integer, so unscaling it is exactly the fraction it stands for -- no
         // second rounding, and nothing here has to know how a decimal string is spelled.
         return rounded.scale() <= 0
-                ? new ProjectiveRationalLiteral(rounded.toBigIntegerExact(), BigInteger.ONE)
-                : new ProjectiveRationalLiteral(rounded.unscaledValue(), BigInteger.TEN.pow(rounded.scale()));
+                ? new RationalLiteral(rounded.toBigIntegerExact(), BigInteger.ONE)
+                : new RationalLiteral(rounded.unscaledValue(), BigInteger.TEN.pow(rounded.scale()));
     }
 }

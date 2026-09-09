@@ -258,6 +258,89 @@ missed all three.
     = 8            the coordinates combine
 ```
 
+### Phase 5 — the Traction-Theory carrier
+
+`docs/Traction-Theory.md` states the theory with a carrier of its own: a traction is `(n, t) = n·0^t`,
+a real part and a traction part, with four total operations given in closed form. This phase is that
+carrier, in place of the `base^exponent` pair over a projective rational.
+
+**What moved.** `ProjectiveRationalLiteral` became `RationalLiteral` — an ordinary non-reducing
+rational whose **denominator is never zero**; `TractionLiteral(base, exp)` became
+`TractionLiteral(real, exponent)` with the base fixed at zero; `TractionRules` was rewritten one
+method per operation, plus the two unit tables; the syntax layer was retargeted at both. 187 green.
+
+**The zero denominator was the whole of it.** Omega lived in the coordinates as `(1, 0)` only because
+a coordinate pair was the only thing in the carrier that could hold `1÷0`. It does not need to be
+there — `ω` is `0^-1`, which the traction pair spells — and `1÷0` becomes E9, an axiom applied in
+view of a derivation rather than arithmetic done under one. Four things the docs record as defects
+went with it:
+
+- `ω+ω` is `2ω` and `(-1)·(-1)` is `1` without either being special-cased. There is no
+  cross-multiplication across a zero denominator because there is no zero denominator.
+- `ω÷2` is half of omega. `1÷2w` used to answer `ω`, since the zero denominator absorbed the factor;
+  `i = 0^(ω÷2)` is therefore spellable now, and what it still needs is uniqueness of roots — its
+  square lands on `0^((2÷4)ω)`, beside `0^ω` rather than on it.
+- `-0` is not a literal. It is `-1·0`, the pair `(-1, 1)`, so the sign lives in the real coordinate
+  instead of on a denominator, and negation is an involution on the pair without the leap. The
+  three-way disagreement about `-0` collapses to one answer: the product, with no rule for it.
+- `2·0` keeps the 2. A rational zero annihilates, so a real part may not be one; a zero arriving
+  there rolls into the exponent, and `0·0^2` is `0^3`. Without that, dividing by zero proves 2 = 1.
+
+**Four things in the doc are not wired, and three of them disagree with the doc's own other pages.**
+
+*The carrier's negation, `-(a, b) = (a, b-1)`.* It sends `1` to `1·0^-1`, which is `ω`, against the
+four-unit table's `-1 = (-1, 0)`. The traction form beside it, `a·0^(b+ω)`, is a third answer. What
+is wired is the table's: negation turns the real coordinate, which follows from negation
+distributing over a product and needs neither the leap nor an ω in the exponent.
+
+*The traction addition law.* Left out at the author's instruction, and it would not have gone in
+as it stands: it needs the general involution and a power rule in the ω-direction that the theory
+does not have, and it disagrees with the theory at four edges. `0 + 1` is 2, where the axis
+restriction says that sum stands. `a^d` at `d = 0` must read 1 for `1 + 1` to be 2, against the
+cycle's `1^0 = ω`. At `b = d` it gives `ω + ω = 2·0` where distributivity gives `2ω`. And on two
+bare powers it gives `2·0^(bd)`, where the older docs' Maybe law gives `0^(bd)`. All four turn on
+the real part 0 doing two jobs — `(a+c)` reads that slot as the number zero and `a^d` reads it as ∅
+— and each reading fixes one edge and breaks another. What answers a sum instead is distributivity
+where the two terms are alike, and the identity otherwise.
+
+*The general involution, `0^(0^n) = n`.* Stated in the doc as E6 being involutive generally. On the
+four points the tables have it and there it is forced; off them it is problem 4, so it is
+`provisionalInvolution` and `2^3` still stands rather than becoming a traction.
+
+*`-1·0 = ω`.* Conjectured, and refuted from the primitives: with E1 and the leap it makes `ω = -2`
+as an exponent, then `-1 = 0^-2` whose reciprocal is `0^2`, and `-1` is its own reciprocal, so
+`0^2 = 0^-2` and E6 gives `2 = -2`. Recorded as `provisionalMinusZero` with that derivation, and the
+pair stands.
+
+**What the tables added.** The unit exponentiation and logarithm tables are new — sixteen cells each,
+filed Chosen. They subsume the `x^0` cycle, and they wire two cells the engine previously left
+standing: `log(-1, 0) = ω`, and the leap under a real part. The second was necessary rather than
+optional: `0^ω · 0^ω` carries the real part in by E1 before the fold can see the term, so a fold
+that only matched a bare pair let the square of minus one stand.
+
+**Three defects this phase found in the engine rather than in the theory.**
+
+*The identity ran too early.* `x + 0 = x` fired before its operand had settled, so `2·0 + 0`
+answered `2·0` where distributivity answers `3·0`. The fix is a third phase in the driver: shape
+rules, then the operands, then the identities and the coordinates. The identity also gained the
+condition REVIEW.md's P1-1 asks for — it does not apply where x is itself at the point zero's order,
+which is what leaves `0 + 0 = 2·0` to distributivity.
+
+*A log's operands were never reduced.* `inChildren` had no case for it, which went unnoticed while
+every log rule read a literal the parser produces directly. `log(-1, 0)` arrives as
+`log(Negation(1), 0)`, so the cell could not be reached until the case existed.
+
+*Two spellings of the same value.* A zero numerator away from `(0, 1)` — `1 + 1÷(-1)` lands on
+`(0, -1)` — is a multiple of the point zero and belongs in the pair, so `0÷d` is now `(1÷d)·0`.
+Without it the display did not round-trip: it printed `0÷-1` and re-read it as `1÷-1·0`. The
+converse case is the one to leave alone: `2÷2` stays `(2,2)`, one at coordinates that are not one,
+because that is the same fact the exponent erasure is read off the term to avoid.
+
+**Checked by 187 tests and by a stability sweep**: 82 expressions, each answer re-entered and
+required to answer itself. That is the invariant the printer exists for — the result of one
+evaluation is the entry for the next — and it is stricter than the round-trip test, which does not
+simplify what it re-reads.
+
 ### What this plan deliberately does not do
 
 It does not resolve `0·w`, supply a power rule off the integers, choose between the Maybe

@@ -6,29 +6,29 @@ import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.OMEGA;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ONE;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ZERO;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.NEG_ONE;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.ONE;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.ZERO;
 
 class OperationExprTest {
 
     /**
-     * Stands in for anything the projective layer cannot combine with.
+     * Stands in for anything the coordinate layer cannot combine with.
      *
      * <p>0^2 and not 0^1: the latter is the point zero by E4, and now that the fold is a rewrite of its own
      * rather than something a rule did on its way past, it is no longer opaque to anything.
      */
-    private static final TractionLiteral OPAQUE = new TractionLiteral(ZERO, ProjectiveRationalLiteral.of(2, 1));
+    private static final TractionLiteral OPAQUE = TractionLiteral.of(RationalLiteral.of(2, 1));
 
-    private static ProjectiveRationalLiteral at(int numerator, int denominator) {
-        return ProjectiveRationalLiteral.of(numerator, denominator);
+    private static RationalLiteral at(int numerator, int denominator) {
+        return RationalLiteral.of(numerator, denominator);
     }
 
     @Test
@@ -68,7 +68,7 @@ class OperationExprTest {
 
     @Test
     void theReciprocalOfZeroSimplifiesToOmega() {
-        assertEquals(OMEGA, new ReciprocalOperationExpr(ZERO).simplify());
+        assertEquals(TractionLiteral.OMEGA, new ReciprocalOperationExpr(ZERO).simplify());
     }
 
     @Test
@@ -79,12 +79,20 @@ class OperationExprTest {
         assertEquals(1.0 / 6.0, new MultiplicationOperationExpr(at(1, 2), at(1, 3)).evaluate().orElseThrow(), 1e-12);
     }
 
+    /**
+     * A rational has a shadow and a traction has none, so a sum with one in it has none either.
+     *
+     * <p>Omega used to have zero's shadow, because it used to be a coordinate pair and the projection had to
+     * send it somewhere on the real line. It is {@code 0^-1} now, and a power of zero is not a real: the
+     * projection of {@code 0^t} is zero as t climbs and nothing finite as it descends. REVIEW.md's P1-9 says
+     * the same thing from the other end -- omega does not share zero's shadow, and what it shares with zero
+     * is the reciprocal symmetry.
+     */
     @Test
-    void evaluateIsEmptyOnlyWhereThereIsNoProjectionAtAll() {
+    void aTractionHasNoRealReading() {
         assertEquals(Optional.empty(), new AdditionOperationExpr(ONE, OPAQUE).evaluate());
-        // 1 + w stands, so its shadow is 1 + w's shadow, which is 1. It used to be 0, because the sum
-        // collapsed to omega first and took the 1 with it.
-        assertEquals(Optional.of(1.0), new AdditionOperationExpr(ONE, OMEGA).evaluate());
-        assertEquals(Optional.of(0.0), new ReciprocalOperationExpr(ZERO).evaluate());
+        assertEquals(Optional.empty(), new AdditionOperationExpr(ONE, TractionLiteral.OMEGA).evaluate());
+        assertEquals(Optional.empty(), new ReciprocalOperationExpr(ZERO).evaluate());
+        assertEquals(Optional.of(0.0), ZERO.evaluate());
     }
 }

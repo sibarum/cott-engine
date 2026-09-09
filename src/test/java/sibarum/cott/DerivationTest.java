@@ -71,7 +71,7 @@ class DerivationTest {
         // E1 fires, and then the exponent sum it built is reduced -- two steps, both visible, which is the
         // point of the rules no longer doing their own arithmetic behind the derivation's back.
         assertTrue(d.steps().stream().anyMatch(s -> s.rule().equals(TractionRules.PRODUCT)));
-        assertEquals(Deriver.PROJECTIVE, d.steps().getLast().rule());
+        assertEquals(Deriver.COORDINATES, d.steps().getLast().rule());
     }
 
     /**
@@ -103,7 +103,7 @@ class DerivationTest {
     }
 
     /**
-     * The projective layer is in the trace. Every bug found in this engine so far has been coordinate
+     * The coordinate layer is in the trace. Every bug found in this engine so far has been coordinate
      * arithmetic rather than a traction rule, and a derivation that recorded only the interesting-looking
      * layer would have missed all of them.
      */
@@ -111,16 +111,33 @@ class DerivationTest {
     void theCoordinatesReportThemselves() {
         Derivation d = of("w+w");
         assertEquals("2ω", Render.show(d.to()));
-        assertEquals(1, d.steps().size());
-        assertSame(Deriver.PROJECTIVE, d.steps().getFirst().rule());
+        // Two steps: distributivity puts the real parts together, and then the coordinates add them. The rule
+        // builds 1+1 rather than 2, so the arithmetic is a step of its own and visible as one.
+        assertEquals(2, d.steps().size());
+        assertSame(TractionRules.LIKE_TERMS, d.steps().getFirst().rule());
+        assertSame(Deriver.COORDINATES, d.steps().getLast().rule());
     }
 
-    /** The unwired rules carry the status that keeps them unwired. */
+    /**
+     * The unwired rules carry the status that keeps them unwired, and the wired ones carry theirs.
+     *
+     * <p>Traction-Theory.md's addition law is Open rather than Maybe: it needs the general involution, it
+     * needs a power rule the theory does not have in the ω-direction, and it disagrees with the rest of the
+     * theory at four edges. Negation is Proven now, because turning the real coordinate does not need the
+     * leap; the leap itself and both unit tables are Chosen, so any answer that folds {@code 0^ω} says so.
+     */
     @Test
     void theProvisionalRulesDeclareWhatTheyAre() {
-        assertEquals(Rule.Status.MAYBE, TractionRules.ADDITION_LAW.status());
-        assertEquals(Rule.Status.CHOSEN, TractionRules.NEGATION.status());
-        assertEquals(Rule.Status.CHOSEN, TractionRules.MINUS_ONE.status());
+        assertEquals(Rule.Status.OPEN, TractionRules.ADDITION_LAW.status());
+        assertEquals(Rule.Status.OPEN, TractionRules.INVOLUTION.status());
+        assertEquals(Rule.Status.OPEN, TractionRules.MINUS_ZERO.status());
+
+        assertEquals(Rule.Status.CHOSEN, TractionRules.LEAP.status());
+        assertEquals(Rule.Status.CHOSEN, TractionRules.UNIT_POWER.status());
+        assertEquals(Rule.Status.CHOSEN, TractionRules.UNIT_LOG.status());
+
         assertTrue(TractionRules.PRODUCT.isProven());
+        assertTrue(TractionRules.NEGATION.isProven());
+        assertTrue(TractionRules.OMEGA_DEF.isProven());
     }
 }

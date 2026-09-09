@@ -71,7 +71,7 @@ operator** `E : T → T`, written `E(a) = 0^a`. Then:
 
 ```
 E1    E(a + b) = E(a) · E(b)         E is a homomorphism (T,+) → (T,·)
-E10   E(a ÷ b) = E(a) − E(b)         and carries ÷ to −
+E2    E(a ÷ b) = E(a) − E(b)         and carries ÷ to −
 E3    E(−a) = 1 / E(a)
 E4    E(1) = 0
 E5    E(0) = 1
@@ -80,6 +80,8 @@ E7    E maps {0, 1, -1, ω} onto itself
 E8    log_0 = E⁻¹
 E9    ω := 1/0
 ```
+
+# TODO: Refactor E10 --> E2.
 
 **E1 and E10 together are the substance.** `E` carries addition to multiplication and division to
 subtraction — it exchanges the additive and multiplicative structure in both directions. E4 and E5 say `E`

@@ -2,10 +2,10 @@ import sibarum.cott.*;
 import sibarum.cott.engine.base.expr.*;
 import sibarum.cott.engine.operation.binary.*;
 import sibarum.cott.engine.operation.unary.*;
-import sibarum.cott.engine.projective.expr.*;
+import sibarum.cott.engine.rational.expr.*;
 import sibarum.cott.engine.traction.expr.*;
 import sibarum.cott.engine.derivation.*;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.*;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.*;
 /** Type an expression the way the display would. */
 String ev(String entry) { return Cott.evaluate(entry); }
 /** What it parses to, before anything answers it. */

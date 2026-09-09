@@ -4,8 +4,9 @@ import org.junit.jupiter.api.Test;
 import sibarum.cott.engine.base.expr.IExpr;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
-import sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral;
-import sibarum.cott.engine.traction.expr.ProjRationalToTractionPromotionRule;
+import sibarum.cott.engine.operation.unary.NegationOperationExpr;
+import sibarum.cott.engine.rational.expr.RationalLiteral;
+import sibarum.cott.engine.traction.expr.RationalToTractionPromotionRule;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.util.Optional;
@@ -14,21 +15,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ONE;
-import static sibarum.cott.engine.projective.expr.ProjectiveRationalLiteral.ZERO;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.NEG_ONE;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.ONE;
+import static sibarum.cott.engine.rational.expr.RationalLiteral.ZERO;
 
 class TractionLiteralTest {
 
-    private static ProjectiveRationalLiteral at(int numerator, int denominator) {
-        return ProjectiveRationalLiteral.of(numerator, denominator);
+    private static RationalLiteral at(int numerator, int denominator) {
+        return RationalLiteral.of(numerator, denominator);
     }
 
     @Test
     void anExponentCanBeATraction() {
-        TractionLiteral zeroSquared = new TractionLiteral(ZERO, at(2, 1));
-        TractionLiteral nested = new TractionLiteral(ZERO, zeroSquared);
+        TractionLiteral zeroSquared = TractionLiteral.of(at(2, 1));
+        TractionLiteral nested = TractionLiteral.of(zeroSquared);
 
-        assertEquals(zeroSquared, nested.exp());
+        assertEquals(zeroSquared, nested.exponent());
         assertSame(nested, nested.simplify());
     }
 
@@ -37,14 +39,14 @@ class TractionLiteralTest {
     void anExponentCanBeAnyExpression() {
         IExpr sum = new AdditionOperationExpr(ONE, ZERO);
         // The exponent 1+0 is 1, since 0 is invariant under addition, and 0^1 is then the point zero by E4.
-        assertEquals(ZERO, new TractionLiteral(ZERO, sum).simplify());
-        assertEquals(new TractionLiteral(ZERO, at(2, 1)),
-                new TractionLiteral(ZERO, new AdditionOperationExpr(ONE, ONE)).simplify());
+        assertEquals(ZERO, TractionLiteral.of(sum).simplify());
+        assertEquals(TractionLiteral.of(at(2, 1)),
+                TractionLiteral.of(new AdditionOperationExpr(ONE, ONE)).simplify());
     }
 
     @Test
     void thePartsSimplifyButNoRuleFiresBetweenThem() {
-        TractionLiteral traction = new TractionLiteral(ZERO, new TractionLiteral(ZERO, at(2, 1)));
+        TractionLiteral traction = TractionLiteral.of(TractionLiteral.of(at(2, 1)));
 
         assertEquals(traction, traction.simplify());
         assertEquals(traction.simplify(), traction.simplify().simplify());
@@ -54,22 +56,62 @@ class TractionLiteralTest {
     /**
      * {@code 0^1 · 0^-1} is the multiplicative erasure and discharges to 1.
      *
-     * <p>This test has been rewritten twice, which is the interesting part. It was {@code 0^1 · 0^1}, chosen
-     * in phase 1 because nothing could answer it, until E1 could. Then it was this product, standing, because
-     * Problem 1 was open. Now w is 1÷0 and the product is a value times its own reciprocal.
+     * <p>This test has been rewritten three times, which is the interesting part. It was {@code 0^1 · 0^1},
+     * chosen in phase 1 because nothing could answer it, until E1 could. Then it was this product, standing,
+     * because Problem 1 was open. Then w became 1÷0 and the product became a value times its own reciprocal.
+     * It reads the same in this carrier, where w is the pair {@code (1, -1)} rather than a coordinate.
      */
     @Test
     void anOperationTheTheoryHasSinceSettled() {
-        IExpr product = new TractionLiteral(ZERO, ONE).times(new TractionLiteral(ZERO, at(-1, 1)));
+        IExpr product = TractionLiteral.of(ONE).times(TractionLiteral.OMEGA);
         assertEquals(ONE, product.simplify());
     }
 
+    /**
+     * The two multiplicative units, as the pair holds them: {@code (1,1)} folds to the point zero and
+     * {@code (1,-1)} IS omega and stays where it is.
+     */
     @Test
-    void promotionReadsARationalAsATractionAtTheFirstPower() {
-        ProjRationalToTractionPromotionRule rule = new ProjRationalToTractionPromotionRule();
+    void thePointsThePairHolds() {
+        assertEquals(ZERO, TractionLiteral.of(ONE).simplify());
+        assertSame(TractionLiteral.OMEGA, TractionLiteral.OMEGA.simplify());
+        assertEquals(NEG_ONE, TractionLiteral.of(TractionLiteral.OMEGA).simplify());   // 0^ω = -1, the leap
+    }
+
+    /**
+     * {@code -0} is the pair {@code (-1, 1)}, and it stands.
+     *
+     * <p>It is {@code -1·0} and the theory has not resolved what that product is, so no rule reduces it and
+     * it is not one of the four units. Notably it is not the point zero -- a carrier that answered
+     * {@code -0 = 0} would be saying negation does nothing there -- and not omega either, which
+     * {@code TractionRules.provisionalMinusZero} records along with what refutes it.
+     */
+    @Test
+    void minusZeroIsAProductThatStands() {
+        TractionLiteral minusZero = new TractionLiteral(NEG_ONE, ONE);
+
+        assertSame(minusZero, minusZero.simplify());
+        assertEquals(minusZero, new MultiplicationOperationExpr(NEG_ONE, ZERO).simplify());
+        // and the negation node lifts it: the literal has no sign to turn, so E4 has to be used first.
+        assertEquals(minusZero, new NegationOperationExpr(ZERO).simplify());
+    }
+
+    /**
+     * A real part that arrives as the rational zero rolls into the exponent, because a zero there would be an
+     * annihilator: {@code 0·0^2} is {@code 0^3} and not "zero, having lost its exponent".
+     */
+    @Test
+    void aZeroRealPartRollsIntoTheExponent() {
+        assertEquals(TractionLiteral.of(at(3, 1)), new TractionLiteral(ZERO, at(2, 1)).simplify());
+        assertEquals(TractionLiteral.of(at(2, 1)), new MultiplicationOperationExpr(ZERO, ZERO).simplify());
+    }
+
+    @Test
+    void promotionReadsARationalAsATractionAtTheZeroPower() {
+        RationalToTractionPromotionRule rule = new RationalToTractionPromotionRule();
 
         assertTrue(rule.isApplicableFor(at(2, 3)));
-        assertFalse(rule.isApplicableFor(new TractionLiteral(ZERO, ONE)));
-        assertEquals(new TractionLiteral(at(2, 3), ONE), rule.apply(at(2, 3)));
+        assertFalse(rule.isApplicableFor(TractionLiteral.of(ONE)));
+        assertEquals(new TractionLiteral(at(2, 3), ZERO), rule.apply(at(2, 3)));
     }
 }
