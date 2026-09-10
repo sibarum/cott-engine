@@ -80,7 +80,7 @@ class DerivationTest {
      */
     @Test
     void anApproximationIsDeclared() {
-        Derivation d = of("sin(0)+1");
+        Derivation d = of("cos(0)");
         assertEquals("1", Render.show(d.to()));
         assertFalse(d.isProven());
         assertEquals(1, d.assumptions().size());

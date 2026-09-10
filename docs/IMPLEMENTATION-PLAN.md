@@ -267,7 +267,7 @@ carrier, in place of the `base^exponent` pair over a projective rational.
 **What moved.** `ProjectiveRationalLiteral` became `RationalLiteral` — an ordinary non-reducing
 rational whose **denominator is never zero**; `TractionLiteral(base, exp)` became
 `TractionLiteral(real, exponent)` with the base fixed at zero; `TractionRules` was rewritten one
-method per operation, plus the two unit tables; the syntax layer was retargeted at both. 187 green.
+method per operation, plus the two unit tables; the syntax layer was retargeted at both. 196 green.
 
 **The zero denominator was the whole of it.** Omega lived in the coordinates as `(1, 0)` only because
 a coordinate pair was the only thing in the carrier that could hold `1÷0`. It does not need to be
@@ -283,25 +283,54 @@ went with it:
 - `-0` is not a literal. It is `-1·0`, the pair `(-1, 1)`, so the sign lives in the real coordinate
   instead of on a denominator, and negation is an involution on the pair without the leap. The
   three-way disagreement about `-0` collapses to one answer: the product, with no rule for it.
-- `2·0` keeps the 2. A rational zero annihilates, so a real part may not be one; a zero arriving
-  there rolls into the exponent, and `0·0^2` is `0^3`. Without that, dividing by zero proves 2 = 1.
+- `2·0` keeps the 2. A rational zero annihilates if it is computed with, so the absence marker is
+  skipped instead, and `0·0^2` is `0^3`. Without that, dividing by zero proves 2 = 1.
 
-**Four things in the doc are not wired, and three of them disagree with the doc's own other pages.**
+**The absence marker was got wrong first, and the author corrected it.** This phase landed with the
+real part respelled — `0 = (1,1)`, `ω = (1,-1)`, a real part that may never be zero, and a zero
+arriving there rolling into the exponent. The reason given was the annihilation above. That was the
+right defect and the wrong fix, and the marker is zero after all:
+
+*One is a coefficient a term could actually have.* A marker of one cannot be told from a real part
+that happens to be one, and a marker that is a value takes part in arithmetic and gets absorbed —
+`1·1^1` can be argued into `1^2`. Zero cannot be a coefficient here, because a coefficient of zero
+would annihilate and this theory has no annihilator, so zero is the only number that can mean
+absence. Uniformly in both slots, and `(0,0)` is then erasure itself, which is the `∅` at the centre
+of the diagram. The respelling had made that origin unreachable.
+
+*Annihilation is a defect in the operation, not in the marker.* `a·c` with an absent operand is
+skipped, not multiplied: `2·0 = (2·∅, 0+1) = (2, 1)`. Negation has nothing to turn in an absent real
+part, so it materialises the `-1` it is multiplying by, and `-0` is `(-1, 1)` — the same pair the
+respelling reached, so nothing about `-0` depended on the marker.
+
+*One rule was needed to keep one spelling per value.* A real part of exactly one is the
+multiplicative identity and collapses back to the marker by `x·1 = x`, because `1÷0` arrives as
+`(1, -1)` where omega is `(0, -1)`. That collapse is a rule with a name, in view of the derivation,
+rather than the marker and the coefficient being the same thing by fiat.
+
+**Four things in the doc are not wired, and two of them disagree with the doc's own other pages.**
 
 *The carrier's negation, `-(a, b) = (a, b-1)`.* It sends `1` to `1·0^-1`, which is `ω`, against the
 four-unit table's `-1 = (-1, 0)`. The traction form beside it, `a·0^(b+ω)`, is a third answer. What
 is wired is the table's: negation turns the real coordinate, which follows from negation
 distributing over a product and needs neither the leap nor an ω in the exponent.
 
-*The traction addition law.* Left out at the author's instruction, and it would not have gone in
-as it stands: it needs the general involution and a power rule in the ω-direction that the theory
-does not have, and it disagrees with the theory at four edges. `0 + 1` is 2, where the axis
-restriction says that sum stands. `a^d` at `d = 0` must read 1 for `1 + 1` to be 2, against the
-cycle's `1^0 = ω`. At `b = d` it gives `ω + ω = 2·0` where distributivity gives `2ω`. And on two
-bare powers it gives `2·0^(bd)`, where the older docs' Maybe law gives `0^(bd)`. All four turn on
-the real part 0 doing two jobs — `(a+c)` reads that slot as the number zero and `a^d` reads it as ∅
-— and each reading fixes one edge and breaks another. What answers a sum instead is distributivity
-where the two terms are alike, and the identity otherwise.
+*The traction addition law.* Left out at the author's instruction. Four edges of it were reported as
+disagreements and three were the marker's fault rather than the law's: a factor mentioning an erased
+coordinate never got generated, because the four factors are cross-terms of a distribution and a
+cross-term with an erased part in it was never there to distribute. Dropped rather than evaluated,
+they give `0 + 1 = 1`, `1 + 1 = 2`, and `0^2 + 0^3 = 0^6`, which is the older docs' mirror law — so
+the two agree on bare powers. Written with explicit coefficients, `1·0 + 1·0^0` is 2 where `0 + 1`
+is 1, which is the marker earning its keep.
+
+What survives is one disagreement and the two holes. At `b = d` only `0^(bd)` survives, so the law
+makes `ω + ω` the point zero where distributivity makes it `2ω`: the real part is a multiplicative
+slot, so its absence is a multiplicative erasure, and by the residue rules a multiplicative erasure
+landing in a sum leaves a residue of one rather than nothing. The law drops it; the residue rule
+keeps it as one copy. Taking the law makes the value zero an additive identity, which is the
+collision the older docs already record against the mirror law. The holes are the general involution
+and a power rule in the ω-direction. What answers a sum meanwhile is distributivity where the two
+terms are alike, and the identity otherwise.
 
 *The general involution, `0^(0^n) = n`.* Stated in the doc as E6 being involutive generally. On the
 four points the tables have it and there it is forced; off them it is problem 4, so it is
@@ -336,7 +365,62 @@ Without it the display did not round-trip: it printed `0÷-1` and re-read it as 
 converse case is the one to leave alone: `2÷2` stays `(2,2)`, one at coordinates that are not one,
 because that is the same fact the exponent erasure is read off the term to avoid.
 
-**Checked by 187 tests and by a stability sweep**: 82 expressions, each answer re-entered and
+*The erasure was found at one end of E1 and not the other.* `0^(2÷2) · 0^(-2÷2)` answered
+`0^(1÷2·0)`, because E1 builds the exponent sum while the exponents are still terms — so the
+product's own erasure check was comparing `(2,2)` against an unreduced `-2÷2` and missing it.
+Delaying E1 is not the fix, since the shape it matches can be reduced away. What was missing is the
+same erasure at the other end: a sum of two coordinates where one is the other with its sign turned
+is `z - z` with no negation node left to recognise it by. Found by checking a claim written into
+`Traction-Theory.md`, not by a test.
+
+**Five more, found by checking the laws rather than the cases.** Commutativity, associativity and
+reversibility over a corpus of ten values, 2400 pairs, with the failures split into *unsound* (both
+sides answered and disagreed) and *incomplete* (a side stands, so no rule reaches). Two of the last
+five commits before this rewrite were one-sided matching bugs, so this is where to look.
+
+- *The identity dropped a zero it could not absorb.* `x + 0 = x` asks x to dominate the point zero,
+  and a term that has not settled has to be asked the same question of its parts: `0 + (0 + 0^2)`
+  answered `0 + 0^2`, a zero gone, because the standing sum on the right is not a literal and so
+  looked like it dominated.
+- *The additive erasure materialised instead of vanishing.* `x + (z-z) = x` says it leaves nothing;
+  discharging it to the point zero first and then adding made `0 + (1-1)` into `2·0`.
+- *The transient `(0,0)` was multiplied before it discharged.* Left standing for one turn, an
+  enclosing product got it: `(0·ω)·1` answered `0^(2·0)`, the two exponent zeros having been added
+  as though they were point zeros. It discharges where it is made now, and exponent arithmetic skips
+  an absent exponent.
+- *Two spellings of `-1` took different paths.* `1 + (-1)` at the literal and `1 - 1` at a negation
+  node are the same erasure, and only the node was recognised. Likewise `-1÷-1`: as negation nodes
+  it was the whole-term erasure and answered 1, as literals it went to the coordinates and answered
+  `(-1,-1)` -- so a printed answer re-read as something else. Whether a rule fires may not depend on
+  how far an operand happens to have reduced.
+
+What the sweep left was six disagreements out of 2400, all one shape: `x + 0 = x` discarding a
+magnitude-zero term that a later erasure needed, so addition was not associative. That is REVIEW.md's
+P1-1, and the author settled it: **`x + 0` is a projection, not a traction rule.** Adding the point
+zero does not move a value's shadow, and in the type both terms are still there.
+
+Removing the rule took three steps, and the middle one is the interesting one.
+
+- *The rule goes.* `PLUS_ZERO`, and with it the dominance condition and its two helpers.
+- *So does the coordinate version.* Measured on its own, deleting only the rule made the sweep
+  **worse** -- eighteen disagreements -- because `(1,1) + (0,1)` is `(1,1)`, so the model went on
+  absorbing what the theory had stopped absorbing, and with no condition at all.
+- *Which forces the sorts apart.* In an exponent the rational zero IS the absence marker and
+  `1 + 0` is 1; as a value it is the point zero and the sum stands. The walk now carries which slot
+  it is in, and the rules that lift a zero take it with them. That is the narrow form of REVIEW.md's
+  P0-4 -- by position, not by type -- and it is the only place the engine needs it.
+
+Six disagreements down to **two**, and those two are a different question: a cancellation between
+coordinates gives the point zero read as an erasure and `0÷2` computed as coordinates, which are
+different values here. The visible cost is that `1 + 0`, `0 - 1` and `ω + 0` now stand, with the
+shadow carrying the old answer.
+
+**A fuzz of 20000 random expressions**: no crashes and no non-termination, and every answer settles
+when re-entered. 857 of them need exactly one extra round, never more and never oscillating: a
+coordinate that does not reduce is spelled as a division, and re-reading a division takes one rewrite
+to fold back into the coordinate. The value never changes.
+
+**Checked by 196 tests and by a stability sweep**: 82 expressions, each answer re-entered and
 required to answer itself. That is the invariant the printer exists for — the result of one
 evaluation is the entry for the next — and it is stricter than the round-trip test, which does not
 simplify what it re-reads.

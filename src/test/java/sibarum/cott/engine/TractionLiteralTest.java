@@ -97,13 +97,41 @@ class TractionLiteralTest {
     }
 
     /**
-     * A real part that arrives as the rational zero rolls into the exponent, because a zero there would be an
-     * annihilator: {@code 0·0^2} is {@code 0^3} and not "zero, having lost its exponent".
+     * A zero real part is the absence marker, so {@code (0, 2)} is {@code 0^2} and is already where it
+     * belongs. What rolls into the exponent is a real part at a zero numerator AWAY from {@code (0,1)}: that
+     * is a multiple of the point zero rather than an absence, and {@code 0÷2·0^2} is {@code (1÷2)·0^3}.
      */
     @Test
-    void aZeroRealPartRollsIntoTheExponent() {
-        assertEquals(TractionLiteral.of(at(3, 1)), new TractionLiteral(ZERO, at(2, 1)).simplify());
+    void anAbsentRealPartIsNotARolledUpOne() {
+        TractionLiteral zeroSquared = TractionLiteral.of(at(2, 1));
+        assertSame(zeroSquared, zeroSquared.simplify());
+        assertEquals(new TractionLiteral(at(1, 2), at(3, 1)),
+                new TractionLiteral(at(0, 2), at(2, 1)).simplify());
+    }
+
+    /**
+     * Multiplying by the point zero keeps the other factor, because the marker is skipped rather than
+     * multiplied: {@code 2·0} is {@code (2, 1)}. Were it computed, the 2 would be annihilated and dividing by
+     * zero would prove 2 = 1.
+     */
+    @Test
+    void anAbsentCoordinateIsSkippedAndNotComputedWith() {
         assertEquals(TractionLiteral.of(at(2, 1)), new MultiplicationOperationExpr(ZERO, ZERO).simplify());
+        assertEquals(new TractionLiteral(at(2, 1), ONE),
+                new MultiplicationOperationExpr(at(2, 1), ZERO).simplify());
+        assertEquals(TractionLiteral.of(at(3, 1)),
+                new MultiplicationOperationExpr(ZERO, TractionLiteral.of(at(2, 1))).simplify());
+    }
+
+    /**
+     * A real part of exactly one is the multiplicative identity and collapses to the marker, so a value has
+     * one spelling: {@code 1·0^-1} is omega and not a second pair beside it.
+     */
+    @Test
+    void aRealPartOfOneCollapsesToTheMarker() {
+        assertEquals(TractionLiteral.OMEGA, new TractionLiteral(ONE, NEG_ONE).simplify());
+        assertEquals(ZERO, new TractionLiteral(ONE, ONE).simplify());
+        assertEquals(ONE, new TractionLiteral(ONE, ZERO).simplify());
     }
 
     @Test

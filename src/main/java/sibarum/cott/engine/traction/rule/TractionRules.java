@@ -41,6 +41,8 @@ public final class TractionRules {
     private static final RationalLiteral ONE = RationalLiteral.ONE;
     private static final RationalLiteral NEG_ONE = RationalLiteral.NEG_ONE;
     private static final TractionLiteral OMEGA = TractionLiteral.OMEGA;
+    /** The absence marker, in either coordinate. Numerically the rational zero, and never read as one. */
+    private static final RationalLiteral ABSENT = TractionLiteral.ABSENT;
 
     // ---------------------------------------------------------------- what a derivation cites
 
@@ -65,8 +67,16 @@ public final class TractionRules {
             new Rule("a·0^b + c·0^b = (a+c)·0^b", "distributivity", Rule.Status.PROVEN);
     public static final Rule INTEGER_POWER =
             new Rule("(0^a)^n = 0^(a·n), integer n", "E1, repeated multiplication", Rule.Status.PROVEN);
+    /**
+     * A negative outer power, which is NOT E3 however it is cited.
+     * <p>
+     * E3 relates a negated exponent to the reciprocal, {@code 0^(-a) = 1÷0^a}. Getting from there to
+     * {@code (0^a)^-n} needs {@code x^-1 = 1÷x} at {@code x = 0^a} first, and the unit table refutes that
+     * identification at the two units on the additive axis. So this is Chosen, and restricted to a base on
+     * the traction axis -- see {@link #foldsToAnAdditiveUnit}.
+     */
     public static final Rule NEGATIVE_POWER =
-            new Rule("(0^a)^-n = 0^(-a·n)", "E3", Rule.Status.PROVEN);
+            new Rule("(0^a)^-n = 0^(-a·n)", "x^-1 = 1÷x at the base, which E3 does not give", Rule.Status.CHOSEN);
     public static final Rule BASE_ZERO =
             new Rule("0^E is a traction", "the pair (1, E)", Rule.Status.PROVEN);
     public static final Rule POINT =
@@ -75,8 +85,8 @@ public final class TractionRules {
             new Rule("(0, t) = (1, t+1)", "E4: the rational zero is 0^1", Rule.Status.PROVEN);
     public static final Rule ZERO_COORDINATES =
             new Rule("0÷d = (1÷d)·0", "E4: the rational zero is 0^1", Rule.Status.PROVEN);
-    public static final Rule PLUS_ZERO =
-            new Rule("x + 0 = x", "0 is invariant under addition", Rule.Status.PROVEN);
+    // x + 0 = x was a rule here. It is not one: it is a fact about the projection, and as a rewrite it
+    // breaks associativity. See identity().
     public static final Rule TIMES_ONE =
             new Rule("x · 1 = x", "1 is invariant under multiplication", Rule.Status.PROVEN);
     public static final Rule LOG_INVERTS =
@@ -92,14 +102,26 @@ public final class TractionRules {
      */
     public static final Rule ERASURE =
             new Rule("z÷z = 1, z-z = 0", "the erasure discharges to its own operation's identity", Rule.Status.PROVEN);
+    /** {@code x + (z-z) = x}: under addition the additive erasure is ∅ and leaves no residue at all. */
+    public static final Rule ERASURE_VANISHES =
+            new Rule("x + (z-z) = x", "the erasure matches the operation, so nothing is left", Rule.Status.PROVEN);
 
     /** The leap, folded one way only. See {@link #exponentOfZero}. */
     public static final Rule LEAP =
             new Rule("0^ω = -1", "E6 and E7, the leap", Rule.Status.CHOSEN);
+    /**
+     * The unit tables. Chosen, but no longer merely asserted.
+     * <p>
+     * Searching all 4^12 completions of the axiom-forced base-0 row: 216 keep {@code x^1 = x} and a
+     * logarithm at every base, four of those have every column a permutation and all four compose, two of
+     * those keep {@code 0^x = ω^(-x)}, and one of those keeps the reciprocal law. This one. So the table is
+     * forced given its premises, and it is Chosen because the reciprocal law is.
+     */
     public static final Rule UNIT_POWER =
-            new Rule("the unit exponentiation table", "Traction-Theory.md: Unit Exponentiation", Rule.Status.CHOSEN);
+            new Rule("the unit exponentiation table",
+                    "the only completion keeping x^1 = x, every log, and the reciprocal law", Rule.Status.CHOSEN);
     public static final Rule UNIT_LOG =
-            new Rule("the unit logarithm table", "Traction-Theory.md: Unit Logarithm", Rule.Status.CHOSEN);
+            new Rule("the unit logarithm table", "the exponentiation table inverted", Rule.Status.CHOSEN);
 
     public static final Rule ADDITION_LAW =
             new Rule("a·0^b + c·0^d = (a+c)·a^d·c^b·0^(bd)", "Traction-Theory.md: Addition", Rule.Status.OPEN);
@@ -116,24 +138,148 @@ public final class TractionRules {
     /**
      * The pair {@code (n, t)} this expression is, where the carrier can say.
      * <p>
-     * A nonzero rational is {@code (r, 0)}: its real part is itself and it is nowhere on the traction axis.
-     * That is not E5 being used to read 1 as {@code 0^0} -- the real coordinate stays put, and nothing here
-     * moves an additive unit onto the traction axis. The rational zero IS {@code 0^1} by E4, so it promotes
-     * to {@code (1, 1)}.
+     * A nonzero rational is {@code (r, 0)}: its real part is itself and its traction part is absent. That is
+     * not E5 being used to read 1 as {@code 0^0} -- the real coordinate stays put, and nothing here moves an
+     * additive unit onto the traction axis. The point zero is {@code (0, 1)} by E4, its real part absent.
+     * <p>
+     * A zero numerator away from {@code (0,1)} is not the absence marker but a multiple of the point zero:
+     * {@code 0÷d} is {@code (1÷d)·0}, and dropping the d would lose something multiplicative -- a root, an
+     * orientation -- that the type is supposed to conserve.
      */
     private static Optional<Pair> pair(IExpr e) {
         if (e instanceof TractionLiteral t) {
             return Optional.of(new Pair(t.real(), t.exponent()));
         }
         if (e instanceof RationalLiteral r) {
-            // A zero numerator keeps its denominator, exactly: (0, d) is 0÷d, which is (1÷d)·0. Sending it to
-            // the point zero would drop the d, and the d is multiplicative -- a root, an orientation -- so
-            // dropping it loses information the type is supposed to conserve.
-            return Optional.of(r.isZero()
-                    ? new Pair(new RationalLiteral(BigInteger.ONE, r.denominator()), ONE)
-                    : new Pair(r, ZERO));
+            if (!r.isZero()) {
+                return Optional.of(new Pair(r, ABSENT));
+            }
+            return Optional.of(r.denominator().equals(BigInteger.ONE)
+                    ? new Pair(ABSENT, ONE)
+                    : new Pair(new RationalLiteral(BigInteger.ONE, r.denominator()), ONE));
         }
         return Optional.empty();
+    }
+
+    /** Whether a coordinate is the absence marker: this axis contributes nothing. */
+    private static boolean absent(IExpr coordinate) {
+        return ABSENT.equals(coordinate);
+    }
+
+    /**
+     * Whether this term is a coordinate, or will be one once its sign settles.
+     * <p>
+     * The negation has to be seen through, because whether a rule fires must not depend on how far the
+     * operand happens to have reduced. {@code -1÷-1} arrives with negation nodes the first time and with the
+     * literal {@code -1} the second, and reading only the literal made those two disagree -- the first was
+     * the whole-term erasure and answered 1, the second went to the coordinates and answered {@code (-1,-1)}.
+     * A printed answer then re-read as something else.
+     */
+    private static boolean isCoordinate(IExpr e) {
+        if (e instanceof NegationOperationExpr(IExpr operand)) {
+            return isCoordinate(operand);
+        }
+        return e instanceof RationalLiteral;
+    }
+
+    /**
+     * Whether this term is {@code z - z}: the additive erasure, as a term.
+     * <p>
+     * Either way round, and in either spelling. {@code 1 + (-1)} at the literal -1 is the same erasure as
+     * {@code 1 - 1} at a negation node, and reading only the node made the two disagree —
+     * {@code (1-1) + 2·0} was {@code 2·0} and {@code (1 + -1) + 2·0} was {@code 3·0}.
+     */
+    private static boolean isAdditiveErasure(IExpr e) {
+        if (!(e instanceof AdditionOperationExpr(IExpr l, IExpr r))) {
+            return false;
+        }
+        if (r instanceof NegationOperationExpr(IExpr taken)) {
+            return l.equals(taken);
+        }
+        if (l instanceof NegationOperationExpr(IExpr taken)) {
+            return r.equals(taken);
+        }
+        return negates(l, r);
+    }
+
+    /**
+     * The exponents of two tractions added, with an absent one skipped.
+     * <p>
+     * Skipped for the same reason an absent real part is: {@code 0^0} is 1 and contributes nothing to a
+     * product, so its exponent contributes nothing to the exponent sum. Adding it instead handed the
+     * exponent slot a term the VALUE rules then read as the point zero -- {@code 0^0 · 0^0} became
+     * {@code 0^(0+0)} and then {@code 0^(2·0)}, which is the two sorts being confused where it shows.
+     */
+    private static IExpr exponentSum(IExpr b, IExpr d) {
+        if (absent(b)) {
+            return d;
+        }
+        return absent(d) ? b : plus(b, d);
+    }
+
+    /** The same for a quotient: {@code b - d}, with an absent exponent skipped. */
+    private static IExpr exponentDifference(IExpr b, IExpr d) {
+        if (absent(d)) {
+            return b;
+        }
+        return absent(b) ? new NegationOperationExpr(d) : minus(b, d);
+    }
+
+    /**
+     * Whether this term is a bare power of zero that folds to an additive unit: {@code 0^0} is 1 and
+     * {@code 0^ω} is -1.
+     * <p>
+     * Both are powers of zero as TERMS, and E1 may read them as such -- {@code 0^0 · 0^2} is {@code 0^2}.
+     * The power rule may not, and the reason is the whole of why {@code x^-1} is not {@code 1÷x}. The rule
+     * {@code (0^a)^-n = 0^(-a·n)} is cited to E3, but E3 relates a NEGATED EXPONENT to the reciprocal; to get
+     * from it to a negative outer power you first need {@code x^-1 = 1÷x} at {@code x = 0^a}, and the unit
+     * table refutes that at the two units on the additive axis. So the rule holds where {@code 0^a} is on
+     * the traction axis, and at {@code a = 0} and {@code a = ω} the table answers instead: {@code (0^0)^-1}
+     * is {@code 1^-1 = -1}, not {@code 0^(-0)}, and {@code (0^ω)^-1} is {@code (-1)^-1 = 1}, not
+     * {@code 0^(-ω)}.
+     */
+    private static boolean foldsToAnAdditiveUnit(IExpr e) {
+        IExpr exponent = e instanceof TractionLiteral t && t.isBare() ? t.exponent()
+                : e instanceof ExponentialOperationExpr p && ZERO.equals(p.base()) ? p.exponent()
+                : null;
+        return exponent != null && (absent(exponent) || OMEGA.equals(exponent));
+    }
+
+    /**
+     * Two real parts multiplied, with an absent one skipped rather than computed with.
+     * <p>
+     * This is what keeps the marker out of the arithmetic. Multiplying by it would annihilate -- {@code 2·0}
+     * would come back as the point zero with the 2 gone, and then dividing by zero proves 2 = 1. Skipping it
+     * is what {@code ∅} means multiplicatively: {@code x·(z÷z) = x}.
+     */
+    private static IExpr realProduct(IExpr a, IExpr c) {
+        if (absent(a)) {
+            return c;
+        }
+        return absent(c) ? a : times(a, c);
+    }
+
+    /** Two real parts divided, the same way. An absent numerator is 1, so it leaves {@code 1÷c}. */
+    private static IExpr realQuotient(IExpr a, IExpr c) {
+        if (absent(c)) {
+            return a;
+        }
+        return absent(a) ? over(ONE, c) : over(a, c);
+    }
+
+    /**
+     * Two real parts added, where an absent one counts as ONE COPY.
+     * <p>
+     * The real part is a multiplicative slot, so its absence is a multiplicative erasure -- and a
+     * multiplicative erasure landing in a sum leaves a residue of one: {@code x + (z÷z) = x + 1}. That is
+     * what makes {@code w + w} two omegas and {@code 0 + 0} two zeros.
+     * <p>
+     * Traction-Theory.md's addition law reads the same cell the other way, dropping the term rather than
+     * leaving a residue, and answers {@code 0^(bd)} -- so it makes {@code w + w} the point zero. That
+     * disagreement is the one edge of the law that does not dissolve; see {@link #provisionalAddition}.
+     */
+    private static IExpr realSum(IExpr a, IExpr c) {
+        return plus(absent(a) ? ONE : a, absent(c) ? ONE : c);
     }
 
     /**
@@ -144,8 +290,11 @@ public final class TractionRules {
      * ordinary rationals are left to the coordinates, which is not deference -- it is that lifting them would
      * put the pair rules in a loop, rebuilding {@code 2÷3} as {@code (2÷3)·0^0} for ever.
      */
-    private static boolean liftable(IExpr e) {
-        return e instanceof TractionLiteral || e instanceof RationalLiteral r && r.isZero();
+    private static boolean liftable(IExpr e, boolean inExponent) {
+        // In an exponent the rational zero is the absence marker, not the point zero, and lifting it there
+        // is the sort confusion: 0 + 1 as an exponent is 1, and 0·3 is 0. A traction in an exponent is
+        // still a value -- 0^(ω+ω) -- so that one lifts wherever it sits.
+        return e instanceof TractionLiteral || !inExponent && e instanceof RationalLiteral r && r.isZero();
     }
 
     /**
@@ -202,15 +351,26 @@ public final class TractionRules {
      * {@link #provisionalMinusZero} records both the conjecture and what refutes it.
      */
     public static Optional<Rewrite> point(TractionLiteral t) {
-        // A real part that arrives as the rational zero rolls into the exponent: the rational zero is 0^1,
-        // and a zero real part would be an annihilator, which this theory does not have.
-        if (t.real() instanceof RationalLiteral r && r.isZero()) {
+        // A real part at a zero numerator away from (0,1) is a multiple of the point zero rather than the
+        // marker: 0÷d·0^t is (1÷d)·0^(t+1).
+        if (t.real() instanceof RationalLiteral r && r.isZero() && !r.denominator().equals(BigInteger.ONE)) {
             return Optional.of(new Rewrite(
                     pairOf(new RationalLiteral(BigInteger.ONE, r.denominator()), plus(t.exponent(), ONE)),
                     ROLL_IN));
         }
-        if (ZERO.equals(t.exponent())) {
-            return Optional.of(new Rewrite(t.real(), POINT));           // a·0^0 = a·1 = a, E5
+        if (absent(t.exponent())) {
+            // Both absent is (0,0), erasure itself, which is not a member. It arrives here from the
+            // multiplicative discharge -- 0·w -- so it discharges the way that operation does, to 1.
+            return Optional.of(t.isBare()
+                    ? new Rewrite(ONE, ERASURE)
+                    : new Rewrite(t.real(), POINT));                    // a·0^0 = a·1 = a, E5
+        }
+        // A real part of exactly one is the multiplicative identity, so it says nothing that the absence
+        // marker does not: 1·0^t is 0^t by x·1 = x. Collapsing it is what keeps one spelling per value --
+        // 1÷0 arrives here as (1, -1) and omega is (0, -1) -- and it happens as a rule, in view of the
+        // derivation, rather than by the marker and the coefficient being the same thing.
+        if (ONE.equals(t.real())) {
+            return Optional.of(new Rewrite(pairOf(ABSENT, t.exponent()), TIMES_ONE));
         }
         if (t.isBare() && ONE.equals(t.exponent())) {
             return Optional.of(new Rewrite(ZERO, POINT));               // 0^1 = 0, E4
@@ -235,8 +395,8 @@ public final class TractionRules {
      * lives. Without this the same value had two spellings and the display did not round-trip: the coordinate
      * sum produced {@code 0÷-1} and re-reading it produced {@code 1÷-1·0}.
      */
-    public static Optional<Rewrite> zeroCoordinates(RationalLiteral r) {
-        if (!r.isZero() || r.denominator().equals(BigInteger.ONE)) {
+    public static Optional<Rewrite> zeroCoordinates(RationalLiteral r, boolean inExponent) {
+        if (inExponent || !r.isZero() || r.denominator().equals(BigInteger.ONE)) {
             return Optional.empty();
         }
         return Optional.of(new Rewrite(
@@ -254,21 +414,31 @@ public final class TractionRules {
      * the exponent and both are multiplicative at the value level, so what they discharge to is
      * multiplication's identity. {@code 0·w} is the product case, and it is 1.
      */
-    public static Optional<Rewrite> product(IExpr left, IExpr right) {
+    public static Optional<Rewrite> product(IExpr left, IExpr right, boolean inExponent) {
         if (right instanceof ReciprocalOperationExpr(IExpr by)) {
-            return quotient(left, by);
+            return quotient(left, by, inExponent);
         }
         // A division written the other way round is still a division: (1÷y)·x is x÷y, the same rule with the
         // roles swapped. Matching one order only made multiplication non-commutative on those terms.
         if (left instanceof ReciprocalOperationExpr(IExpr by)) {
-            return quotient(right, by);
+            return quotient(right, by, inExponent);
         }
-        if (!liftable(left) && !liftable(right)) {
+        if (!liftable(left, inExponent) && !liftable(right, inExponent)) {
             return Optional.empty();
         }
-        return pair(left).flatMap(l -> pair(right).map(r -> negates(l.t(), r.t())
-                ? new Rewrite(pairOf(times(l.n(), r.n()), ZERO), ERASURE)
-                : new Rewrite(pairOf(times(l.n(), r.n()), plus(l.t(), r.t())), PRODUCT)));
+        return pair(left).flatMap(l -> pair(right).map(r -> {
+            IExpr real = realProduct(l.n(), r.n());
+            if (!negates(l.t(), r.t())) {
+                return new Rewrite(pairOf(real, exponentSum(l.t(), r.t())), PRODUCT);
+            }
+            // The exponent erases and the operation is a product, so it discharges to multiplication's
+            // identity. Where there is no real part either, that identity is the whole answer, and it has to
+            // be given HERE rather than as the pair (0,0): (0,0) is erasure itself and not a member, and
+            // left standing for a turn an enclosing product multiplied it. 0·ω·1 answered 0^(2·0).
+            return absent(real)
+                    ? new Rewrite(ONE, ERASURE)
+                    : new Rewrite(pairOf(real, ABSENT), ERASURE);
+        }));
     }
 
     /**
@@ -278,24 +448,31 @@ public final class TractionRules {
      * {@code 2÷2} would come back as the pair {@code (2,2)}, which is the value one at coordinates that are
      * not one. Reading the erasure off the term is what makes it exact.
      */
-    private static Optional<Rewrite> quotient(IExpr of, IExpr by) {
-        // The whole-term erasure, but not between two rationals: there the coordinates answer, and what they
-        // answer is (2,2) -- one at coordinates that are not one. That is deliberate and it is the same fact
-        // the exponent erasure is read off the term to avoid, so overruling it here would contradict the
-        // reason this engine does not reduce. Everywhere else -- tractions, atoms, whole terms -- z÷z is 1.
-        boolean coordinates = of instanceof RationalLiteral && by instanceof RationalLiteral;
+    private static Optional<Rewrite> quotient(IExpr of, IExpr by, boolean inExponent) {
+        // The whole-term erasure, but not between two coordinates: there the coordinates answer, and what
+        // they answer is (2,2) -- one at coordinates that are not one. That is deliberate and it is the same
+        // fact the exponent erasure is read off the term to avoid, so overruling it here would contradict
+        // the reason this engine does not reduce. Everywhere else -- tractions, atoms, whole terms -- z÷z
+        // is 1.
+        boolean coordinates = isCoordinate(of) && isCoordinate(by);
         if (!coordinates && of.equals(by)) {
             return Optional.of(new Rewrite(ONE, ERASURE));
         }
-        if (!liftable(of) && !liftable(by)) {
+        if (!liftable(of, inExponent) && !liftable(by, inExponent)) {
             return Optional.empty();
         }
         if (of.equals(by)) {
             return Optional.of(new Rewrite(ONE, ERASURE));
         }
-        return pair(of).flatMap(l -> pair(by).map(r -> l.t().equals(r.t())
-                ? new Rewrite(pairOf(over(l.n(), r.n()), ZERO), QUOTIENT)
-                : new Rewrite(pairOf(over(l.n(), r.n()), minus(l.t(), r.t())), QUOTIENT)));
+        return pair(of).flatMap(l -> pair(by).map(r -> {
+            IExpr real = realQuotient(l.n(), r.n());
+            if (!l.t().equals(r.t())) {
+                return new Rewrite(pairOf(real, exponentDifference(l.t(), r.t())), QUOTIENT);
+            }
+            return absent(real)
+                    ? new Rewrite(ONE, ERASURE)
+                    : new Rewrite(pairOf(real, ABSENT), QUOTIENT);
+        }));
     }
 
     // ---------------------------------------------------------------- addition and subtraction
@@ -307,7 +484,16 @@ public final class TractionRules {
      * {@code ω + ω = 2ω} rather than sending it through a law. The general sum at unlike exponents is
      * {@link #provisionalAddition} and is not wired.
      */
-    public static Optional<Rewrite> sum(IExpr left, IExpr right) {
+    public static Optional<Rewrite> sum(IExpr left, IExpr right, boolean inExponent) {
+        // x + (z-z) = x. An additive erasure under addition is ∅ and vanishes -- it does NOT materialise as
+        // the point zero and then add. Discharging it first answered 0 + (1-1) as 2·0, where 0 + 1 - 1 is 0.
+        // The residue is only left where the operation does not match, which for z-z means a product.
+        if (isAdditiveErasure(right)) {
+            return Optional.of(new Rewrite(left, ERASURE_VANISHES));
+        }
+        if (isAdditiveErasure(left)) {
+            return Optional.of(new Rewrite(right, ERASURE_VANISHES));
+        }
         if (right instanceof NegationOperationExpr(IExpr taken)) {
             return difference(left, taken);
         }
@@ -315,7 +501,16 @@ public final class TractionRules {
         if (left instanceof NegationOperationExpr(IExpr taken)) {
             return difference(right, taken);
         }
-        return likeTerms(left, right);
+        // A sum of two terms where one is the other with its sign turned is the same erasure with no
+        // negation node left to recognise it by -- the coordinates have already absorbed the sign. It has to
+        // be caught here as well, because the product rule cannot always catch it first: E1 builds the
+        // exponent sum while the exponents are still terms, so 0^(2÷2)·0^(-2÷2) reaches this as
+        // 0^((2,2) + (-2,2)) with its own erasure the only one left to find. Letting the coordinates have it
+        // instead answered 0^(1÷2·0), which is not 1.
+        if (negates(left, right)) {
+            return Optional.of(new Rewrite(ZERO, ERASURE));
+        }
+        return likeTerms(left, right, inExponent);
     }
 
     /**
@@ -327,18 +522,21 @@ public final class TractionRules {
      * and where the two are at the same order the real parts add instead.
      * <p>
      * Real parts that negate as terms are the additive erasure and discharge to the point zero. Without that,
-     * {@code 1·0 + (-1)·0} would land on a zero real part, which rolls into the exponent and answers
-     * {@code 0^2} -- the coordinates doing arithmetic where the term said erasure.
+     * {@code 1·0 + (-1)·0} would land on a real part of zero, which is the absence marker and would say
+     * {@code 0^1} for a different reason -- the coordinates arriving at the right answer by accident, where
+     * the term said erasure.
+     * <p>
+     * An absent real part counts as one copy here; see {@link #realSum}.
      */
-    private static Optional<Rewrite> likeTerms(IExpr left, IExpr right) {
-        if (!liftable(left) && !liftable(right)) {
+    private static Optional<Rewrite> likeTerms(IExpr left, IExpr right, boolean inExponent) {
+        if (!liftable(left, inExponent) && !liftable(right, inExponent)) {
             return Optional.empty();    // two rationals: the coordinates do this, and say so
         }
         return pair(left).flatMap(l -> pair(right)
                 .filter(r -> l.t().equals(r.t()))
                 .map(r -> negates(l.n(), r.n())
                         ? new Rewrite(ZERO, ERASURE)
-                        : new Rewrite(pairOf(plus(l.n(), r.n()), l.t()), LIKE_TERMS)));
+                        : new Rewrite(pairOf(realSum(l.n(), r.n()), l.t()), LIKE_TERMS)));
     }
 
     /**
@@ -372,11 +570,14 @@ public final class TractionRules {
      */
     public static Optional<Rewrite> negation(IExpr operand) {
         if (operand instanceof TractionLiteral t) {
-            return Optional.of(new Rewrite(pairOf(t.real().negated(), t.exponent()), NEGATION));
+            // An absent real part has no sign to turn, so the -1 being multiplied by materialises there:
+            // negation IS multiplication by -1, and (-1, 0)·(0, b) is (-1, b) by the same skipping rule.
+            return Optional.of(new Rewrite(
+                    pairOf(t.isBare() ? NEG_ONE : t.real().negated(), t.exponent()), NEGATION));
         }
-        // The rational zero has no sign to turn -- the exponent zero has no orientation -- so negating the
-        // point zero has to lift it first: 0 is 0^1 by E4, and -(1·0^1) is (-1)·0^1. Leaving it to the
-        // coordinates is what used to answer -0 = 0, and that is not what negation is.
+        // The point zero is (0, 1), whose real part is absent, so negating it lifts it first: 0 is 0^1 by E4
+        // and -0 is (-1)·0^1. Leaving it to the coordinates is what used to answer -0 = 0, which is not what
+        // negation is.
         if (ZERO.equals(operand)) {
             return Optional.of(new Rewrite(pairOf(NEG_ONE, ONE), NEGATION));
         }
@@ -394,8 +595,9 @@ public final class TractionRules {
             return Optional.of(new Rewrite(OMEGA, OMEGA_DEF));
         }
         if (operand instanceof TractionLiteral t) {
+            // An absent real part stays absent: 1÷∅ is ∅, since ∅ is one multiplicatively.
             return Optional.of(new Rewrite(
-                    pairOf(t.real().reciprocal(), t.exponent().negated()), RECIPROCAL));
+                    pairOf(t.isBare() ? ABSENT : t.real().reciprocal(), t.exponent().negated()), RECIPROCAL));
         }
         return Optional.empty();
     }
@@ -403,71 +605,47 @@ public final class TractionRules {
     // ---------------------------------------------------------------- the identities
 
     /**
-     * The identities, each invariant under its own operation: {@code x + 0 = x} and {@code x · 1 = x}.
+     * The multiplicative identity, {@code x · 1 = x}, and only that one.
+     *
+     * <h2>{@code x + 0 = x} is not here, and is not a traction rule</h2>
+     * It is a fact about the PROJECTION. Adding the point zero does not move a value's shadow, and that is
+     * the whole of what it says; in the type the two terms are both still there, and discarding one loses
+     * information the type exists to conserve. So {@code x + 0} stands, and its shadow is x's.
      * <p>
-     * The coordinate layer already does this between two literals. This is the same statement for any x at
-     * all -- an atom, a traction, a call -- because it is a claim about the identity rather than about
-     * coordinate arithmetic. And the result is the other operand UNCHANGED, which is what invariance means.
+     * It was a rule here, with a condition on x, and the condition could not be made to work. Any version of
+     * it breaks associativity: {@code (1 + -1) + 2·0} is {@code 2·0} because the erasure vanishes and leaves
+     * the multiple of zero, while {@code 1 + (-1 + 2·0)} was 0 because the identity absorbed the {@code 2·0}
+     * into the {@code -1} first and then the 1 and the -1 erased. Six pairs in a 2400-pair sweep, all of
+     * that shape, and they are gone with the rule.
      * <p>
-     * -1 and ω are invariant under neither, which is what separates them from these two: {@code 1 + ω} has no
-     * single value and stands as the pair it is.
+     * Where an answer still comes out as x, the coordinates did it -- {@code 1 + 0} is 1 because
+     * {@code (1,1) + (0,1)} is {@code (1,1)} -- and the coordinates are the model rather than the theory.
+     * The traction layer no longer claims it.
+     * <p>
+     * -1 and ω are invariant under neither operation, which is what separates them from 1: {@code 1 + ω} has
+     * no single value and stands as the pair it is.
      */
+    /**
+     * Whether a sum's operands are coordinates that may simply add.
+     * <p>
+     * Not where one of them is the point zero. Adding it away is the same absorption the traction rule was
+     * removed for, and it happens here too: {@code (1,1) + (0,1)} is {@code (1,1)}, so {@code 1 + 0} came
+     * out as 1 with the point zero gone. Whether that is the model being allowed to answer, or the model
+     * quietly doing what the theory declined to, is the question the removal leaves -- and until it is
+     * settled the conservative reading is the one that matches the rule's removal.
+     */
+    public static boolean addsAsCoordinates(IExpr left, IExpr right) {
+        return !ZERO.equals(left) && !ZERO.equals(right);
+    }
+
     public static Optional<Rewrite> identity(IExpr left, IExpr right, boolean product) {
-        if (product) {
-            if (ONE.equals(right)) {
-                return Optional.of(new Rewrite(left, TIMES_ONE));
-            }
-            return ONE.equals(left) ? Optional.of(new Rewrite(right, TIMES_ONE)) : Optional.empty();
+        if (!product) {
+            return Optional.empty();
         }
-        if (isMagnitudeZero(right) && dominatesZero(left)) {
-            return Optional.of(new Rewrite(left, PLUS_ZERO));
+        if (ONE.equals(right)) {
+            return Optional.of(new Rewrite(left, TIMES_ONE));
         }
-        return isMagnitudeZero(left) && dominatesZero(right)
-                ? Optional.of(new Rewrite(right, PLUS_ZERO))
-                : Optional.empty();
-    }
-
-    /**
-     * Whether {@code x + 0 = x} may be applied to this operand: whether it dominates the point zero.
-     * <p>
-     * The identity is not unconditional, and this is the condition REVIEW.md's P1-1 asks for. Where x is
-     * itself at the point zero's order the real parts add instead -- {@code 2·0 + 0} is {@code 3·0}, not
-     * {@code 2·0} -- and anywhere else on the vanishing side of the axis, {@code 0^2} or {@code 0^(1÷2)},
-     * the sum stands rather than one term swallowing the other. Dominance would answer those, but answering
-     * by dominance discards a term, and this type is supposed to conserve them; the two readings are only
-     * forced to agree where x has no vanishing part at all, and that is what this allows. What is left is x
-     * with no traction part, x on omega's side, and x the carrier cannot lift: an atom, a call, a term that
-     * stands.
-     * <p>
-     * {@code 1 + 0} is the case that matters and it answers 1, which is where QUICK-REFERENCE.md's ledger
-     * (P2-5) puts it.
-     * <p>
-     * Declining also lets the traversal work. This node is tried before its operands are reduced, so an
-     * unreduced {@code 2·0} on the left is not yet a pair and the like-terms rule cannot see it; the identity
-     * declining is what leaves the next turn to it.
-     */
-    private static boolean dominatesZero(IExpr x) {
-        if (!liftable(x)) {
-            return true;
-        }
-        return pair(x).map(p -> p.t() instanceof RationalLiteral t
-                        && t.numerator().signum() * t.denominator().signum() <= 0)
-                .orElse(false);
-    }
-
-    /**
-     * The point zero and its multiples: the rational zero, and any pair at exponent 1.
-     * <p>
-     * {@code -0} is {@code (-1, 1)} and {@code 0÷2} is {@code ((1,2), 1)}; both are zero, and what
-     * distinguishes them is multiplicative -- an orientation, a root -- so neither has anything to contribute
-     * to a sum. Not {@code 0^2}: further along the traction axis is not the same point, and a sum with it
-     * stands.
-     */
-    private static boolean isMagnitudeZero(IExpr e) {
-        if (e instanceof RationalLiteral r) {
-            return r.isZero();
-        }
-        return e instanceof TractionLiteral t && ONE.equals(t.exponent());
+        return ONE.equals(left) ? Optional.of(new Rewrite(right, TIMES_ONE)) : Optional.empty();
     }
 
     // ---------------------------------------------------------------- exponentiation
@@ -484,6 +662,12 @@ public final class TractionRules {
     public static Optional<Rewrite> power(IExpr base, IExpr exponent) {
         if (ZERO.equals(base)) {
             return Optional.of(new Rewrite(traction(exponent), BASE_ZERO));
+        }
+        // A base that folds to an additive unit is not read as a power of zero here: 0^0 is 1 and 0^ω is -1,
+        // and for those the unit table answers rather than the power rule. Declining lets the base fold
+        // first. See foldsToAnAdditiveUnit -- this is the exclusion that keeps x^-1 apart from 1÷x.
+        if (foldsToAnAdditiveUnit(base)) {
+            return Optional.empty();
         }
         Optional<Rewrite> unit = unitPower(base, exponent);
         if (unit.isPresent()) {
@@ -583,21 +767,46 @@ public final class TractionRules {
      * closure set -- theory-problems.md #4 -- and a power rule at general exponents, which the theory does
      * not have in the ω-direction. But the reason it is not wired is more immediate than either: the formula
      * disagrees with the rest of the theory at three edges.
-     * <ul>
-     * <li>{@code 0 + 1} is 2. With {@code 0 = 1·0^1} and {@code 1 = 1·0^0} the real parts add though the
-     *     traction parts are at different orders, and "the two axes do not mix" says that sum stands.</li>
-     * <li>{@code a^d} at {@code d = 0} has to read 1 for {@code 1 + 1} to be 2, and the {@code x^0} cycle
-     *     says {@code 1^0} is ω. So the factor is a shadow reading and not this theory's power.</li>
-     * <li>At {@code b = d} it gives {@code ω + ω = 2·0}, where distributivity gives {@code 2ω}.</li>
-     * </ul>
-     * Underneath all three, the real part 0 is doing two jobs: {@code (a+c)} reads that slot as the number
-     * zero and {@code a^d} reads it as ∅. Each choice fixes one edge and breaks another.
+     * <h2>The erasure rule is what makes it nearly work</h2>
+     * A factor mentioning an absent coordinate never got generated -- those factors are cross-terms of the
+     * distribution, and a cross-term with an erased part in it was never there to distribute. Dropping them
+     * rather than evaluating them is what this method does, and three edges that look fatal dissolve:
+     * <pre>
+     * 0 + 1      a absent, d absent   (a+c) is c, and only c^b survives     = 1
+     * 1 + 1      b absent, d absent   only (a+c) survives                   = 2
+     * 0^2 + 0^3  a and c absent       only 0^(bd) survives                  = 0^6
+     * </pre>
+     * The last of those is the older docs' mirror law, {@code 0^a + 0^b = 0^(a·b)}, so the two agree on bare
+     * powers. Evaluating the dropped factors instead is what gave the wrong answers: {@code a^d} at
+     * {@code d = 0} would be {@code 1^0}, which the cycle says is ω, and {@code 0^(bd)} at {@code b = d = 0}
+     * would be {@code 0^(0·0)}, which is {@code 0^(0^2)} and stands.
+     *
+     * <h2>The edge that does not dissolve</h2>
+     * At {@code b = d} only {@code 0^(bd)} survives, so {@code ω + ω} is {@code 0^((-1)(-1))}, which is
+     * {@code 0^1} -- the point zero. Distributivity says {@code 2ω}, and {@link #realSum} says why: an absent
+     * real part is a multiplicative erasure, and a multiplicative erasure landing in a sum leaves a residue of
+     * one, not nothing. This law drops it; the residue rule keeps it as one copy. The same disagreement makes
+     * the law say {@code 0 + 0 = 0}, which is the value zero acting as an additive identity -- exactly the
+     * collision the older docs record against the mirror law, and it is a theory decision rather than a defect.
      */
     public static Optional<Rewrite> provisionalAddition(IExpr left, IExpr right) {
-        return pair(left).flatMap(l -> pair(right).map(r -> new Rewrite(
-                pairOf(times(times(plus(l.n(), r.n()), raise(l.n(), r.t())), raise(r.n(), l.t())),
-                        times(l.t(), r.t())),
-                ADDITION_LAW)));
+        return pair(left).flatMap(l -> pair(right).map(r -> {
+            IExpr result = null;
+            if (!absent(l.n()) || !absent(r.n())) {
+                result = absent(l.n()) ? r.n() : absent(r.n()) ? l.n() : plus(l.n(), r.n());
+            }
+            if (!absent(l.n()) && !absent(r.t())) {
+                result = result == null ? raise(l.n(), r.t()) : times(result, raise(l.n(), r.t()));
+            }
+            if (!absent(r.n()) && !absent(l.t())) {
+                result = result == null ? raise(r.n(), l.t()) : times(result, raise(r.n(), l.t()));
+            }
+            if (!absent(l.t()) && !absent(r.t())) {
+                IExpr traction = traction(times(l.t(), r.t()));
+                result = result == null ? traction : times(result, traction);
+            }
+            return new Rewrite(result == null ? ONE : result, ADDITION_LAW);
+        }));
     }
 
     /**

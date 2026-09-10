@@ -71,8 +71,12 @@ class TractionRulesTest {
      */
     @Test
     void subtractingAnAdditiveUnitFromAMultiplicativeOneSettles() {
+        // It settles by STANDING. No rule reads 1 as a power of zero, and the point zero is not added away
+        // either, since x + 0 = x is a fact about the projection and not a rule. The shadow of what stands
+        // is -1, which is where that answer belongs.
         IExpr mixed = new AdditionOperationExpr(ZERO, new NegationOperationExpr(ONE));
-        assertEquals(NEG_ONE, mixed.simplify());
+        assertEquals(new AdditionOperationExpr(ZERO, NEG_ONE), mixed.simplify());
+        assertEquals(Optional.of(-1.0), mixed.simplify().evaluate());
     }
 
     /**
@@ -106,20 +110,40 @@ class TractionRulesTest {
     }
 
     /**
-     * {@code x + 0 = x} and {@code x · 1 = x}, returning the other operand itself rather than the same value
-     * at other coordinates -- which is what invariance means, and is why the identity is a rule rather than
-     * being left to the coordinate arithmetic.
+     * {@code x · 1 = x} is a rule, and returns the other operand itself rather than the same value at other
+     * coordinates -- which is what invariance means.
      */
     @Test
-    void theIdentitiesReturnTheOtherOperandUnchanged() {
-        assertEquals(ONE, new AdditionOperationExpr(ONE, ZERO).simplify());
-        assertEquals(ONE, new AdditionOperationExpr(ZERO, ONE).simplify());
-        assertEquals(new AtomExpr("x"), new AdditionOperationExpr(new AtomExpr("x"), ZERO).simplify());
+    void oneIsInvariantUnderMultiplication() {
         assertEquals(at(2, 3), new MultiplicationOperationExpr(at(2, 3), ONE).simplify());
+        assertEquals(at(2, 3), new MultiplicationOperationExpr(ONE, at(2, 3)).simplify());
+        assertEquals(new AtomExpr("x"), new MultiplicationOperationExpr(new AtomExpr("x"), ONE).simplify());
+    }
 
-        // Any magnitude-zero value, not only (0,1): 0÷2 and -0 add without effect too.
-        assertEquals(ONE, new AdditionOperationExpr(ONE, at(0, 2)).simplify());
-        assertEquals(ONE, new AdditionOperationExpr(ONE, new NegationOperationExpr(ZERO)).simplify());
+    /**
+     * {@code x + 0 = x} is NOT a rule. It is a fact about the PROJECTION: adding the point zero does not
+     * move a value's shadow, and in the type both terms are still there.
+     *
+     * <p>So a sum holding the point zero stands, and its shadow is the other operand's. Nothing absorbs it --
+     * not the traction rules, which no longer claim it, and not the coordinates either, which used to add it
+     * away less visibly.
+     */
+    @Test
+    void addingThePointZeroIsNotAnIdentity() {
+        for (IExpr other : new IExpr[]{ONE, NEG_ONE, at(2, 3), OMEGA, new AtomExpr("x"), pow0(2, 1)}) {
+            IExpr sum = new AdditionOperationExpr(other, ZERO);
+            assertEquals(sum, sum.simplify(), "" + other);
+            IExpr swapped = new AdditionOperationExpr(ZERO, other);
+            assertEquals(swapped, swapped.simplify(), "" + other);
+        }
+        // the shadow is what carries x + 0 = x
+        assertEquals(Optional.of(1.0), new AdditionOperationExpr(ONE, ZERO).evaluate());
+        assertEquals(2.0 / 3.0,
+                new AdditionOperationExpr(ZERO, at(2, 3)).evaluate().orElseThrow(), 1e-12);
+
+        // 0÷2 is a multiple of the point zero and behaves the same way
+        IExpr atARoot = new AdditionOperationExpr(ONE, at(0, 2));
+        assertEquals(new AdditionOperationExpr(ONE, new TractionLiteral(at(1, 2), ONE)), atARoot.simplify());
     }
 
     /**
@@ -138,6 +162,82 @@ class TractionRulesTest {
         // and real parts that negate as terms are the additive erasure, which discharges to the point zero
         // rather than leaving a zero real part for the coordinates to roll into the exponent.
         assertEquals(ZERO, new AdditionOperationExpr(pair(1, 1), pair(-1, 1)).simplify());
+    }
+
+    /**
+     * The identity may not drop a zero the other operand cannot absorb.
+     *
+     * <p>A sum holding the point zero keeps it, however deeply. This was the first thing to go wrong when
+     * {@code x + 0 = x} was a rule with a condition: {@code 0 + (0 + 0^2)} answered {@code 0 + 0^2}, because
+     * the standing sum on the right is not a literal and so looked like it dominated. Nothing absorbs now.
+     */
+    @Test
+    void aSumHoldingThePointZeroKeepsIt() {
+        IExpr nested = new AdditionOperationExpr(ZERO, new AdditionOperationExpr(ZERO, pow0(2, 1)));
+        assertEquals(nested, nested.simplify());
+        IExpr withMultiple = new AdditionOperationExpr(new AdditionOperationExpr(ZERO, pow0(2, 1)), pair(2, 1));
+        assertEquals(withMultiple, withMultiple.simplify());
+    }
+
+    /**
+     * {@code x + (z-z) = x}. Under addition the additive erasure is ∅ and leaves nothing at all.
+     *
+     * <p>Discharging it to the point zero first and adding that instead answered {@code 0 + (1-1)} as
+     * {@code 2·0}, where {@code 0 + 1 - 1} is 0. The residue is only left where the operation does not
+     * match, and for {@code z-z} that means a product: {@code x·(z-z)} is {@code 0x}.
+     */
+    @Test
+    void theAdditiveErasureVanishesUnderAddition() {
+        IExpr erasure = new AdditionOperationExpr(ONE, new NegationOperationExpr(ONE));
+        assertEquals(ZERO, new AdditionOperationExpr(ZERO, erasure).simplify());
+        assertEquals(ZERO, new AdditionOperationExpr(erasure, ZERO).simplify());
+        assertEquals(pair(2, 1), new AdditionOperationExpr(pair(2, 1), erasure).simplify());
+
+        // standing alone it is the point zero, and in a PRODUCT it leaves the residue zero
+        assertEquals(ZERO, erasure.simplify());
+        assertEquals(pair(2, 1), new MultiplicationOperationExpr(at(2, 1), erasure).simplify());
+    }
+
+    /**
+     * The transient {@code (0,0)} discharges where it is made, not a turn later.
+     *
+     * <p>It is erasure itself and not a member of the type, so leaving it standing for a turn let an
+     * enclosing product multiply it: {@code (0·ω)·1} answered {@code 0^(2·0)}, the exponent zeros having
+     * been added as though they were point zeros. Skipping an absent exponent in the exponent arithmetic is
+     * the other half of the same point.
+     */
+    @Test
+    void theTransientErasureDischargesBeforeAnythingCanMultiplyIt() {
+        assertEquals(ONE, new MultiplicationOperationExpr(
+                new MultiplicationOperationExpr(ZERO, OMEGA), ONE).simplify());
+        assertEquals(at(2, 1), new MultiplicationOperationExpr(
+                new MultiplicationOperationExpr(ZERO, OMEGA), at(2, 1)).simplify());
+        IExpr zeroToTheZero = new ExponentialOperationExpr(ZERO, ZERO);
+        assertEquals(ONE, new MultiplicationOperationExpr(zeroToTheZero, zeroToTheZero).simplify());
+        assertEquals(pow0(2, 1), new MultiplicationOperationExpr(zeroToTheZero, pow0(2, 1)).simplify());
+    }
+
+    /**
+     * Addition is not associative, and this is where: {@code x + 0 = x} discards a magnitude-zero term that
+     * a later erasure needed.
+     *
+     * <p>{@code (1 + -1) + 2·0} is {@code 2·0} -- the erasure vanishes and the multiple of zero survives.
+     * {@code 1 + (-1 + 2·0)} is 0 -- the identity absorbs the {@code 2·0} into the {@code -1}, and then the
+     * 1 and the -1 erase. Six pairs out of 2400 in the law sweep behaved that way.
+     *
+     * <p>All six are gone with the rule. The second route now stands instead of answering, which is the
+     * engine being unable to reach an erasure across a bracket rather than two routes disagreeing -- and
+     * that is the difference between incomplete and unsound.
+     */
+    @Test
+    void bracketingDecidesWhetherAnErasureIsReachable() {
+        IExpr erasureFirst = new AdditionOperationExpr(
+                new AdditionOperationExpr(ONE, NEG_ONE), pair(2, 1));
+        IExpr erasureSplit = new AdditionOperationExpr(
+                ONE, new AdditionOperationExpr(NEG_ONE, pair(2, 1)));
+
+        assertEquals(pair(2, 1), erasureFirst.simplify());
+        assertEquals(erasureSplit, erasureSplit.simplify());
     }
 
     /** w is invariant under neither operation, which is why the sum stands. */
@@ -309,6 +409,61 @@ class TractionRulesTest {
         }
     }
 
+    /**
+     * {@code x^-1} is not {@code 1÷x}, and the table is what says so.
+     *
+     * <p>They agree on the multiplicative axis and swap on the additive one. The reciprocal reading of
+     * {@code x^-1} is refuted by bijectivity: if {@code 1^-1} were {@code 1÷1 = 1}, the base-1 row would hold
+     * 1 twice and no -1, and base -1 would hold -1 twice and no 1. What {@code ^-1} is instead is the
+     * half-turn, {@code (x^0)^0} -- so it is a rotation of the square where {@code 1÷x} is a reflection, and
+     * no rotation is a reflection. E3 is why they ever looked interchangeable: it identifies them at base
+     * zero, which is where every negative power in the docs sits.
+     *
+     * <p>This test exists to stop the two being quietly merged again.
+     */
+    @Test
+    void theInverseExponentIsNotTheReciprocal() {
+        assertEquals(OMEGA, new ExponentialOperationExpr(ZERO, NEG_ONE).simplify());
+        assertEquals(OMEGA, new ReciprocalOperationExpr(ZERO).simplify());
+        assertEquals(ZERO, new ExponentialOperationExpr(OMEGA, NEG_ONE).simplify());
+        assertEquals(ZERO, new ReciprocalOperationExpr(OMEGA).simplify());
+
+        // and the two cells where they part company
+        assertEquals(NEG_ONE, new ExponentialOperationExpr(ONE, NEG_ONE).simplify());
+        assertEquals(ONE, new ReciprocalOperationExpr(ONE).simplify());
+        assertEquals(ONE, new ExponentialOperationExpr(NEG_ONE, NEG_ONE).simplify());
+        assertEquals(at(1, -1), new ReciprocalOperationExpr(NEG_ONE).simplify());   // -1, at other coordinates
+
+        // a negative power at a general base is a convention rather than a consequence, so it stands
+        IExpr twoToTheMinusOne = new ExponentialOperationExpr(at(2, 1), NEG_ONE);
+        assertEquals(twoToTheMinusOne, twoToTheMinusOne.simplify());
+        assertEquals(at(1, 2), new ReciprocalOperationExpr(at(2, 1)).simplify());
+    }
+
+    /**
+     * The exponent -1 acts as the half-turn, and the four unit exponents compose as ℤ/4 generated by the
+     * exponent 0: {@code (x^a)^b = x^(a∘b)} under {@code 1 -> 0, 0 -> 1, -1 -> 2, ω -> 3}.
+     *
+     * <p>∘ is not the product of the exponents -- {@code (x^0)^0} is {@code x^-1}, not {@code x^(0·0)} --
+     * which is why a power rule at general exponents has to exclude a zero exponent.
+     */
+    @Test
+    void theUnitExponentsComposeAsAFourCycle() {
+        IExpr[] units = {ZERO, ONE, OMEGA, NEG_ONE};
+        IExpr[] exponents = {ONE, ZERO, NEG_ONE, OMEGA};        // the identity first, then the generator
+        for (int i = 0; i < exponents.length; i++) {
+            for (int j = 0; j < exponents.length; j++) {
+                IExpr composed = exponents[(i + j) % exponents.length];
+                for (IExpr x : units) {
+                    IExpr twice = new ExponentialOperationExpr(
+                            new ExponentialOperationExpr(x, exponents[i]), exponents[j]).simplify();
+                    assertEquals(new ExponentialOperationExpr(x, composed).simplify(), twice,
+                            "(" + x + "^" + exponents[i] + ")^" + exponents[j]);
+                }
+            }
+        }
+    }
+
     /** Every row of it is a permutation of the four, which is what "bijective over the units" means. */
     @Test
     void theZeroPowerCycleIsWiredAndCloses() {
@@ -463,21 +618,33 @@ class TractionRulesTest {
     /**
      * The traction addition law runs, and is deliberately not wired.
      *
-     * <p>What it answers here is the fourth disagreement listed on the method: on two bare powers it gives
-     * {@code 2·0^6}, where the older docs' Maybe law gives {@code 0^6}. The factor is {@code (a+c)} at
-     * {@code a = c = 1}, and it disappears only if a bare {@code 0^b} is read as having real part 0 rather
-     * than 1 -- the same ∅-against-zero ambiguity that decides the other three.
+     * <p>A factor mentioning an absent coordinate never got generated, so it is dropped rather than
+     * evaluated, and the law then answers three cells that looked fatal correctly: {@code 0 + 1} is 1,
+     * {@code 1 + 1} is 2, and on two bare powers it is the older docs' mirror law, {@code 0^a + 0^b} at
+     * {@code 0^(a·b)}. Evaluating the dropped factors instead gave {@code 1^0}, which the cycle says is ω,
+     * and {@code 0^(0·0)}, which stands.
+     *
+     * <p>What it still disagrees with is distributivity, at {@code b = d}: the law drops the real parts and
+     * answers {@code 0^(bd)}, so {@code ω + ω} is the point zero where two omegas are {@code 2ω}. That is
+     * the value zero acting as an additive identity, which is the collision the older docs already record
+     * against the mirror law.
      */
     @Test
     void theAdditionLawIsProvisionalAndNotWired() {
-        assertEquals(Optional.of(new TractionLiteral(at(2, 1), at(6, 1))),
-                TractionRules.provisionalAddition(pow0(2, 1), pow0(3, 1))
-                        .map(rewrite -> rewrite.result().simplify()));
+        assertEquals(Optional.of(ONE), law(ZERO, ONE));                        // 0 + 1
+        assertEquals(Optional.of(at(2, 1)), law(ONE, ONE));                    // 1 + 1
+        assertEquals(Optional.of(pow0(6, 1)), law(pow0(2, 1), pow0(3, 1)));    // 0^2 + 0^3, the mirror law
+        assertEquals(Optional.of(ZERO), law(OMEGA, OMEGA));                    // w + w, against 2w
 
-        // Unwired: an unlike sum stands, and an ordinary one is still the coordinates adding.
+        // Unwired: an unlike sum stands, an ordinary one is the coordinates adding, and w + w is 2w.
         IExpr unlike = new AdditionOperationExpr(pow0(2, 1), pow0(3, 1));
         assertEquals(unlike, unlike.simplify());
         assertEquals(at(2, 1), new AdditionOperationExpr(ONE, ONE).simplify());
+        assertEquals(new TractionLiteral(at(2, 1), NEG_ONE), new AdditionOperationExpr(OMEGA, OMEGA).simplify());
+    }
+
+    private static Optional<IExpr> law(IExpr left, IExpr right) {
+        return TractionRules.provisionalAddition(left, right).map(rewrite -> rewrite.result().simplify());
     }
 
     /**

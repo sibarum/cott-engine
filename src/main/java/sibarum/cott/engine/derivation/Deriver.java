@@ -111,55 +111,74 @@ public final class Deriver {
      * </ol>
      */
     public static Optional<Rewrite> step(IExpr e) {
-        Optional<Rewrite> shape = shape(e).filter(rewrite -> !rewrite.result().equals(e));
+        return step(e, false);
+    }
+
+    /**
+     * One rewrite, knowing whether this term is an exponent or a value.
+     *
+     * <h2>The one place the two sorts are told apart</h2>
+     * They have to be. The rational zero is the absence marker in an exponent and the point zero as a value,
+     * and the same node means different things in the two places: {@code 1 + 0} as an exponent is 1, because
+     * zero is what the exponents add without effect, while as a value it is a sum holding the point zero and
+     * it stands. Getting that wrong is what let a coordinate sum absorb a point zero that the traction rules
+     * had stopped absorbing -- {@code 0 + (0 + 1)} answered 1, two zeros gone.
+     *
+     * <p>This is the narrow version of REVIEW.md's P0-4. It distinguishes the sorts by POSITION, which is all
+     * the walk needs, rather than by giving them separate types.
+     */
+    public static Optional<Rewrite> step(IExpr e, boolean inExponent) {
+        Optional<Rewrite> shape = shape(e, inExponent).filter(rewrite -> !rewrite.result().equals(e));
         if (shape.isPresent()) {
             return shape;
         }
-        Optional<Rewrite> inside = inChildren(e);
+        Optional<Rewrite> inside = inChildren(e, inExponent);
         if (inside.isPresent()) {
             return inside;
         }
-        return settle(e).filter(rewrite -> !rewrite.result().equals(e));
+        return settle(e, inExponent).filter(rewrite -> !rewrite.result().equals(e));
     }
 
     /** The first rewrite available inside {@code e}, with the whole expression rebuilt around it. */
-    private static Optional<Rewrite> inChildren(IExpr e) {
+    private static Optional<Rewrite> inChildren(IExpr e, boolean inExponent) {
         return switch (e) {
             case MultiplicationOperationExpr(IExpr l, IExpr r) ->
-                    left(l, x -> new MultiplicationOperationExpr(x, r))
-                            .or(() -> left(r, x -> new MultiplicationOperationExpr(l, x)));
+                    left(l, inExponent, x -> new MultiplicationOperationExpr(x, r))
+                            .or(() -> left(r, inExponent, x -> new MultiplicationOperationExpr(l, x)));
             case AdditionOperationExpr(IExpr l, IExpr r) ->
-                    left(l, x -> new AdditionOperationExpr(x, r))
-                            .or(() -> left(r, x -> new AdditionOperationExpr(l, x)));
+                    left(l, inExponent, x -> new AdditionOperationExpr(x, r))
+                            .or(() -> left(r, inExponent, x -> new AdditionOperationExpr(l, x)));
+            // The exponent slots, and the only places the sort changes.
             case ExponentialOperationExpr p ->
-                    left(p.base(), x -> new ExponentialOperationExpr(x, p.exponent()))
-                            .or(() -> left(p.exponent(), x -> new ExponentialOperationExpr(p.base(), x)));
+                    left(p.base(), inExponent, x -> new ExponentialOperationExpr(x, p.exponent()))
+                            .or(() -> left(p.exponent(), true, x -> new ExponentialOperationExpr(p.base(), x)));
             case TractionLiteral t ->
-                    left(t.real(), x -> new TractionLiteral(x, t.exponent()))
-                            .or(() -> left(t.exponent(), x -> new TractionLiteral(t.real(), x)));
+                    left(t.real(), inExponent, x -> new TractionLiteral(x, t.exponent()))
+                            .or(() -> left(t.exponent(), true, x -> new TractionLiteral(t.real(), x)));
             // A log's operands were never descended into, which went unnoticed while the only log rules read
             // literals the parser produces directly. log(-1, 0) is the leap read backwards and the parser
             // hands it Negation(1), so the cell could not be reached until this case existed.
             case LogarithmOperationExpr l ->
-                    left(l.operand(), x -> new LogarithmOperationExpr(l.base(), x))
-                            .or(() -> left(l.base(), x -> new LogarithmOperationExpr(x, l.operand())));
+                    left(l.operand(), inExponent, x -> new LogarithmOperationExpr(l.base(), x))
+                            .or(() -> left(l.base(), inExponent, x -> new LogarithmOperationExpr(x, l.operand())));
             case NegationOperationExpr(IExpr operand) ->
-                    left(operand, NegationOperationExpr::new);
+                    left(operand, inExponent, NegationOperationExpr::new);
             case ReciprocalOperationExpr(IExpr operand) ->
-                    left(operand, ReciprocalOperationExpr::new);
-            case CallExpr c -> inArguments(c);
+                    left(operand, inExponent, ReciprocalOperationExpr::new);
+            case CallExpr c -> inArguments(c, inExponent);
             default -> Optional.empty();
         };
     }
 
-    private static Optional<Rewrite> left(IExpr child, java.util.function.UnaryOperator<IExpr> rebuild) {
-        return step(child).map(rewrite -> new Rewrite(rebuild.apply(rewrite.result()), rewrite.rule()));
+    private static Optional<Rewrite> left(IExpr child, boolean inExponent,
+                                          java.util.function.UnaryOperator<IExpr> rebuild) {
+        return step(child, inExponent).map(rewrite -> new Rewrite(rebuild.apply(rewrite.result()), rewrite.rule()));
     }
 
-    private static Optional<Rewrite> inArguments(CallExpr call) {
+    private static Optional<Rewrite> inArguments(CallExpr call, boolean inExponent) {
         List<IExpr> args = call.args();
         for (int i = 0; i < args.size(); i++) {
-            Optional<Rewrite> rewrite = step(args.get(i));
+            Optional<Rewrite> rewrite = step(args.get(i), inExponent);
             if (rewrite.isPresent()) {
                 List<IExpr> next = new ArrayList<>(args);
                 next.set(i, rewrite.get().result());
@@ -176,12 +195,15 @@ public final class Deriver {
      * something" and the additive erasure, and the identity reading answers {@code -0} while the erasure
      * answers 0. The erasure is the more specific match and it is the right one, so it goes first.
      */
-    private static Optional<Rewrite> shape(IExpr e) {
+    private static Optional<Rewrite> shape(IExpr e, boolean inExponent) {
         return switch (e) {
-            case MultiplicationOperationExpr(IExpr l, IExpr r) -> TractionRules.product(l, r);
-            case AdditionOperationExpr(IExpr l, IExpr r) -> TractionRules.sum(l, r);
+            // The rules take the sort with them: in an exponent the rational zero is the absence marker and
+            // is not lifted to the point zero, so a sum of exponents is coordinate arithmetic. The erasures
+            // still apply there -- z-z is an erasure wherever it is written.
+            case MultiplicationOperationExpr(IExpr l, IExpr r) -> TractionRules.product(l, r, inExponent);
+            case AdditionOperationExpr(IExpr l, IExpr r) -> TractionRules.sum(l, r, inExponent);
             case ExponentialOperationExpr p -> TractionRules.power(p.base(), p.exponent());
-            case sibarum.cott.engine.rational.expr.RationalLiteral r -> TractionRules.zeroCoordinates(r);
+            case sibarum.cott.engine.rational.expr.RationalLiteral r -> TractionRules.zeroCoordinates(r, inExponent);
             case TractionLiteral t -> TractionRules.point(t);
             case LogarithmOperationExpr l -> TractionRules.logarithm(l.base(), l.operand());
             // Uncovering an operand from under two negations is not the coordinates combining, and labelling
@@ -206,12 +228,13 @@ public final class Deriver {
      * Last of the three, because both need their operands settled. The coordinates cannot combine what is not
      * yet a literal, and {@code x + 0 = x} has a condition on x that cannot be checked until x is one.
      */
-    private static Optional<Rewrite> settle(IExpr e) {
+    private static Optional<Rewrite> settle(IExpr e, boolean inExponent) {
         return switch (e) {
             case MultiplicationOperationExpr(IExpr l, IExpr r) ->
                     TractionRules.identity(l, r, true).or(() -> coordinates(l.times(r), e));
             case AdditionOperationExpr(IExpr l, IExpr r) ->
-                    TractionRules.identity(l, r, false).or(() -> coordinates(l.plus(r), e));
+                    inExponent || TractionRules.addsAsCoordinates(l, r)
+                            ? coordinates(l.plus(r), e) : Optional.empty();
             case NegationOperationExpr(IExpr operand) -> coordinates(operand.negated(), e);
             case ReciprocalOperationExpr(IExpr operand) -> coordinates(operand.reciprocal(), e);
             default -> Optional.empty();
