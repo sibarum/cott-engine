@@ -216,7 +216,7 @@ public final class Deriver {
             // The pair's own negation and reciprocal are named rules, not coordinates combining: negation
             // distributes over the product and the reciprocal is E3. 1÷0 belongs to the same method, because
             // a rational cannot hold it -- that is E9 being applied, and a derivation should say so.
-            case NegationOperationExpr(IExpr operand) -> TractionRules.negation(operand);
+            case NegationOperationExpr(IExpr operand) -> TractionRules.negation(operand, inExponent);
             case ReciprocalOperationExpr(IExpr operand) -> TractionRules.reciprocal(operand);
             default -> Optional.empty();
         };

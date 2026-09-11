@@ -78,7 +78,7 @@ public final class TractionRules {
     public static final Rule NEGATIVE_POWER =
             new Rule("(0^a)^-n = 0^(-a·n)", "x^-1 = 1÷x at the base, which E3 does not give", Rule.Status.CHOSEN);
     public static final Rule BASE_ZERO =
-            new Rule("0^E is a traction", "the pair (1, E)", Rule.Status.PROVEN);
+            new Rule("0^E is a traction", "the pair (∅, E), and 0^0 the pair (1, ∅)", Rule.Status.PROVEN);
     public static final Rule POINT =
             new Rule("0^1 = 0, a·0^0 = a", "E4 and E5", Rule.Status.PROVEN);
     public static final Rule ROLL_IN =
@@ -568,17 +568,23 @@ public final class TractionRules {
      * {@code -(0^a) = 0^(a+ω)}, is the same claim routed through the leap; it agrees at {@code -1} and is not
      * needed anywhere the real coordinate can answer.
      */
-    public static Optional<Rewrite> negation(IExpr operand) {
+    public static Optional<Rewrite> negation(IExpr operand, boolean inExponent) {
         if (operand instanceof TractionLiteral t) {
             // An absent real part has no sign to turn, so the -1 being multiplied by materialises there:
             // negation IS multiplication by -1, and (-1, 0)·(0, b) is (-1, b) by the same skipping rule.
+            // A traction in an exponent is still a value -- 0^(ω+ω) -- so this fires wherever it sits.
             return Optional.of(new Rewrite(
                     pairOf(t.isBare() ? NEG_ONE : t.real().negated(), t.exponent()), NEGATION));
         }
         // The point zero is (0, 1), whose real part is absent, so negating it lifts it first: 0 is 0^1 by E4
         // and -0 is (-1)·0^1. Leaving it to the coordinates is what used to answer -0 = 0, which is not what
         // negation is.
-        if (ZERO.equals(operand)) {
+        //
+        // NOT in an exponent. There the rational zero is the absence marker rather than the point zero, and
+        // lifting it materialises a value on the traction axis inside a slot that holds exponents: 0^(2-0)
+        // became 0^(2 + (-1)·0) and stood, where 0^(0-2) reached 0^-2 because the negation fell on the 2
+        // instead. One operation, two answers, decided by which side the zero was written on.
+        if (!inExponent && ZERO.equals(operand)) {
             return Optional.of(new Rewrite(pairOf(NEG_ONE, ONE), NEGATION));
         }
         return Optional.empty();
@@ -661,7 +667,12 @@ public final class TractionRules {
      */
     public static Optional<Rewrite> power(IExpr base, IExpr exponent) {
         if (ZERO.equals(base)) {
-            return Optional.of(new Rewrite(traction(exponent), BASE_ZERO));
+            // 0^0 is (1, ∅) and NOT (∅, ∅). The second is the double erasure -- neither coordinate defined,
+            // which is not a value at all -- and building it here made 0^0 reach 1 by discharging an erasure
+            // rather than by E5. A real part of one with the traction part absent is what 0^0 is, and
+            // point() then answers it with E4 and E5, which is the rule the theory actually cites.
+            return Optional.of(new Rewrite(
+                    absent(exponent) ? pairOf(ONE, ABSENT) : traction(exponent), BASE_ZERO));
         }
         // A base that folds to an additive unit is not read as a power of zero here: 0^0 is 1 and 0^ω is -1,
         // and for those the unit table answers rather than the power rule. Declining lets the base fold
