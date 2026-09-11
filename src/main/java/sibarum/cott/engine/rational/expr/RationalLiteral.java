@@ -22,9 +22,25 @@ import java.util.Optional;
  * <p>
  * What that buys is the two defects the docs record as the worst the coordinate model had. Cross-multiplying
  * across a zero denominator sent {@code w + w} to 1 and {@code (-1)·(-1)} to 0; with no zero denominator
- * there is nothing to cross-multiply across. And a zero numerator no longer needs to carry an orientation on
- * the denominator, because {@code -0} is not a coordinate either: it is {@code -1·0}, the pair {@code (-1, 1)},
- * which is where the theory puts it.
+ * there is nothing to cross-multiply across.
+ *
+ * <h2>Which coordinate carries the sign is not settled</h2>
+ * The class this replaced was called projective, and dropping that name was a side effect rather than a
+ * decision. What went with the zero denominator was the reason a ZERO numerator had to put its sign on the
+ * denominator -- {@code -0} needed somewhere to live, and it now lives in the traction pair as
+ * {@code (-1, 1)}. That removed a requirement. It did not decide that the sign may no longer sit there, and
+ * the two are not the same thing.
+ * <p>
+ * So the sign still moves. {@link #reciprocal()} swaps the coordinates, so {@code 1÷(-1)} is {@code (1, -1)}
+ * and {@code (-1)÷1} is {@code (-1, 1)} -- one value at two coordinates, which is the same kind of fact as
+ * {@code (2, 4)} and {@code (1, 2)} being one value at two coordinates. Since matching is on terms and never
+ * on values, nothing downstream reads them as equal.
+ * <p>
+ * Whether that difference carries information -- an orientation -- is open, and nothing here should be read
+ * as answering it. The older class had an {@code orientation()} that put the sign on whichever coordinate
+ * could hold it; it is not restored, because what orientation would MEAN is not settled either. Note that
+ * the question no longer stands or falls with {@code -0}: {@code -w} is a distinct value from {@code 0}
+ * whichever way this goes.
  *
  * @param numerator
  * @param denominator never zero
@@ -75,12 +91,19 @@ public record RationalLiteral(BigInteger numerator, BigInteger denominator) impl
     }
 
     /**
-     * The sign is carried by the numerator, and that is the only place it can be now.
+     * Negation turns the numerator, and only the numerator.
      * <p>
-     * A zero numerator negates to itself, which is right: the exponent 0 has no orientation, and the VALUE
-     * zero is not this literal. {@code 0} the value is {@code 0^1}, the pair {@code (1, 1)}, and its negation
-     * is the pair {@code (-1, 1)} -- an unresolved {@code -1·0}. The old carrier had to put the sign on the
-     * denominator to keep {@code -0} apart from {@code 0}; the traction pair holds them apart on its own.
+     * That is what this method does; it is not a claim about where the sign may be. {@link #reciprocal()}
+     * puts it on the denominator, and the class header says why that is left standing.
+     * <p>
+     * A zero numerator therefore negates to itself here. That is right for what this literal is asked to be
+     * in the carrier -- an exponent, or a real part -- because the VALUE zero is not this literal at all:
+     * {@code 0} the value is {@code 0^1}, the traction pair {@code (0, 1)}, and its negation is
+     * {@code (-1, 1)}, an unresolved {@code -1·0}. So {@code -0} does not need a spelling here, which is the
+     * requirement the older carrier had and this one does not.
+     * <p>
+     * It is not evidence that a zero numerator HAS no orientation, only that nothing currently asks it for
+     * one.
      */
     @Override
     public IExpr negated() {
@@ -96,7 +119,12 @@ public record RationalLiteral(BigInteger numerator, BigInteger denominator) impl
     }
 
     /**
-     * The two coordinates trade places.
+     * The two coordinates trade places, sign and all.
+     * <p>
+     * So this is where a negative denominator comes from: {@code 1÷(-1)} is {@code (1, -1)}, where
+     * {@code (-1)÷1} is {@code (-1, 1)}. One value, two coordinates, and not the same literal -- which is
+     * what this pair does everywhere, {@code (2, 4)} against {@code (1, 2)} included. It is left alone
+     * rather than normalised; see the class header.
      * <p>
      * Not at a zero numerator: {@code 1÷0} is E9 and the answer is a traction, not a pair. A rule does that,
      * so a derivation shows the axiom being used instead of finding it already applied. Here the term stands.

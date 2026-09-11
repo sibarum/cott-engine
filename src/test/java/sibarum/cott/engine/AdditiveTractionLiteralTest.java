@@ -112,24 +112,20 @@ class AdditiveTractionLiteralTest {
     }
 
     /**
-     * Omega should be its own additive inverse, because {@code 1/(-1)} is {@code -1}. <b>It is not, and
-     * this test pins why.</b>
+     * Omega is its own additive inverse by VALUE and not by TERM, and this test pins the difference.
      *
-     * <p>By value it is: the inverse comes back as {@code 0 + 0^(1÷-1)}, and {@code 1÷-1} is -1. By TERM it
-     * is not, because {@link RationalLiteral#reciprocal()} swaps the two coordinates and so leaves the sign
-     * on the DENOMINATOR -- {@code (1,-1)} where omega's own exponent is {@code (-1,1)}. Two spellings of
-     * one rational, and since matching here is on terms and never on values, nothing downstream can see
-     * that they are the same: the erasure guards compare denominators, so {@code ω + inv(ω)} does not
-     * cancel, and {@code 0^(-1÷-1)} is not recognised as {@code 0^1}.
+     * <p>{@code inv(ω)} comes back as {@code 0 + 0^(1÷-1)}, and {@code 1÷-1} is -1, so the value is omega.
+     * The coordinates are not omega's: {@link RationalLiteral#reciprocal()} swaps the two slots, so the sign
+     * lands on the denominator -- {@code (1,-1)} where omega's own exponent is {@code (-1,1)}.
      *
-     * <p>That is not this node's defect -- it is the carrier's, and it is older. The same spelling split
-     * makes {@code 1 + 1÷(-1)} answer {@code (1÷-1)·0} where {@code 1 + (-1)÷1} answers the point zero.
-     * {@link RationalLiteral}'s own documentation says the sign is carried by the numerator and that this
-     * is the only place it can be; {@code reciprocal()} does not keep to that.
+     * <p>That is the pair behaving as it does everywhere, not a defect. {@code (2,4)} and {@code (1,2)} are
+     * one value at two coordinates and are not the same literal either. Since matching here is on terms and
+     * never on values, nothing downstream reads them as equal: {@code ω + inv(ω)} does not cancel, and
+     * {@code 0^(-1÷-1)} is not recognised as {@code 0^1}.
      *
-     * <p>It is left standing rather than normalised away, because where the sign sits is one of the
-     * invariants the algebra may want to track rather than erase, and normalising it here would decide
-     * that. What this test records is the cost of not deciding.
+     * <p>Whether that difference carries information is open -- what an orientation would MEAN is not
+     * settled, and the question no longer rides on {@code -0}, since {@code -ω} is a distinct value from
+     * {@code 0} either way. So this records what the engine does, and takes no position on what it should.
      */
     @Test
     void omegaIsItsOwnAdditiveInverseByValueButNotByTerm() {
