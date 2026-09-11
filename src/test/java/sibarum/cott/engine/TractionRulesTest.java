@@ -1,6 +1,9 @@
 package sibarum.cott.engine;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.Cott;
+import sibarum.cott.Notation;
+import sibarum.cott.Parser;
 import sibarum.cott.engine.base.expr.AtomExpr;
 import sibarum.cott.engine.base.expr.IExpr;
 import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
@@ -344,6 +347,58 @@ class TractionRulesTest {
         // any term at all, not only a value: x - x is the same erasure
         AtomExpr x = new AtomExpr("x");
         assertEquals(ZERO, new AdditionOperationExpr(x, new NegationOperationExpr(x)).simplify());
+    }
+
+    /**
+     * The leap folds before E1 reads the term, however the other operand happened to be written.
+     *
+     * <p>{@code 0^ω} is a bare power of zero as a TERM, so E1 will read it and sum its exponent -- and
+     * {@code 0^(ω+1)} is a term no rule finishes, because the fold matches an exponent that IS ω rather
+     * than one containing it. Once E1 has it, the ω is gone.
+     *
+     * <p>That was being decided by how far the OTHER factor had reduced. {@code 0^ω · 0^1} declined,
+     * because the right operand was still an exponential and not yet a pair, so the fold ran first and the
+     * answer was {@code -0}; {@code 0^ω · 0} fired, because the rational zero lifts on sight, and the answer
+     * was {@code 0^(ω+1)}. One value, two irreducible spellings, chosen by a detail of the input.
+     */
+    @Test
+    void theLeapFoldsBeforeE1TakesTheExponent() {
+        IExpr minusZero = pair(-1, 1);
+        assertEquals(minusZero, Cott.reduce(Parser.parse(Notation.normalize("0^w*0^1"))));
+        assertEquals(minusZero, Cott.reduce(Parser.parse(Notation.normalize("0^w*0"))));
+        assertEquals(minusZero, Cott.reduce(Parser.parse(Notation.normalize("0*0^w"))));
+        assertEquals(minusZero, Cott.reduce(Parser.parse(Notation.normalize("0^1*0^w"))));
+    }
+
+    /**
+     * A quotient subtracts the exponents and the reciprocal negates one, so both lose the ω the same way.
+     *
+     * <p>{@code 0^ω ÷ 0} would be {@code 0^(ω-1)} and stand; folding first gives {@code -1 ÷ 0}, which is
+     * {@code -1·ω}, a pair the carrier holds. E3 is the subtler one -- it reaches {@code 0^ω} through
+     * {@code 1÷(a·0^b)} without any second operand being involved at all.
+     */
+    @Test
+    void theSameHoldsForQuotientsAndReciprocals() {
+        IExpr minusOmega = new TractionLiteral(NEG_ONE, NEG_ONE);
+        assertEquals(minusOmega, Cott.reduce(Parser.parse(Notation.normalize("0^w/0"))));
+        assertEquals(minusOmega, Cott.reduce(Parser.parse(Notation.normalize("0^w/0^1"))));
+
+        // and the other way round, where E3 is what would have taken the exponent
+        IExpr byPower = Cott.reduce(Parser.parse(Notation.normalize("0/0^w")));
+        assertEquals(byPower, Cott.reduce(Parser.parse(Notation.normalize("0^1/0^w"))));
+    }
+
+    /**
+     * {@code 0^0} is NOT deferred, and must not be: its exponent is the absence marker, which the exponent
+     * sum skips, so E1 loses nothing. {@code 0^0 · 0^2} is {@code 0^2} and the docs say so. Only ω is a
+     * value in that slot, and only a value can be summed away.
+     */
+    @Test
+    void aZeroExponentIsNotDeferred() {
+        IExpr zeroSquared = pow0(2, 1);
+        assertEquals(zeroSquared, Cott.reduce(Parser.parse(Notation.normalize("0^0*0^2"))));
+        assertEquals(zeroSquared, Cott.reduce(Parser.parse(Notation.normalize("0^2*0^0"))));
+        assertEquals(ONE, Cott.reduce(Parser.parse(Notation.normalize("0^0*0^0"))));
     }
 
     /**

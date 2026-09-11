@@ -264,6 +264,27 @@ public final class TractionRules {
      * is {@code 1^-1 = -1}, not {@code 0^(-0)}, and {@code (0^ω)^-1} is {@code (-1)^-1 = 1}, not
      * {@code 0^(-ω)}.
      */
+    /**
+     * Whether this term is a bare {@code 0^ω}, which the leap will fold and E1 must not consume first.
+     * <p>
+     * {@code 0^ω} is a bare power of zero as a TERM, so E1 reads it and sums its exponent -- and
+     * {@code 0^(ω+1)} is a term no rule finishes, because {@link #point} folds an exponent that IS ω and
+     * not one that merely contains it. The ω is gone for good the moment E1 has it.
+     * <p>
+     * That would be a choice of routes if it were made consistently, and it was not: it was made by how far
+     * the OTHER factor happened to have reduced. {@code 0^ω · 0^1} declined, because the right operand was
+     * still an exponential rather than a pair, so the fold ran and the answer was {@code -0}; {@code 0^ω · 0}
+     * fired, because the rational zero lifts on sight, and the answer was {@code 0^(ω+1)}. One value, two
+     * spellings, and the engine picked between them on a detail of the input's shape.
+     * <p>
+     * {@code 0^0} is not in this. Its exponent is the absence marker, which {@link #exponentSum} skips, so
+     * E1 loses nothing -- {@code 0^0 · 0^2} is {@code 0^2} and the doc says so. Only ω is a value in that
+     * slot, and only a value can be summed away.
+     */
+    private static boolean foldsThroughTheLeap(IExpr e) {
+        return e instanceof TractionLiteral t && t.isBare() && OMEGA.equals(t.exponent());
+    }
+
     private static boolean foldsToAnAdditiveUnit(IExpr e) {
         IExpr exponent = e instanceof TractionLiteral t && t.isBare() ? t.exponent()
                 : e instanceof ExponentialOperationExpr p && ZERO.equals(p.base()) ? p.exponent()
@@ -470,6 +491,12 @@ public final class TractionRules {
         if (left instanceof ReciprocalOperationExpr(IExpr by)) {
             return quotient(right, by, inExponent);
         }
+        // Let the leap fold before E1 reads the term. See foldsThroughTheLeap: E1 would sum the ω into the
+        // exponent and the fold could never see it again, and which of the two happened was decided by how
+        // far the other factor had reduced.
+        if (foldsThroughTheLeap(left) || foldsThroughTheLeap(right)) {
+            return Optional.empty();
+        }
         if (!liftable(left, inExponent) && !liftable(right, inExponent)) {
             return Optional.empty();
         }
@@ -504,6 +531,12 @@ public final class TractionRules {
         boolean coordinates = isCoordinate(of) && isCoordinate(by);
         if (!coordinates && of.equals(by)) {
             return Optional.of(new Rewrite(ONE, ERASURE));
+        }
+        // The same deferral as in product(): a quotient subtracts the exponents, so it loses the ω the same
+        // way a product loses it. 0^ω ÷ 0 would become 0^(ω-1) and stand, where folding first gives -1 ÷ 0,
+        // which is -1·ω -- a pair the carrier holds.
+        if (foldsThroughTheLeap(of) || foldsThroughTheLeap(by)) {
+            return Optional.empty();
         }
         if (!liftable(of, inExponent) && !liftable(by, inExponent)) {
             return Optional.empty();
@@ -655,6 +688,13 @@ public final class TractionRules {
     public static Optional<Rewrite> reciprocal(IExpr operand) {
         if (ZERO.equals(operand)) {
             return Optional.of(new Rewrite(OMEGA, OMEGA_DEF));
+        }
+        // The same deferral as in product() and quotient(). E3 NEGATES the exponent, which loses the ω as
+        // surely as summing it does -- 0^ω would become 0^(-ω) and stand, where folding first gives 1÷(-1),
+        // which is -1. Negation is not in this: it leaves the exponent alone, so point() can still see the ω
+        // and fold under the real part it materialised.
+        if (foldsThroughTheLeap(operand)) {
+            return Optional.empty();
         }
         if (operand instanceof TractionLiteral t) {
             // An absent real part stays absent: 1÷∅ is ∅, since ∅ is one multiplicatively.
