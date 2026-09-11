@@ -10,6 +10,7 @@ import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
 import sibarum.cott.engine.rational.expr.RationalLiteral;
+import sibarum.cott.engine.traction.expr.AdditiveTractionLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.math.BigDecimal;
@@ -85,6 +86,12 @@ public final class Render {
         return switch (e) {
             case RationalLiteral p -> coordinates(p);
             case TractionLiteral t -> traction(t);
+            // The additive pair prints as the sum it is, through the same path a written sum takes, so that
+            // 1+0 and 1+ω read back as themselves. A bare one is just its power -- the fold says so too, but
+            // a printer is handed terms that have not reduced and may not assume they have.
+            case AdditiveTractionLiteral t -> t.isBare()
+                    ? powerName(t.exponent())
+                    : sum(new AdditionOperationExpr(t.real(), TractionLiteral.of(t.exponent())));
             case AtomExpr a -> a.name();
             // A call is written the way it is typed. Its arguments are whole expressions and the call's own
             // brackets already separate them, so nothing inside needs brackets of its own.

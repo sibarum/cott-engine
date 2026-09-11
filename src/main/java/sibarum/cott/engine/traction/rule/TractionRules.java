@@ -9,6 +9,7 @@ import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
 import sibarum.cott.engine.rational.expr.RationalLiteral;
+import sibarum.cott.engine.traction.expr.AdditiveTractionLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 
 import java.math.BigInteger;
@@ -122,6 +123,31 @@ public final class TractionRules {
                     "the only completion keeping x^1 = x, every log, and the reciprocal law", Rule.Status.CHOSEN);
     public static final Rule UNIT_LOG =
             new Rule("the unit logarithm table", "the exponentiation table inverted", Rule.Status.CHOSEN);
+
+    /**
+     * The additive node's inverse, which is NOT the multiplicative node's negation.
+     * <p>
+     * An inverse has to erase both coordinates, each under the operation acting there. In {@code n + 0^t}
+     * the traction parts are joined by {@code ·}, so erasing them takes {@code 1/t} and not {@code -t}:
+     * {@code inv(n, t) = (-n, 1/t)}, against {@code recip(n, t) = (1/n, -t)}. Each negates its own
+     * coordinate and applies the OTHER operation's inverse to the traction part, which is the same duality
+     * E1 and E2 state. {@code -} is then not primitive: {@code a - b} is {@code a + inv(b)}.
+     */
+    public static final Rule ADDITIVE_INVERSE =
+            new Rule("inv(n, t) = (-n, 1/t)", "the inverse erases both coordinates", Rule.Status.PROVEN);
+    /** {@code n + ∅ = n} and {@code ∅ + 0^t = 0^t}: an absent coordinate is skipped in this node too. */
+    public static final Rule ADDITIVE_POINT =
+            new Rule("(n, ∅) = n, (∅, t) = 0^t", "an absent coordinate is skipped", Rule.Status.PROVEN);
+    /**
+     * The additive node's own sum, which needs the mirror law and so is not wired.
+     * <p>
+     * {@code (a + 0^b) + (c + 0^d)} is {@code (a+c) + (0^b + 0^d)}, and closing the second bracket is
+     * {@code 0^b + 0^d = 0^(b·d)} -- the mirror law, which is Traction-Theory.md's addition law on bare
+     * powers and is not adopted there. It is the same disagreement: the law makes {@code ω + ω} the point
+     * zero where distributivity makes it {@code 2ω}.
+     */
+    public static final Rule MIRROR_SUM =
+            new Rule("(a, b) + (c, d) = (a+c, b·d)", "the mirror law, not adopted", Rule.Status.OPEN);
 
     public static final Rule ADDITION_LAW =
             new Rule("a·0^b + c·0^d = (a+c)·a^d·c^b·0^(bd)", "Traction-Theory.md: Addition", Rule.Status.OPEN);
@@ -387,6 +413,27 @@ public final class TractionRules {
     }
 
     /**
+     * What an additive pair folds to, where it folds: {@code n + ∅ = n} and {@code ∅ + 0^t = 0^t}.
+     * <p>
+     * Both are the absent coordinate being skipped, which is the rule that survives the change of join --
+     * {@code 1} is {@code 1 + ∅} as readily as {@code 1 · ∅}. The second fold hands the term to the
+     * multiplicative node, because a bare power of zero is one and the same value however it was written.
+     * <p>
+     * Both coordinates absent is {@code (0,0)}, the double erasure, and the first fold returns it as the
+     * marker itself -- which standing alone is the point zero, addition's own discharge. Whether it should
+     * instead stay as a member of the type is open; see Traction-Theory.md, Carrier.
+     */
+    public static Optional<Rewrite> additivePoint(AdditiveTractionLiteral t) {
+        if (absent(t.exponent())) {
+            return Optional.of(new Rewrite(t.real(), ADDITIVE_POINT));       // n + ∅ = n
+        }
+        if (t.isBare()) {
+            return Optional.of(new Rewrite(traction(t.exponent()), ADDITIVE_POINT));   // ∅ + 0^t = 0^t
+        }
+        return Optional.empty();
+    }
+
+    /**
      * A zero numerator away from the coordinate {@code (0, 1)}: {@code 0÷d} is {@code (1÷d)·0}, the pair.
      * <p>
      * The rational zero at {@code (0, 1)} is the point zero and stays as it is. Anything else with a zero
@@ -569,6 +616,15 @@ public final class TractionRules {
      * needed anywhere the real coordinate can answer.
      */
     public static Optional<Rewrite> negation(IExpr operand, boolean inExponent) {
+        // The additive node's inverse reciprocates the traction part instead of leaving it alone, because
+        // there the traction parts are joined by · and that is what erases them. An absent real part has
+        // nothing to turn and stays absent -- additively the marker is already the identity, so there is no
+        // -1 to materialise the way there is in a product.
+        if (operand instanceof AdditiveTractionLiteral t) {
+            return Optional.of(new Rewrite(new AdditiveTractionLiteral(
+                    t.isBare() ? ABSENT : t.real().negated(),
+                    absent(t.exponent()) ? ABSENT : t.exponent().reciprocal()), ADDITIVE_INVERSE));
+        }
         if (operand instanceof TractionLiteral t) {
             // An absent real part has no sign to turn, so the -1 being multiplied by materialises there:
             // negation IS multiplication by -1, and (-1, 0)·(0, b) is (-1, b) by the same skipping rule.
@@ -818,6 +874,27 @@ public final class TractionRules {
             }
             return new Rewrite(result == null ? ONE : result, ADDITION_LAW);
         }));
+    }
+
+    /**
+     * The additive node's sum, {@code (a, b) + (c, d) = (a+c, b·d)}.
+     * <p>
+     * Not wired, for one reason: the traction coordinate multiplies, and that is
+     * {@code 0^b + 0^d = 0^(b·d)} -- the mirror law, which Traction-Theory.md does not adopt because it
+     * makes {@code ω + ω} the point zero where distributivity makes it {@code 2ω}. Wiring this would adopt
+     * it through the carrier rather than through the law, which is the same decision wearing a different
+     * hat.
+     * <p>
+     * It is here because it is what makes the inverse testable. {@code z + inv(z)} erases in both
+     * coordinates at once and lands on {@code (0,0)}: {@code 1 + (-1)} is
+     * {@code (1,∅) + (-1,∅) = (0, ∅·∅)}, the double erasure, rather than a value.
+     */
+    public static Optional<Rewrite> provisionalAdditiveSum(AdditiveTractionLiteral l,
+                                                           AdditiveTractionLiteral r) {
+        IExpr real = absent(l.real()) ? r.real() : absent(r.real()) ? l.real() : plus(l.real(), r.real());
+        IExpr exponent = absent(l.exponent()) ? r.exponent()
+                : absent(r.exponent()) ? l.exponent() : times(l.exponent(), r.exponent());
+        return Optional.of(new Rewrite(new AdditiveTractionLiteral(real, exponent), MIRROR_SUM));
     }
 
     /**

@@ -46,7 +46,7 @@ import java.util.Optional;
  * @param real     the real part n, zero meaning absent
  * @param exponent the traction part's exponent t, zero meaning absent
  */
-public record TractionLiteral(IExpr real, IExpr exponent) implements IExpr {
+public record TractionLiteral(IExpr real, IExpr exponent) implements ITractionPair {
 
     /** The absent coordinate, in either slot. */
     public static final RationalLiteral ABSENT = RationalLiteral.ZERO;
@@ -60,6 +60,7 @@ public record TractionLiteral(IExpr real, IExpr exponent) implements IExpr {
     }
 
     /** Whether the real part is absent, so that this is a bare power of zero. */
+    @Override
     public boolean isBare() {
         return ABSENT.equals(real);
     }

@@ -10,6 +10,7 @@ import sibarum.cott.engine.operation.binary.LogarithmOperationExpr;
 import sibarum.cott.engine.operation.binary.MultiplicationOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.operation.unary.ReciprocalOperationExpr;
+import sibarum.cott.engine.traction.expr.AdditiveTractionLiteral;
 import sibarum.cott.engine.traction.expr.TractionLiteral;
 import sibarum.cott.engine.traction.rule.TractionRules;
 
@@ -155,6 +156,9 @@ public final class Deriver {
             case TractionLiteral t ->
                     left(t.real(), inExponent, x -> new TractionLiteral(x, t.exponent()))
                             .or(() -> left(t.exponent(), true, x -> new TractionLiteral(t.real(), x)));
+            case AdditiveTractionLiteral t ->
+                    left(t.real(), inExponent, x -> new AdditiveTractionLiteral(x, t.exponent()))
+                            .or(() -> left(t.exponent(), true, x -> new AdditiveTractionLiteral(t.real(), x)));
             // A log's operands were never descended into, which went unnoticed while the only log rules read
             // literals the parser produces directly. log(-1, 0) is the leap read backwards and the parser
             // hands it Negation(1), so the cell could not be reached until this case existed.
@@ -205,6 +209,7 @@ public final class Deriver {
             case ExponentialOperationExpr p -> TractionRules.power(p.base(), p.exponent());
             case sibarum.cott.engine.rational.expr.RationalLiteral r -> TractionRules.zeroCoordinates(r, inExponent);
             case TractionLiteral t -> TractionRules.point(t);
+            case AdditiveTractionLiteral t -> TractionRules.additivePoint(t);
             case LogarithmOperationExpr l -> TractionRules.logarithm(l.base(), l.operand());
             // Uncovering an operand from under two negations is not the coordinates combining, and labelling
             // it that way would have put a false reason in a derivation. It is reversibility, which is what
