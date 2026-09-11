@@ -22,9 +22,14 @@ Zero is invertible; that is the founding commitment, and it is what puts the the
 and meadows (§9).
 
 `T` is currently presented by **coordinates**: a pair `(n, d) ∈ ℤ × ℤ`, with `(0,0)` identified to `(1,1)`
-and **no other identification**. Nothing is reduced by a common factor and no sign is moved between the
-slots. So `(1,2)` and `(2,4)` are distinct objects that both project to `1/2`, and `(0,1)` and `(0,-1)` are
-distinct objects both of magnitude zero (the second is `-0`; see §6).
+and **no other identification**. That is the whole of the normalization protocol: it does not reduce by a
+common factor and it does not move a sign between the slots. So `(1,2)` and `(2,4)` are distinct objects
+that both project to `1/2`, and `(0,1)` and `(0,-1)` are distinct objects both of magnitude zero (the second
+is `-0`; see §6).
+
+This is a statement about which pairs are *identified*, not about which pairs the operations may *produce*.
+An operation is free to put a sign wherever it has one to put — negation at a zero numerator puts it on the
+denominator, because there is nowhere else — and that is not the protocol moving it.
 
 **This is the first thing we would like an opinion on.** The axioms in §3 are written with `=`, and there are
 two readings:
