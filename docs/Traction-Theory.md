@@ -52,8 +52,21 @@ coefficient of zero would annihilate and this theory has no annihilator.
 
 So at most one coordinate is ever zero, and one of the two is always defined.
 
-The coordinate (0,0) is not a member of the type, but can be used as a transient value denoting erasure.
-It should be immediately translated to (1,0) or (0,1) as per the rules of discharge.
+The coordinate (0,0) is not `0^0`. `0^0` is (1,0): a real part of one, and a traction part that is
+absent. (0,0) is the absence of any value — neither coordinate defined, a double erasure — and it
+discharges to (1,0), (0,1) or (1,1) as the use requires.
+
+**Whether it is a member of the type is open.** It was written here as a transient that must be
+translated at once. But under the operations it never has to discharge, because both its coordinates
+are skipped and it is then the identity of whichever operation reaches it, which is what ∅ means:
+
+```
+0ω + 1 = (0,0) + (1,0) = (1, 0) = 1
+0ω · 0 = (0,0) · (0,1) = (0, 1) = 0
+```
+
+Admitting it costs the discharge of `0·ω` to the value 1: held as (0,0) it is ∅, so `0ω + 1` is 1
+rather than 2. That is the open question, not the spelling.
 
 **An absent coordinate is skipped, not computed with.** In a product the real parts combine as `a·c`
 with an absent one skipped, which is what ∅ means multiplicatively:
@@ -439,13 +452,15 @@ The weight it carries is this identification, not E3.
 
 ### Negation
 
-Carrier negation:
+Carrier negation, in the multiplicative node `n·0^t`:
 
 ```
 -(a, b) = (-a, b),  and  -(∅, b) = (-1, b)
 ```
 
-Negation turns the real part and leaves the traction part alone. Derivation:
+Negation turns the real part and leaves the traction part alone. That is the rule for this node, and
+it is not the additive node's: an additive inverse has to reciprocate the traction part, since that
+is the coordinate addition combines multiplicatively. Derivation:
 
 ```
 -(a·0^b) = (-1)·(a·0^b) = (-1·a)·0^b = (-a)·0^b
@@ -477,16 +492,26 @@ and `b+ω` is not `b-1` unless `ω = -1`.
 -0 = -1·0 = (-1, 1)          and it stands
 ```
 
-`-1·0 = ω` is refutable, so the pair is not omega either:
+`-1·0 = ω` is a conjecture and it is open. There is no standing argument either way.
+
+It was recorded here as refuted, from E1 + E3 + E6: read `-1·0` as `0^ω · 0^1 = 0^(ω+1)`, let the
+conjecture make that `0^-1`, read the exponents off to get `ω + 1 = -1`, and end at `2 = -2`. **That
+proof is void.** Both of those steps need `0^a = 0^b` to give `a = b`, and it does not — no more than
+`e^(2πi) = e^0` makes `2πi` zero. Strike them and the chain never reaches a contradiction.
+
+What the conjecture does cost is one identity, and this much needs only E1:
 
 ```
--1·0 = 0^ω · 0^1 = 0^(ω+1)   the leap, then E1
-0^(ω+1) = 0^-1               the conjecture, since ω = 0^-1
-ω + 1 = -1                   E6, so ω = -2 as an exponent
--1 = 0^ω = 0^-2              substituting
-1÷(-1) = 1÷0^-2 = 0^2        E3, and -1 is its own reciprocal
-0^2 = 0^-2                   so 2 = -2 by E6
+(-1·0)·(-1·0) = (-1)(-1)·0·0 = 0^2
+and if -1·0 = ω, the same product is ω·ω = 0^-2
+so                                     0^2 = 0^-2
 ```
+
+which is a consequence and not a contradiction — getting from it to `2 = -2` needs the same exponent
+uniqueness that is not available. It also spends `(-1)(-1) = 1`, which is itself a discard: that
+should be `(-1)^2`, since collapsing it loses whether the two factors were `1·1` or `(-1)·(-1)`.
+
+So the cost is recorded and unpaid, and the pair `(-1, 1)` stands.
 
 ### Reciprocation
 
