@@ -23,6 +23,59 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class RoundTripTest {
 
+    /**
+     * Every letter is a variable, not the three the parser used to accept.
+     *
+     * <p>The engine never needed this: an atom is a leaf, no rule in {@code TractionRules} matches one, and
+     * the name has always been carried through untouched. The whole restriction was two lines of syntax --
+     * the parser's list of letters, and the character sets {@link Notation} uses to decide where
+     * juxtaposition multiplies.
+     */
+    @org.junit.jupiter.api.Test
+    void anyLetterIsAVariable() {
+        assertEquals("a", Cott.evaluate("a"));
+        assertEquals("ab", Cott.evaluate("a·b"));
+        assertEquals("2a", Cott.evaluate("2a"));           // juxtaposition multiplies, as with 2x
+        assertEquals("1", Cott.evaluate("a/a"));           // and the erasure sees it, as with x/x
+        assertEquals("a·0", Cott.evaluate("a*0"));         // a term the theory has no rule for still stands
+        assertEquals(Cott.evaluate("a·b"), Cott.evaluate("ab"));
+    }
+
+    /** The four reserved letters keep their meanings and are reached before any variable reading. */
+    @Test
+    void theReservedLettersAreStillReserved() {
+        assertEquals("ω", Cott.evaluate("w"));             // normalize maps w to omega
+        assertEquals("0", Cott.evaluate("sin(0)"));
+        assertEquals("1", Cott.evaluate("cos(0)"));
+        // e and pi are atoms with REAL READINGS, which is what a free variable does not have: a call on one
+        // answers, a call on a variable stands. That is the whole difference, and it is why they stay
+        // reserved rather than becoming two more letters.
+        assertEquals("1.218282905017", Cott.evaluate("atan(e)"));
+        assertEquals("0", Cott.evaluate("sin(π)"));
+        assertEquals("atan(a)", Cott.evaluate("atan(a)"));
+        assertEquals("i", Cott.evaluate("i"));
+    }
+
+    /**
+     * A product of variables must not print as a name.
+     *
+     * <p>{@code c·o·s} is three variables, and {@code cos} is the cosine -- so dropping every sign would
+     * hand back something that reads as a call and then fails for want of brackets. The vocabulary is
+     * matched before single characters, so once the boundary is inside a word it cannot be recovered. This
+     * hazard did not exist while the variables were x, y and z, because no word is spelled out of those.
+     */
+    @Test
+    void aProductOfVariablesDoesNotPrintAsAName() {
+        for (String product : new String[]{"c·o·s", "s·i·n", "t·a·n", "l·o·g"}) {
+            String once = Cott.evaluate(product);
+            assertEquals(once, Cott.evaluate(once), "not re-readable: " + product + " -> " + once);
+        }
+        // the sign is kept exactly where the word would swallow the join, and nowhere else
+        assertEquals("co·s", Cott.evaluate("c·o·s"));
+        assertEquals("abs", Cott.evaluate("a·b·s"));       // no such function, so nothing to collide with
+        assertEquals("2sin(x)", Cott.evaluate("2·sin(x)"));// a word BEGINNING at the join is safe
+    }
+
     private static String show(String entry) {
         return Render.show(Parser.parse(Notation.normalize(entry)));
     }

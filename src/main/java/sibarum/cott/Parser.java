@@ -140,7 +140,6 @@ public final class Parser {
             // π and e have no base-0 exponential form and are not derivable here, so they are atoms
             case 'π' -> new AtomExpr("π");
             case 'e' -> new AtomExpr("e");
-            case 'x', 'y', 'z' -> new AtomExpr(String.valueOf(c));
             default -> null;
         };
         if (named != null) {
@@ -149,6 +148,18 @@ public final class Parser {
         }
         if (Notation.numeral(c)) {
             return number();
+        }
+        // Any other letter is a variable. Not a list of three, because nothing below this layer ever cared
+        // which letter it was -- an atom is a leaf, no rule matches one, and the engine has always carried
+        // whatever name it was given. The four above are reserved and are reached first, so a variable can
+        // never be one of them.
+        //
+        // Single letters only, and that is the same rule as before rather than a limitation of it: xy is
+        // x·y, so a run of letters cannot be read as one name by default. What breaks that tie is a
+        // vocabulary, which is what Bindings is for -- see Notation.
+        if (Notation.variable(c)) {
+            next();
+            return new AtomExpr(String.valueOf(c));
         }
         throw new SyntaxException("'" + c + "' not in COTT");
     }

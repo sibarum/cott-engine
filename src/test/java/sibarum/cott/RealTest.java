@@ -93,8 +93,8 @@ class RealTest {
         // Written order, since nothing canonicalises a sum yet -- that is phase 2. The call standing is the
         // property under test here and it is unaffected.
         assertEquals("cos(x+1)", ev("cos(x+1)"));
-        assertEquals("x·sin(x)", ev("x·sin(x)"));
-        assertEquals("2·sin(x)", ev("2sin(x)"));
+        assertEquals("xsin(x)", ev("x·sin(x)"));
+        assertEquals("2sin(x)", ev("2sin(x)"));
         // and a call that HAS reduced is an ordinary number in whatever surrounds it
         assertEquals("2", ev("1+sin(π÷2)"));
     }
@@ -126,13 +126,14 @@ class RealTest {
     void wordsDoNotDisturbJuxtaposition() {
         assertEquals("xy", ev("xy"));            // still a product, as it has always been
         assertEquals(ev("x·y"), ev("xy"));
-        assertEquals("2·sin(x)", ev("2 sin(x)"));
+        assertEquals("2sin(x)", ev("2 sin(x)"));
         // Written order. Canonical ordering was the evaluator sorting a product, and there is no rule to do
         // it yet -- phase 2. What is under test here is that the word scan found the call at all.
         assertEquals("sin(x)y", ev("sin(x)y"));
-        // A sign is needed here and not above: c does not start an operand, so juxtaposition would not read
-        // back as a product. That rule is Notation.implied and is exactly what this test is about.
-        assertEquals("sin(x)·cos(y)", ev("sin(x)cos(y)"));
+        // No sign needed: every letter starts an operand now, and the scan finds cos as its own token on the
+        // way back in, which is where the sign goes. A word BEGINNING at the join is safe; one crossing it
+        // is not, and Render.wordSpansTheJoin is what keeps c·o·s from printing as cos.
+        assertEquals("sin(x)cos(y)", ev("sin(x)cos(y)"));
         // sinh wins over sin, because the scan takes the longest word standing at that point
         assertEquals("sinh(x)", ev("sinh(x)"));
     }

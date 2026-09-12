@@ -63,10 +63,10 @@ class BindingsTest {
     /** The names have to be words, and a word must not disturb juxtaposition. */
     @Test
     void aNameIsOneTokenOnlyOnceItIsDefined() {
-        // Undefined, it is five juxtaposed letters -- and t is not one of COTT's three variables, so it is
-        // the letter that is refused rather than the word. That is the old behaviour, exactly.
-        assertEquals("'t' not in COTT",
-                assertThrows(SyntaxException.class, () -> Cott.evaluate("theta")).getMessage());
+        // Undefined, it is five juxtaposed variables -- which is what this class has always said it was,
+        // and is now literally true. It used to be refused instead, because t was not one of the three
+        // letters the parser would take; every letter is a variable now, so the product is what you get.
+        assertEquals(Cott.evaluate("t·h·e·t·a"), Cott.evaluate("theta"));
         Bindings s = Bindings.EMPTY.define("theta = 2");
         assertEquals("2", ev(s, "theta"));
         assertEquals("4", ev(s, "2theta"));
@@ -114,7 +114,7 @@ class BindingsTest {
         // The same body with f declared as a VALUE is a product, and answers as one rather than failing.
         Bindings product = Bindings.EMPTY.define("m(f, n) = f(f(n))");
         assertEquals("18", ev(product, "m(3, 2)"));
-        assertEquals("m(f, n) = f·f·n", product.get("m").source());
+        assertEquals("m(f, n) = ffn", product.get("m").source());
         assertEquals("iter(f(), n) = f(f(n))",
                 Bindings.EMPTY.define("iter(f(), n) = f(f(n))").get("iter").source());
     }
@@ -191,7 +191,7 @@ class BindingsTest {
     void aDefinitionReadsBackAsItWasWritten() {
         Bindings s = Bindings.EMPTY.define("k = 3").define("f(t, u) = t·u+k");
         assertEquals("k = 3", s.get("k").source());
-        assertEquals("f(t, u) = t·u+k", s.get("f").source());   // as typed, not as folded
+        assertEquals("f(t, u) = tu+k", s.get("f").source());     // the sign is implied, and reads back
     }
 
     @Test

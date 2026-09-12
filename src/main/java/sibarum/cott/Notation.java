@@ -174,19 +174,40 @@ public final class Notation {
      * mid-numeral the digits belong to one operand, since {@code 2·3} is not {@code 23}.
      *
      * <p>Character by character, which is what {@link Render} needs: it joins two pieces it has already
-     * rendered, and a piece that begins with a letter — a call — simply keeps the sign, which reads back as
-     * the same product.
+     * rendered. A piece beginning with a letter used to keep the sign, because no letter but {@code x},
+     * {@code y} and {@code z} started an operand; every letter does now, so {@code 2·sin(x)} prints as
+     * {@code 2sin(x)} and the scan finds {@code sin} as its own token on the way back.
+     *
+     * <p>What that opens is a hazard this test cannot see, because it is character by character: two pieces
+     * can concatenate into a <em>word</em>, and {@code c·o·s} printed as {@code cos} is not a product any
+     * more. {@link Render} checks for that separately before dropping a sign.
      */
     public static boolean implied(char left, char right) {
         return endsOperand(left) && startsOperand(right) && !numeral(right);
     }
 
     public static boolean endsOperand(char c) {
-        return OPERAND_TAIL.indexOf(c) >= 0;
+        return OPERAND_TAIL.indexOf(c) >= 0 || variable(c);
     }
 
     public static boolean startsOperand(char c) {
-        return OPERAND_HEAD.indexOf(c) >= 0;
+        return OPERAND_HEAD.indexOf(c) >= 0 || variable(c);
+    }
+
+    /**
+     * Whether this character is a variable standing on its own.
+     *
+     * <p>Any letter, which subsumes the {@code eiπωxyz} written into the two sets above — those are kept
+     * because they say which letters are <em>reserved</em>, and a reader of this class wants to see them.
+     *
+     * <p>A letter only reaches this test when it is not part of a matched word: {@link #tokenAt} tries the
+     * vocabulary first, so {@code sin} is one token and never three variables. The cost of that is real and
+     * worth knowing — the vocabulary is matched longest-first, so {@code asin(2)} is the arc sine and not
+     * {@code a·sin(2)}, and a variable named {@code a} is invisible inside every function name beginning
+     * with one.
+     */
+    public static boolean variable(char c) {
+        return Character.isLetter(c);
     }
 
     /** Digits and the dot continue a number rather than starting a new operand. */

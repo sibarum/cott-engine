@@ -259,8 +259,38 @@ public final class Render {
     /** Two rendered factors, with a sign only where juxtaposition would not read back as a product. */
     private static String juxtapose(String left, String right) {
         return Notation.implied(left.charAt(left.length() - 1), right.charAt(0))
+                && !wordSpansTheJoin(left, right)
                 ? left + right
                 : left + Notation.TIMES + right;
+    }
+
+    /**
+     * Whether dropping the sign would let a word of the vocabulary swallow the join.
+     *
+     * <p>Now that every letter is a variable, two factors can concatenate into a <em>name</em>:
+     * {@code c·o·s} is a product of three, and printing it as {@code cos} hands back something that reads as
+     * the cosine and then fails for want of brackets. The vocabulary is matched before single characters, so
+     * once the boundary is inside a word it is gone — which is exactly the failure this class exists to
+     * prevent, arriving by a route that did not exist while the variables were {@code x}, {@code y} and
+     * {@code z} and no word was spelled out of those.
+     *
+     * <p>A word that <em>begins</em> at the join is not this: {@code 2·sin(x)} prints as {@code 2sin(x)} and
+     * the scan finds {@code sin} as its own token, which is where the sign goes back. Only a word crossing
+     * the boundary destroys it.
+     *
+     * <p>Asked of the builtin vocabulary, since the printer is not handed a session's. A session that defines
+     * a name spelled out of its own variables could still collide, and that is the older question of what a
+     * definition may shadow.
+     */
+    private static boolean wordSpansTheJoin(String left, String right) {
+        String joined = left + right;
+        for (int i = 0; i < left.length(); i++) {
+            String word = Notation.wordAt(joined, i, Bindings.EMPTY);
+            if (word != null && i + word.length() > left.length()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Render for a position that needs at least {@code min} binding tightness. */
