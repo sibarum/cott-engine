@@ -191,8 +191,27 @@ guard-digit test (skipped, since it cannot square anything), and one canonical p
 
 ### Phase 4 — calculator
 
-**Withdrawn. `calculator-vexel-demo` has been deleted, and a client for this engine will be
-written from scratch rather than ported.**
+**Withdrawn, then satisfied by a rewrite. `calculator-vexel-demo` was deleted and a client written
+from scratch rather than ported; that client now depends on this engine.** It took the lesson below
+literally: it reads `Place` and `Variables` and pattern-matches no carrier node anywhere, so the
+carrier can move without it noticing. Its whole surface onto this engine is one class, `Algebra`.
+
+What the engine grew to make that possible, both published *for* a client rather than written
+inside one:
+
+- **`engine.projection.Place`** — where a settled value lands, as coordinates. The spine read
+  outermost-first, the absence marker kept (so `1` is `(1, 0)` and the point zero is `(0, 1)`,
+  which a chart that dropped it would place together), a nested exponent contributing a third, and
+  `withinVolume()` false beyond three so a plot declines rather than dropping a coordinate.
+- **`Variables`** — the free names in a term, which is what decides whether a client is drawing a
+  curve or placing a point. In the syntax layer and not in the engine: `AtomExpr` holds a variable
+  and a constant under one type on purpose, and which names are constants is this layer's decision.
+
+One defect the client found in this engine, worth recording because it is a coordinate fact and not
+a rule: **a sampled literal has to be exact.** `"0.0"` parses as `0÷10`, whose numerator is zero but
+which is not `RationalLiteral.ZERO`, and the rules that fire on zero do not fire on it — coordinates
+never reduce. Sampling `0^x` at the origin answered `0^(0÷10)`, placing at `(0,0)`, which is erasure
+and not a member of the type, where the answer is `0^0 = 1` at `(1,0)`.
 
 What the audit found before it went, kept because a rewrite should not walk back into it. The
 187 references were two different jobs sharing one name: `Rational` was doing plot geometry —

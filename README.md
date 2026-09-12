@@ -3,7 +3,7 @@
 Traction Theory as a direct evaluator. Pure Java: no subprocess, no native code, no reflection.
 
 The carrier is the traction pair of [docs/Traction-Theory.md](docs/Traction-Theory.md): a value is
-`n·0^t`, a real part and a traction part. `mvn test` is 196 green.
+`n·0^t`, a real part and a traction part. `mvn test` is 228 green.
 
 ## What the carrier is
 
