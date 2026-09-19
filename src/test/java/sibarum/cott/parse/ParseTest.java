@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import sibarum.cott.SyntaxException;
 import sibarum.cott.engine.ratio.T;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -190,6 +191,24 @@ class ParseTest {
     @Test
     void aNegativePowerStands() {
         assertEquals(new Node.Power(lit(2, 3), lit(-1, 1)), Parse.of("T(2,3)^-1").fold());
+    }
+
+    /**
+     * A power too wide to hold stands, which is the same answer a negative exponent gets and means the same
+     * thing: the arithmetic is not wrong, it is not done.
+     *
+     * <p>The cost of a power is not bounded by the length of what was typed. Twelve characters asked for a
+     * coordinate of two billion bits, and the wait ended in an {@code OutOfMemoryError} -- which a caller
+     * guarding a text field does not catch, because it is not a {@code RuntimeException}.
+     */
+    @Test
+    void aPowerTooWideToHoldStands() {
+        assertEquals(new Node.Power(lit(2, 1), lit(2000000000, 1)), Parse.of("2^2000000000").fold());
+        assertEquals(new Node.Power(lit(10, 1), lit(90000000, 1)), Parse.of("10^90000000").fold());
+        // and the ordinary ones still fold, including ones that are merely large
+        assertEquals(lit(1024, 1), Parse.of("2^10").fold());
+        assertEquals(BigInteger.TWO.pow(1000000),
+                Parse.of("2^1000000").fold().literal().orElseThrow().p());
     }
 
     /**

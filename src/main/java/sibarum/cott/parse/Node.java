@@ -162,7 +162,8 @@ public sealed interface Node {
         return switch (n) {
             case Sum(Lit(T a), Lit(T b)) -> new Lit(a.plus(b));
             case Product(Lit(T a), Lit(T b)) -> new Lit(a.times(b));
-            case Power(Lit(T a), Lit(T e)) -> exponent(e).map(k -> (Node) new Lit(a.power(k))).orElse(n);
+            case Power(Lit(T a), Lit(T e)) ->
+                    exponent(e).filter(k -> fits(a, k)).<Node>map(k -> new Lit(a.power(k))).orElse(n);
             case Reciprocal(Lit(T a)) -> new Lit(a.reciprocal());
             case Negation(Lit(T a)) -> folding.negate(a).<Node>map(Lit::new).orElse(n);
             default -> n;
@@ -182,6 +183,23 @@ public sealed interface Node {
             return Optional.empty();
         }
         return Optional.of(e.p().intValueExact());
+    }
+
+    /** How wide a coordinate a fold may produce: about five million digits, which is two megabytes of it. */
+    int WIDEST = 1 << 24;
+
+    /**
+     * Whether raising this base to this power lands inside {@link #WIDEST}.
+     * <p>
+     * A power is the one fold whose cost is not bounded by the size of what was typed. {@code 2^2000000000}
+     * is twelve characters and asks for a coordinate of two billion bits, which is a wait and then an
+     * {@link OutOfMemoryError} -- and an Error is not what a caller guarding a text field catches. So a
+     * power too wide to hold is not folded, and the term stands. That is the same answer a negative exponent
+     * gets and it means the same thing: the arithmetic is not wrong, it is not done.
+     */
+    private static boolean fits(T base, int power) {
+        long bits = (long) Math.max(base.p().bitLength(), base.q().bitLength()) * power;
+        return bits <= WIDEST;
     }
 
     /** Substituted, resolved, then folded -- the three walks in the order they compose. */
