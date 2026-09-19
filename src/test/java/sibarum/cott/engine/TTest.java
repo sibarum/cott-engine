@@ -6,6 +6,7 @@ import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.ratio.T;
 import sibarum.cott.engine.rational.expr.RationalLiteral;
 
+import java.math.BigInteger;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +77,50 @@ class TTest {
         assertEquals(Optional.empty(), OMEGA.evaluate());
         assertEquals(Optional.empty(), at(-1, 0).evaluate());
         assertFalse(ZERO_OMEGA.isQuarterTurn());
+    }
+
+    /**
+     * The table's projection column, which is total where the value reading is not.
+     *
+     * <p>The two values with no magnitude keep their sign through it, which is what the signed zero and the
+     * two infinities are for: {@code 0} and {@code -0} are half a turn apart and stay apart here.
+     */
+    @Test
+    void theProjectionIsTheTableColumn() {
+        assertEquals(0.0, ZERO.projection());
+        assertEquals(1.0, ONE.projection());
+        assertEquals(-1.0, NEG_ONE.projection());
+        assertEquals(Double.POSITIVE_INFINITY, OMEGA.projection());
+        assertEquals(-1.0, at(1, -1).projection());          // _1
+        assertEquals(1.0, at(-1, -1).projection());          // -_1
+        assertEquals(Double.NEGATIVE_INFINITY, at(-1, 0).projection());
+        assertEquals(1.0, ZERO_OMEGA.projection());          // read as a value, by x÷x
+        assertEquals(0.5, at(1, 2).projection());
+    }
+
+    /** A signed zero is a distinct projection, and the one the formatter would lose. */
+    @Test
+    void theZerosProjectApart() {
+        assertEquals(1, Math.copySign(1, ZERO.projection()));
+        assertEquals(-1, Math.copySign(1, at(0, -1).projection()));
+        assertEquals(-1, Math.copySign(1, at(0, -7).projection()));
+    }
+
+    /** The exact division, so a coordinate larger than a double does not ask what infinity over infinity is. */
+    @Test
+    void theProjectionDividesTheCoordinatesAndNotTheirShadows() {
+        BigInteger huge = BigInteger.TEN.pow(400);
+        assertEquals(1.0, new T(huge, huge).projection());
+        assertEquals(2.0, new T(huge.multiply(BigInteger.TWO), huge).projection());
+    }
+
+    /** Two readings, and they are meant to differ: one says nothing where the other says infinity. */
+    @Test
+    void theValueReadingAndTheProjectionPartAtTheQuarterTurn() {
+        assertEquals(Optional.empty(), OMEGA.evaluate());
+        assertEquals(Double.POSITIVE_INFINITY, OMEGA.projection());
+        assertEquals(Optional.of(-1.0), NEG_ONE.evaluate());
+        assertEquals(-1.0, NEG_ONE.projection());
     }
 
     @Test

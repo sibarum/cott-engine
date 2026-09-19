@@ -212,10 +212,57 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
     }
 
     /**
+     * The model table's projection column: what this pair is as an ordinary signed number.
+     * <p>
+     * Total, where {@link #evaluate()} is partial, and that is the whole difference between them. A quarter
+     * turn has no finite real and {@code evaluate} says so by answering nothing; the projection answers an
+     * infinity, because the column's job is to say what a pair becomes when it is pushed onto the number
+     * line, including where that loses something.
+     *
+     * <h2>The sign survives onto the two values that have no magnitude</h2>
+     * <pre>
+     *  T(0,1)  +0      T(1,0)  +inf
+     *  T(0,-1) -0      T(-1,0) -inf
+     * </pre>
+     * Which is why this returns a double rather than a rational: IEEE has a signed zero and two infinities,
+     * and those are exactly the four places the model needs kept apart here. It is still a projection and it
+     * still loses things -- {@code T(1,-1)} and {@code T(-1,1)} both come back -1, and they are half a turn
+     * apart. {@link #theta()} is the reading that keeps them; a chart wanting both reports this one beside
+     * the point rather than instead of it.
+     *
+     * <h2>The division is exact wherever it can be</h2>
+     * The four cases above are answered from the signs, and everything else divides the coordinates rather
+     * than their doubles. Dividing the doubles would ask what infinity over infinity is as soon as a
+     * coordinate outgrew a double -- {@code (10^400, 10^400)} is 1, and its two shadows are both infinite.
+     *
+     * <p>{@code T(0,0)} answers as {@link #resolved()} does, at 1: reading a pair as a value is exactly what
+     * a projection is for, so this is the place the table's {@code x÷x} applies.
+     *
+     * <p>{@link #evaluate()} agrees with this wherever it answers at all, but for the signed zero, which it
+     * cannot carry -- it divides exactly, and an exact zero has no sign.
+     */
+    public double projection() {
+        T it = resolved();
+        if (it.q.signum() == 0) {
+            return it.p.signum() > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+        }
+        if (it.p.signum() == 0) {
+            return it.q.signum() < 0 ? -0.0 : 0.0;
+        }
+        return new BigDecimal(it.p)
+                .divide(new BigDecimal(it.q), MathContext.DECIMAL64)
+                .doubleValue();
+    }
+
+    /**
      * The ratio {@code p÷q}, or empty at a quarter turn, where the tangent is not a finite real.
      * <p>
      * The division is done on the coordinates rather than on their doubles, because coordinates outgrow a
      * double long before the ratio they name does.
+     * <p>
+     * This is the value reading and {@link #projection()} is the table's column. They differ in two places
+     * on purpose: at a quarter turn this answers nothing where the projection answers an infinity, and at a
+     * negative zero this answers zero where the projection answers {@code -0}.
      */
     @Override
     public Optional<Double> evaluate() {
