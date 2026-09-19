@@ -1,8 +1,10 @@
 package sibarum.cott.engine.projection;
 
 import sibarum.cott.engine.base.expr.IExpr;
+import sibarum.cott.engine.operation.binary.AdditionOperationExpr;
 import sibarum.cott.engine.operation.unary.NegationOperationExpr;
 import sibarum.cott.engine.rational.expr.RationalLiteral;
+import sibarum.cott.engine.traction.expr.AdditiveTractionLiteral;
 import sibarum.cott.engine.traction.expr.ITractionPair;
 
 import java.math.BigInteger;
@@ -36,6 +38,34 @@ import java.util.Optional;
  * Three is as deep as a value in simplest form is expected to go. Deeper is not an error and is not refused
  * here -- {@link #of} still reports the coordinates -- but {@link #withinVolume()} is false and a plot in
  * three dimensions should decline to draw it rather than drop a coordinate to make it fit.
+ *
+ * <h2>A sum at unlike orders is placed, by the additive reading</h2>
+ * {@code 1 + 0} and {@code 0^2 + 1} stand in the carrier, because the rules do not absorb a point zero into
+ * a value. They are still one point each: they are the additive pair {@code n + 0^t} of Traction-Theory.md's
+ * Carrier section, and its two coordinates are the two axes that are already here. So {@code 1 + 0} is
+ * {@code (1, 1)} and {@code 0^2 + 1} is {@code (1, 2)} -- the 45 degree positions, placed rather than
+ * declined.
+ *
+ * <p>Nothing had to move aside to let them in. A multiplicative pair whose real part is exactly one collapses
+ * by {@code x·1 = x} -- {@code 1·0^2} is {@code 0^2} -- so those coordinates were unreachable from that side,
+ * and were free for this one.
+ *
+ * <p>That is not true further out: {@code 2·0^2} and {@code 2 + 0^2} are two terms, and they are placed
+ * together at {@code (2, 2)}. Which join reached a coordinate is not recorded here, so a client reads where
+ * the value landed rather than which node holds it. Whether those two ought to land together is the
+ * carrier's question and it is open -- see {@link ITractionPair}.
+ *
+ * <p>A sum wanting three numbers is placed on three. {@code 1 + (1÷2)·0} is a real part, a multiplicity and
+ * an exponent, and {@code 1 - 0} is the same shape, since a negated traction part carries a real part of -1
+ * rather than staying bare. Those three are the three the nesting already spells, in the order it spells
+ * them, so they take no axis of their own: {@code 1 - 0} is {@code (1, -1, 1)} the way {@code 0^(w÷2)} is
+ * {@code (0, 1÷2, -1)}. This used to decline, on the ground that there was no coordinate left to keep the
+ * multiplicity in. There was -- the third.
+ *
+ * <p>What still has no place is a sum of two unlike traction parts, {@code 0^2 + 0^3} or {@code 2·0 - ω}:
+ * two exponents and no real part to hang the chain from. That wants four numbers as two pairs rather than as
+ * one chain, which is a different shape from anything here, and the way out of it is an addition law that
+ * settles the sum to one pair first. That is the carrier's question, not this one's.
  *
  * @param coordinates outermost real part first, the innermost exponent last; never fewer than two
  */
@@ -71,11 +101,29 @@ public record Place(List<RationalLiteral> coordinates) {
         while (true) {
             IExpr node = seenThrough(current);
             if (node instanceof ITractionPair pair) {
+                // The sign below is the MULTIPLICATIVE one: -(n·0^t) is (-n)·0^t, so it turns the real part
+                // and the traction part is untouched. Under the other join it is not that -- negating
+                // n + 0^t negates both parts, which is the inverse the change of join did not carry -- so a
+                // negated additive pair declines, exactly as its spelling as a standing sum already does
+                // below. Placing it here would put -(1 + 0) where (-1) + 0 is.
+                if (node != current && node instanceof AdditiveTractionLiteral) {
+                    return Optional.empty();
+                }
                 if (!(seenThrough(pair.real()) instanceof RationalLiteral real)) {
                     return Optional.empty();
                 }
                 out.add(signed(real, node != current));
                 current = pair.exponent();
+                value = false;
+                continue;
+            }
+            if (node == current && node instanceof AdditionOperationExpr sum) {
+                Optional<Pair> read = asAdditivePair(sum);
+                if (read.isEmpty()) {
+                    return Optional.empty();
+                }
+                out.addAll(read.get().leading());
+                current = read.get().exponent();
                 value = false;
                 continue;
             }
@@ -93,6 +141,100 @@ public record Place(List<RationalLiteral> coordinates) {
             }
             return Optional.empty();
         }
+    }
+
+    /**
+     * A sum read as the additive pair: the coordinates it contributes, and the exponent still to walk.
+     * <p>
+     * Usually one coordinate, the real part. Two where the traction addend carries a multiplicity of its own
+     * -- {@code 1 - 0} is {@code 1 + (-1)·0^1}, a real part, a multiplicity and an exponent. Those are the
+     * same three the nesting already spells, in the same order, so they are contributed here rather than
+     * given an axis of their own: outermost real part first, innermost exponent last.
+     */
+    private record Pair(List<RationalLiteral> leading, IExpr exponent) {
+    }
+
+    /**
+     * A standing sum read as {@code n + 0^t}, or empty where it is not that shape.
+     * <p>
+     * Either side may be the real part, since nothing ordered the sum on its way here. A negated sum is not
+     * read at all -- that is handled by the caller, because negating {@code n + 0^t} negates both parts and
+     * the additive node's inverse is not one of the things that survived the change of join.
+     */
+    private static Optional<Pair> asAdditivePair(AdditionOperationExpr sum) {
+        return paired(sum.left(), sum.right()).or(() -> paired(sum.right(), sum.left()));
+    }
+
+    private static Optional<Pair> paired(IExpr real, IExpr traction) {
+        Optional<RationalLiteral> n = realPart(real);
+        if (n.isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<IExpr> bare = bareExponent(traction);
+        if (bare.isPresent()) {
+            return Optional.of(new Pair(List.of(n.get()), bare.get()));
+        }
+        return multiplied(traction)
+                .map(m -> new Pair(List.of(n.get(), m.leading().getFirst()), m.exponent()));
+    }
+
+    /**
+     * An addend that is a traction part with a multiplicity: its multiplicity, and its exponent.
+     * <p>
+     * This is the half {@link #bareExponent} declines. {@code -0^t} is {@code (-1)·0^t} and {@code 2·0} is
+     * {@code 2·0^1}; both have a real part of their own, and it is a coordinate rather than something to
+     * drop. An absent real part is one copy, which is what lets a negated bare traction through --
+     * {@code -ω} is {@code (-1)·0^-1}, so the sign becomes the multiplicity the pair had no room for.
+     * <p>
+     * The point zero is not read here. It reaches {@link #bareExponent} as {@code 0^1} and belongs there;
+     * arriving with a denominator it is {@code (1÷d)·0}, and that d is a multiplicity this would have to
+     * invent an exponent for.
+     */
+    private static Optional<Pair> multiplied(IExpr e) {
+        IExpr node = seenThrough(e);
+        if (!(node instanceof ITractionPair pair)) {
+            return Optional.empty();
+        }
+        IExpr real = seenThrough(pair.real());
+        if (!(real instanceof RationalLiteral r)) {
+            return Optional.empty();
+        }
+        RationalLiteral copies = pair.isBare() ? RationalLiteral.ONE : signed(r, real != pair.real());
+        return Optional.of(new Pair(List.of(signed(copies, node != e)), pair.exponent()));
+    }
+
+    /**
+     * An addend that is a real part: a rational that is not zero.
+     * <p>
+     * The rational zero is excluded because as a value it is not a real part at all -- it is the point zero,
+     * which is the other side of this pair. A zero numerator over a denominator is excluded for that reason
+     * and one more: it is {@code (1÷d)·0}, a multiplicity of the point zero, and there is no coordinate left
+     * to keep the d in.
+     */
+    private static Optional<RationalLiteral> realPart(IExpr e) {
+        IExpr node = seenThrough(e);
+        return node instanceof RationalLiteral r && !r.isZero()
+                ? Optional.of(signed(r, node != e))
+                : Optional.empty();
+    }
+
+    /**
+     * An addend that is a bare traction part, as its exponent.
+     * <p>
+     * The rational zero counts, because the point zero is {@code 0^1}: that is what makes {@code 1 + 0} the
+     * pair {@code (1, 1)} rather than a shape this declines. A negated one does not count -- {@code -0^t} is
+     * {@code (-1)·0^t}, which has a real part of its own and so wants a third number.
+     */
+    private static Optional<IExpr> bareExponent(IExpr e) {
+        if (seenThrough(e) != e) {
+            return Optional.empty();
+        }
+        if (e instanceof RationalLiteral r && r.isZero()) {
+            return r.isInteger() ? Optional.of(RationalLiteral.ONE) : Optional.empty();
+        }
+        return e instanceof ITractionPair pair && pair.isBare()
+                ? Optional.of(pair.exponent())
+                : Optional.empty();
     }
 
     /**
