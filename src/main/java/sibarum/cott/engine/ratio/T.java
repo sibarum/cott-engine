@@ -208,7 +208,18 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
      */
     public double theta() {
         T it = resolved();
-        return Math.atan2(it.p.doubleValue(), it.q.doubleValue());
+        // Taken from the ratio rather than from the two coordinates as doubles, because a pair whose
+        // coordinates have BOTH outgrown a double leaves atan2 with infinity over infinity, which it answers
+        // at 45 degrees whatever the real angle was: T(10^400, 10^500) is a hair off zero and T(10^500,
+        // 10^400) a hair off the quarter turn, and both used to report the same 45. The ratio is exact, and
+        // an overflow in it is harmless -- an infinite ratio is a quarter turn and atan says so.
+        double ratio = it.projection();
+        if (it.q.signum() >= 0) {
+            return Math.atan(ratio);
+        }
+        // The half of the circle atan cannot reach. A zero numerator turns with the positive half, so that
+        // T(0,-1) comes back at half a turn rather than at minus one.
+        return Math.atan(ratio) + (it.p.signum() < 0 ? -Math.PI : Math.PI);
     }
 
     /**

@@ -114,6 +114,25 @@ class TTest {
         assertEquals(2.0, new T(huge.multiply(BigInteger.TWO), huge).projection());
     }
 
+    /**
+     * The angle is taken from the ratio, so a pair whose coordinates have both outgrown a double still
+     * stands where it stands.
+     *
+     * <p>Read off the two coordinates as doubles it was infinity over infinity, which atan2 answers at 45
+     * degrees whatever was asked -- so these two, a hair off zero and a hair off the quarter turn, both came
+     * back at the same eighth turn.
+     */
+    @Test
+    void theAngleSurvivesCoordinatesLargerThanADouble() {
+        BigInteger e400 = BigInteger.TEN.pow(400);
+        BigInteger e500 = BigInteger.TEN.pow(500);
+        assertEquals(0.0, Math.toDegrees(new T(e400, e500).theta()), 1e-9);
+        assertEquals(90.0, Math.toDegrees(new T(e500, e400).theta()), 1e-9);
+        assertEquals(45.0, Math.toDegrees(new T(e400, e400).theta()), 1e-9);
+        assertEquals(-90.0, Math.toDegrees(new T(e500.negate(), e400).theta()), 1e-9);
+        assertEquals(180.0, Math.toDegrees(new T(BigInteger.ZERO, e400.negate()).theta()), 1e-9);
+    }
+
     /** Two readings, and they are meant to differ: one says nothing where the other says infinity. */
     @Test
     void theValueReadingAndTheProjectionPartAtTheQuarterTurn() {
