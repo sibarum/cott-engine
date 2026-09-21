@@ -54,7 +54,7 @@ class TTest {
         assertEquals(0.0, ZERO.theta(), TOLERANCE);                 //  0  at 1
         assertEquals(QUARTER, OMEGA.theta(), TOLERANCE);            //  w  at i
         assertEquals(EIGHTH, ONE.theta(), TOLERANCE);               //  1  at 1+i
-        assertEquals(EIGHTH, ZERO_OMEGA.theta(), TOLERANCE);        // 0w  at 1+i, once resolved
+        assertTrue(Double.isNaN(ZERO_OMEGA.theta()));               // 0w  the origin, at no angle
         assertEquals(-QUARTER, at(-1, 0).theta(), TOLERANCE);       // -w  at -i
         assertEquals(Math.PI, at(0, -1).theta(), TOLERANCE);        // -0  at -1
         assertEquals(3 * EIGHTH, at(1, -1).theta(), TOLERANCE);     // _1  at -1+i
@@ -94,7 +94,7 @@ class TTest {
         assertEquals(-1.0, at(1, -1).projection());          // _1
         assertEquals(1.0, at(-1, -1).projection());          // -_1
         assertEquals(Double.NEGATIVE_INFINITY, at(-1, 0).projection());
-        assertEquals(1.0, ZERO_OMEGA.projection());          // read as a value, by x÷x
+        assertTrue(Double.isNaN(ZERO_OMEGA.projection()));   // no number, and not taken to one
         assertEquals(0.5, at(1, 2).projection());
     }
 
@@ -189,7 +189,7 @@ class TTest {
     @Test
     void omegaPlusOmegaIsTheZeroOmegaPair() {
         assertEquals(ZERO_OMEGA, OMEGA.plus(OMEGA));
-        assertEquals(ONE, OMEGA.plus(OMEGA).resolved());
+        assertTrue(OMEGA.plus(OMEGA).isZeroOmega());
     }
 
     @Test
@@ -215,12 +215,23 @@ class TTest {
         assertEquals(at(0, 0), ZERO_OMEGA);
     }
 
-    /** {@code x÷x = 1} is applied where the pair is read as a value, and to this pair only. */
+    /**
+     * There is no normalisation at all, {@code x÷x} included.
+     *
+     * <p>{@code T(0,0)} stays where it was written, and the readings decline rather than placing it: no
+     * value, no projection, no angle. The table's {@code 0÷0 --> (1:1)} is a reading, and a caller wanting
+     * it applies it where the choice can be seen.
+     */
     @Test
-    void resolvingIsTheOnlyNormalisation() {
-        assertEquals(ONE, ZERO_OMEGA.resolved());
-        assertEquals(at(-1, -1), at(-1, -1).resolved());
-        assertEquals(at(2, 2), at(2, 2).resolved());
+    void nothingIsNormalised() {
+        assertEquals(at(0, 0), ZERO_OMEGA);
+        assertEquals(Optional.empty(), ZERO_OMEGA.evaluate());
+        assertTrue(Double.isNaN(ZERO_OMEGA.projection()));
+        assertTrue(Double.isNaN(ZERO_OMEGA.theta()));
+        // and the pairs that merely LOOK like x÷x were never touched either
+        assertEquals(at(-1, -1), new T(at(-1, -1).p(), at(-1, -1).q()));
+        assertEquals(Optional.of(1.0), at(2, 2).evaluate());
+        assertEquals(1.0, at(-1, -1).projection());
     }
 
     /** {@code ⊗} multiplies the points, so the angles add. */
@@ -263,6 +274,65 @@ class TTest {
     @Test
     void aNegativePowerIsRefusedRatherThanInverted() {
         assertThrows(IllegalArgumentException.class, () -> at(2, 3).power(-1));
+    }
+
+    /**
+     * The model's exponentiation, where the exponent is an integer: the angle is scaled, and the
+     * coordinates are whatever standing at that angle costs.
+     */
+    @Test
+    void theAnglePowerScalesTheAngle() {
+        assertEquals(at(3, 4), at(3, 4).otimesPower(1));
+        assertEquals(at(3, 4).otimes(at(3, 4)), at(3, 4).otimesPower(2));
+        assertEquals(at(2, 0), ONE.otimesPower(2));             // two eighth turns is a quarter
+        assertEquals(QUARTER, ONE.otimesPower(2).theta(), TOLERANCE);
+        assertEquals(at(0, -4), ONE.otimesPower(4));            // four of them is a half turn, at -0
+        assertEquals(Math.PI, ONE.otimesPower(4).theta(), TOLERANCE);
+        assertEquals(at(0, -1), OMEGA.otimesPower(2));          // and two quarter turns is -0 as well
+    }
+
+    /** It is total over a negative exponent, which is the whole difference from the coordinate power. */
+    @Test
+    void theAnglePowerTurnsBackOnANegativeExponent() {
+        assertEquals(at(-3, 4), at(3, 4).otimesPower(-1));
+        assertEquals(at(3, 4).otimesInverse(), at(3, 4).otimesPower(-1));
+        assertEquals(-at(3, 4).theta(), at(3, 4).otimesPower(-1).theta(), TOLERANCE);
+        // conjugating and then raising, or raising and then conjugating, reach the same coordinates
+        assertEquals(at(3, 4).otimesInverse().otimesPower(3), at(3, 4).otimesPower(-3));
+        assertEquals(at(3, 4).otimesPower(3).otimesInverse(), at(3, 4).otimesPower(-3));
+    }
+
+    /** The exponent zero is the ⊗ unit at every pair, including the one ⊗ absorbs everywhere else. */
+    @Test
+    void theAnglePowerIsTheExponentUnitAtZero() {
+        assertEquals(OTIMES_UNIT, at(3, 4).otimesPower(0));
+        assertEquals(OTIMES_UNIT, ZERO_OMEGA.otimesPower(0));
+        assertEquals(ZERO_OMEGA, ZERO_OMEGA.otimesPower(3));
+    }
+
+    /**
+     * Two different operations, and the model states only the angle one. {@code power} raises the
+     * coordinates and stays at the value position; this one turns.
+     */
+    @Test
+    void theAnglePowerIsNotThePowerOfTheCoordinates() {
+        assertEquals(at(4, 9), at(2, 3).power(2));
+        assertEquals(at(12, 5), at(2, 3).otimesPower(2));
+        assertNotEquals(at(2, 3).power(2).evaluate(), at(2, 3).otimesPower(2).evaluate());
+        assertEquals(2 * at(2, 3).theta(), at(2, 3).otimesPower(2).theta(), TOLERANCE);
+    }
+
+    /**
+     * {@code z(T(a,b)) = T(2ab, b²−a²)}: the point squared, so the angle doubled, and on the coordinates
+     * rather than only at that ratio.
+     */
+    @Test
+    void theModelsZIsThePointSquared() {
+        assertEquals(at(24, 7), at(3, 4).doubleAngle());        // 2ab = 24, b²-a² = 7
+        assertEquals(at(3, 4).otimesPower(2), at(3, 4).doubleAngle());
+        assertEquals(at(3, 4).otimes(at(3, 4)), at(3, 4).doubleAngle());
+        assertEquals(2 * at(3, 4).theta(), at(3, 4).doubleAngle().theta(), TOLERANCE);
+        assertEquals(at(0, -1), OMEGA.doubleAngle());
     }
 
     /** The coordinates trade places, which is what makes zero invertible. */

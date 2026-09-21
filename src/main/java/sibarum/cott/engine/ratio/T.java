@@ -50,11 +50,13 @@ import java.util.Optional;
  * rational" -- the orientation is which of the four the point stands in, and the angle reads it directly
  * where the ratio cannot.
  *
- * <p>{@code T(0,0)} is not normalised in the constructor either, and that is a choice with a reason rather
- * than an omission: it is the unit of ⊕, so a constructor that turned it into {@code T(1,1)} would leave the
- * exponent-position sum with no identity that can be written down. The table's {@code 0÷0 --> (1:1)} is
- * {@link #resolved()}, applied where the pair is being read as a value. Which of the two a given computation
- * wants is the caller's to say.
+ * <p>{@code T(0,0)} least of all. It is the unit of ⊕, so a type that turned it into {@code T(1,1)} would
+ * leave the exponent-position sum with no identity that can be written down -- and nothing else here turns
+ * it either, not in the constructor and not on the way out through a reading. The table's
+ * {@code 0÷0 --> (1:1)} is {@code x÷x} applied to a pair, which is a reading and not the pair; a computation
+ * that wants it applies it in its own code, where the choice can be seen. What the readings do instead is
+ * decline: {@link #evaluate()} answers nothing there and {@link #projection()} and {@link #theta()} answer
+ * {@code NaN}, because the origin names no number and stands at no angle.
  *
  * @param p the numerator, and the imaginary part of the point {@code q + pi}
  * @param q the denominator, and the real part of that point; zero here, where a rational's may not be
@@ -74,11 +76,12 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
     public static final T OMEGA = of(1, 0);
 
     /**
-     * {@code 0ω = T(0,0)}: the unit of ⊕.
+     * {@code 0ω = T(0,0)}: the unit of ⊕, and the pair with no reading of its own.
      * <p>
-     * The table reads it as a value by {@code x÷x = 1}, which is {@link #resolved()}. It is kept unresolved
-     * here because as the ⊕ unit it has to be writable at all. Classically {@code 0÷0} is indeterminate, and
-     * that is the reading the model declines rather than the one it is stuck with.
+     * It stays what it is. The table reads it as a value by {@code x÷x = 1}, and that reading belongs to
+     * whoever is calculating -- applied here it would cost the ⊕ unit its spelling, and it would be applied
+     * silently, at whatever depth a pair happened to pass through a reading. Classically {@code 0÷0} is
+     * indeterminate; declining to place it is not agreeing with that, it is declining to decide it here.
      */
     public static final T ZERO_OMEGA = of(0, 0);
 
@@ -149,6 +152,66 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
     }
 
     /**
+     * {@code T^n}: the angle scaled n times, which is {@link #otimes} iterated -- the model's
+     * exponentiation, at the exponents where it lands on a pair of integers.
+     * <p>
+     * The model writes exponentiation as angle scaling, {@code T(a,b)^T(c,d) = tan((c÷d)·arctan(a÷b))}.
+     * Where the exponent is {@code T(n,1)} that is this method, and the coordinates stay integers because
+     * the scaling is then a repeated ⊗, which is the product of the two points. Where it is not -- a third
+     * of an angle, say -- the tangent named is not the ratio of any two integers, so there is no pair to
+     * return and none is invented here.
+     *
+     * <p>Unlike {@link #power}, this is total over the whole range of {@code n}: the ⊗ inverse is
+     * conjugation and costs no reduction, so a negative exponent is the conjugate raised to the positive
+     * one. It makes no difference which comes first, conjugating and then raising or raising and then
+     * conjugating, because conjugation passes through the product.
+     *
+     * <h2>The model's two exponent laws, as this type answers them</h2>
+     * {@code (T^m)^n = T^(m·n)} holds on the coordinates everywhere, both signs included.
+     * {@code T^(m+n) = T^m ⊗ T^n} holds on the coordinates while {@code m} and {@code n} point the same
+     * way. Where they cancel the two sides are one ratio at different coordinates, and the difference is
+     * exactly a factor of {@code (a²+b²)^min(|m|,|n|)} -- the norm, the same one {@link #otimesInverse}
+     * leaves behind when it lands on {@code T(0, a²+b²)} rather than on the unit. Nothing here removes it.
+     * Whether a turn that went out and came back should leave that factor standing or be cancelled away is
+     * the model's question and not this type's to settle.
+     *
+     * @param n any integer; {@code T^0} is {@link #OTIMES_UNIT} at every pair, including
+     *          {@link #ZERO_OMEGA}, which ⊗ absorbs at every other exponent
+     */
+    public T otimesPower(int n) {
+        T base = n < 0 ? otimesInverse() : this;
+        long e = Math.abs((long) n);
+        T result = OTIMES_UNIT;
+        // Squared rather than iterated, which is not a choice about the answer: ⊗ associates exactly on
+        // the coordinates, so the same n factors under any bracketing land on the same pair.
+        while (e > 0) {
+            if ((e & 1L) == 1L) {
+                result = result.otimes(base);
+            }
+            e >>= 1;
+            if (e > 0) {
+                base = base.otimes(base);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * The model's {@code z(T(a,b)) = T(2ab, b²−a²)}: the point squared, so the angle doubled.
+     * <p>
+     * It is {@code this ⊗ this} on the coordinates and not merely at that ratio, so it is
+     * {@link #otimesPower}{@code (2)} under the name the model gives it.
+     *
+     * <p>The model files this as a tangent half-angle substitution returning a unit vector. The formula it
+     * states is the double-angle tangent, and the pair it produces is not a unit vector: the point
+     * {@code (b²−a²) + 2ab·i} has norm {@code a²+b²}, and dividing by that to reach the unit circle leaves
+     * the integers, which this carrier does not do. The formula is what is implemented.
+     */
+    public T doubleAngle() {
+        return otimes(this);
+    }
+
+    /**
      * {@code T(b,a)}: the coordinates trade places, sign and all.
      * <p>
      * The value-position inverse, and it is total -- {@code 0} and {@code ω} are each other's reciprocal,
@@ -179,16 +242,13 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
     }
 
     /**
-     * The value reading of {@code T(0,0)}: {@code T(1,1)}, by {@code x÷x = 1}.
+     * Whether this is {@code T(0,0)}: the unit of ⊕, and the one pair with no reading of its own.
      * <p>
-     * Every other pair comes back unchanged, {@code T(-1,-1)} included -- the table lists that one as a
-     * point of its own, so applying {@code x÷x} there would erase a position the model keeps.
+     * Nothing here turns it into anything else. {@code x÷x = 1} would take it to {@code T(1,1)} and that is
+     * a reading a caller may want, but it is not one the type applies: the pair that arrives is the pair
+     * that is kept, and a computation that wants the value reading asks for it in its own code, where the
+     * choice is visible.
      */
-    public T resolved() {
-        return isZeroOmega() ? ONE : this;
-    }
-
-    /** Whether this is {@code T(0,0)}: the ⊕ unit, and the pair the table resolves to 1. */
     public boolean isZeroOmega() {
         return this.p.signum() == 0 && this.q.signum() == 0;
     }
@@ -203,11 +263,11 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
      * <p>
      * This is the reading that tells the four sign placements apart where the ratio cannot: {@code T(0,1)}
      * and {@code T(0,-1)} are both a zero tangent, and they are the points {@code 1} and {@code -1}, half a
-     * turn apart. {@code T(0,0)} is the origin and has no angle of its own, so it answers as
-     * {@link #resolved()} does, at half a right angle.
+     * turn apart. {@code T(0,0)} is the origin, which has no argument, and this answers {@code NaN} rather
+     * than putting it somewhere -- see {@link #isZeroOmega()}.
      */
     public double theta() {
-        T it = resolved();
+        T it = this;
         // Taken from the ratio rather than from the two coordinates as doubles, because a pair whose
         // coordinates have BOTH outgrown a double leaves atan2 with infinity over infinity, which it answers
         // at 45 degrees whatever the real angle was: T(10^400, 10^500) is a hair off zero and T(10^500,
@@ -246,15 +306,19 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
      * than their doubles. Dividing the doubles would ask what infinity over infinity is as soon as a
      * coordinate outgrew a double -- {@code (10^400, 10^400)} is 1, and its two shadows are both infinite.
      *
-     * <p>{@code T(0,0)} answers as {@link #resolved()} does, at 1: reading a pair as a value is exactly what
-     * a projection is for, so this is the place the table's {@code x÷x} applies.
+     * <p>{@code T(0,0)} is {@code NaN}, which is IEEE's own word for a division that names no number. It is
+     * not taken to 1 on the way past: {@code x÷x} would put it there and that reading is the caller's to
+     * apply, not this column's to assume. See {@link #isZeroOmega()}.
      *
      * <p>{@link #evaluate()} agrees with this wherever it answers at all, but for the signed zero, which it
      * cannot carry -- it divides exactly, and an exact zero has no sign.
      */
     public double projection() {
-        T it = resolved();
+        T it = this;
         if (it.q.signum() == 0) {
+            if (it.p.signum() == 0) {
+                return Double.NaN;
+            }
             return it.p.signum() > 0 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
         }
         if (it.p.signum() == 0) {
@@ -273,11 +337,12 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
      * <p>
      * This is the value reading and {@link #projection()} is the table's column. They differ in two places
      * on purpose: at a quarter turn this answers nothing where the projection answers an infinity, and at a
-     * negative zero this answers zero where the projection answers {@code -0}.
+     * negative zero this answers zero where the projection answers {@code -0}. At {@code T(0,0)} both
+     * decline, one with nothing and one with {@code NaN}.
      */
     @Override
     public Optional<Double> evaluate() {
-        T it = resolved();
+        T it = this;
         if (it.q.signum() == 0) {
             return Optional.empty();
         }
