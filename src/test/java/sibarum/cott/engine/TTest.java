@@ -335,6 +335,49 @@ class TTest {
         assertEquals(at(0, -1), OMEGA.doubleAngle());
     }
 
+    /**
+     * The branch a classical tan or atan answers in: the tangent is unchanged and the denominator is not
+     * negative, which is the half turn taken where it was.
+     */
+    @Test
+    void thePrincipalBranchIsTheHalfWithANonNegativeDenominator() {
+        assertEquals(at(-1, 1), at(1, -1).principal());          // _1 and -1 are one tangent
+        assertEquals(at(1, 1), at(-1, -1).principal());          // -_1 and 1 likewise
+        assertEquals(ZERO, at(0, -1).principal());               // -0 folds onto 0
+        assertEquals(at(3, 4), at(-3, -4).principal());
+        assertEquals(at(3, 4), at(3, 4).principal());            // already there, and untouched
+        assertEquals(at(-3, 4), at(-3, 4).principal());
+    }
+
+    /** It keeps the tangent and moves the angle by a half turn, which is the period it folds by. */
+    @Test
+    void theBranchKeepsTheTangentAndTurnsTheAngle() {
+        T folded = at(1, -1).principal();
+        assertEquals(at(1, -1).evaluate(), folded.evaluate());
+        assertEquals(at(1, -1).projection(), folded.projection());
+        assertEquals(Math.PI, at(1, -1).theta() - folded.theta(), TOLERANCE);
+        assertEquals(-EIGHTH, folded.theta(), TOLERANCE);
+    }
+
+    /** The two places with nothing to fold: the pole is two values, and the origin is no value. */
+    @Test
+    void theQuarterTurnAndTheOriginAreLeftWhereTheyAre() {
+        assertEquals(OMEGA, OMEGA.principal());
+        assertEquals(at(-1, 0), at(-1, 0).principal());
+        assertEquals(ZERO_OMEGA, ZERO_OMEGA.principal());
+        // the two quarter turns are half a turn apart and are NOT one tangent, so neither moves
+        assertEquals(Double.POSITIVE_INFINITY, OMEGA.principal().projection());
+        assertEquals(Double.NEGATIVE_INFINITY, at(-1, 0).principal().projection());
+    }
+
+    /** Folding twice is folding once: the second one has nothing left to do. */
+    @Test
+    void theBranchIsIdempotent() {
+        for (T x : java.util.List.of(at(1, -1), at(-1, -1), at(0, -1), at(3, 4), OMEGA, ZERO_OMEGA)) {
+            assertEquals(x.principal(), x.principal().principal());
+        }
+    }
+
     /** The coordinates trade places, which is what makes zero invertible. */
     @Test
     void theValuePositionInverseSwapsTheCoordinates() {

@@ -474,6 +474,80 @@ class TLawsTest {
         assertEquals(460, scaledByTheNorm);
     }
 
+    // ---- the angle of a quotient, which is what atan2 was for
+
+    /**
+     * {@code y ÷ x} is the pair {@code T(y,x)} at whole arguments, and its angle is {@code atan2(y, x)}.
+     *
+     * <p>This is the measurement behind "there is no atan2 here". A classical {@code atan} is handed
+     * {@code y÷x} and cannot tell {@code 1÷-1} from {@code -1÷1}, because the division put both at the
+     * same number -- so the two arguments have to be carried in separately and the quadrant rebuilt from
+     * their signs. Here the division lands on two different pairs and the angle is read off the pair, so
+     * there is nothing left for a second function to repair.
+     *
+     * <p>Eight of the nine sign combinations agree with {@link Math#atan2} exactly. The ninth is
+     * {@code 0÷0}, where IEEE answers zero and this answers {@code 0ω}, which stands at no angle -- the
+     * one place the two part company, and it is the place atan2 is inventing.
+     */
+    @Test
+    void theQuotientIsThePairAndItsAngleIsAtan2() {
+        int agreed = 0;
+        for (long y : new long[]{1, 0, -1}) {
+            for (long x : new long[]{1, 0, -1}) {
+                T quotient = T.of(y, 1).times(T.of(x, 1).reciprocal());
+                assertEquals(T.of(y, x), quotient, y + " over " + x);
+                if (!quotient.isZeroOmega()) {
+                    assertEquals(Math.atan2(y, x), quotient.theta(), 1e-15, y + " over " + x);
+                    agreed++;
+                }
+            }
+        }
+        assertEquals(8, agreed);
+        assertEquals(T.ZERO_OMEGA, T.ZERO.times(T.ZERO.reciprocal()));
+        assertTrue(Double.isNaN(T.ZERO_OMEGA.theta()));
+        assertEquals(0.0, Math.atan2(0.0, 0.0), "which is the angle IEEE invents there");
+    }
+
+    /** And away from the unit coordinates it is the same, since the quotient is the pair of products. */
+    @Test
+    void theQuotientAgreesWithAtan2AtOtherCoordinatesToo() {
+        for (T x : SPREAD) {
+            if (x.isZeroOmega()) {
+                continue;
+            }
+            double ieee = Math.atan2(x.p().doubleValue(), x.q().doubleValue());
+            assertEquals(ieee, x.theta(), 1e-15, x.toString());
+        }
+    }
+
+    /**
+     * The branch is where the quadrant goes, and it goes because it was asked to: two values half a turn
+     * apart, one tangent, and {@code principal} picks the half a classical atan can name.
+     */
+    @Test
+    void theBranchFoldsExactlyTheHalfTurnPairs() {
+        int folded = 0;
+        for (T x : SPREAD) {
+            T principal = x.principal();
+            assertEquals(principal, principal.principal(), x + " folded twice");
+            assertTrue(principal.q().signum() >= 0, x + " folded into the right half");
+            if (!principal.equals(x)) {
+                assertEquals(x.oplusInverse(), principal, x + " moved by a half turn");
+                assertEquals(x.evaluate(), principal.evaluate(), x + " kept its tangent");
+                folded++;
+            }
+        }
+        assertEquals(3, folded, "the three in the sample with a negative denominator");
+
+        // The projection agrees too, but for the sign of a zero -- which is not the fold being lossy
+        // beyond its remit: at zero that sign IS which half the pair was in, so it is the thing being
+        // given up. Every other value keeps its projection exactly.
+        assertEquals(-0.0, T.of(0, -1).projection());
+        assertEquals(0.0, T.of(0, -1).principal().projection());
+        assertEquals(-1.0, T.of(1, -1).projection());
+        assertEquals(-1.0, T.of(1, -1).principal().projection());
+    }
+
     // ---- two facts about zero that the ratio cannot see
 
     /** A zero numerator has no sign to turn, so the sign of a zero arrives by the denominator. */

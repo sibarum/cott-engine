@@ -212,6 +212,30 @@ public record T(BigInteger p, BigInteger q) implements IExpr {
     }
 
     /**
+     * The same tangent in the half a classical {@code tan} or {@code atan} answers in: a denominator that
+     * is not negative, reached by a half turn where it was.
+     * <p>
+     * The tangent has a period of half a turn, so a pair and its {@link #oplusInverse()} are one tangent
+     * written two ways -- {@code T(1,-1)} and {@code T(-1,1)} are both -1, at {@code 3π/4} and {@code -π/4}.
+     * A classical {@code atan} answers in {@code (-π/2, π/2)} and so can only ever name the second of them;
+     * this is that choice, made by name.
+     *
+     * <h2>It is the one thing here that gives up the orientation, and it is asked for</h2>
+     * Everything else on this type keeps which of the four signings a pair stood in. This does not: it is
+     * the fold the classical branch is, and that is the whole of what it is for. Nothing applies it on the
+     * way past -- not the constructor, not a reading -- so a caller that wants the branch says so, and one
+     * that wants the turn it came from keeps the pair.
+     *
+     * <p>A quarter turn is left where it is. {@code T(1,0)} and {@code T(-1,0)} are half a turn apart and
+     * are <em>not</em> one tangent -- they are the two infinities, and the period argument that folds
+     * everything else does not reach the pole. {@code T(0,0)} is left alone for the older reason: it has no
+     * tangent to have a period in.
+     */
+    public T principal() {
+        return this.q.signum() < 0 ? oplusInverse() : this;
+    }
+
+    /**
      * {@code T(b,a)}: the coordinates trade places, sign and all.
      * <p>
      * The value-position inverse, and it is total -- {@code 0} and {@code ω} are each other's reciprocal,

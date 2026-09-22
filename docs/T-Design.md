@@ -312,6 +312,33 @@ assert something, and so the ones to read sceptically.
 carrier in `engine/traction`, and their zero handling — a zero coordinate as an absence marker — is
 that carrier's, not this one's. Do not look for `T`'s special cases there or carry theirs back.
 
+### 3.3 `atan2` is division here, and there is nothing left for it to do
+
+**Measured**, in `TLawsTest.theQuotientIsThePairAndItsAngleIsAtan2`.
+
+`atan2` exists because a classical `atan` is handed `y÷x` and the division has already destroyed
+the quadrant: `1÷-1` and `-1÷1` are one number, and no function of that number can say which turn
+it came from. So the two arguments are carried in separately and the quadrant is rebuilt from their
+signs, in four cases plus the axes.
+
+The division here does not destroy it. `T(1,-1)` and `T(-1,1)` are different values, the quotient
+of two pairs keeps the placement of the sign it was given, and at whole arguments the quotient
+**is** the pair:
+
+```
+T(y,1) · T(x,1)⁻¹  =  T(y, x)       for every y and x, including x = 0
+```
+
+Its angle agrees with `Math.atan2(y, x)` in 8 of the 9 sign combinations, to the last bit. The
+ninth is `0÷0`, which is `0ω` and stands at no angle, where IEEE answers zero — the one place the
+two part company, and it is the place `atan2` is inventing.
+
+So `tan` and `atan` in `Standard` have no arithmetic in them at all. A pair is its own tangent, so
+what is left of both is the branch — `T.principal()`, the half a classical tangent answers in, taken
+by a half turn where the denominator was negative. Both names are that one map, which is the
+model's first line stated as code. Applying it is how the quadrant gets lost, and it is opt-in:
+nothing folds on the way past.
+
 ---
 
 ## 4. Where information is lost
@@ -588,11 +615,13 @@ Not gaps to be closed by inference. Each of these is a decision that has not bee
 
 | file | what it is |
 |---|---|
-| `engine/ratio/T.java` | the carrier, four operations, two powers, the doubled angle, three inverses, three readings |
+| `engine/ratio/T.java` | the carrier, four operations, two powers, the doubled angle, the branch fold, three inverses, three readings |
 | `parse/Traction.g4` | the grammar: precedence, associativity, accepted glyphs |
-| `parse/Node.java` | the term: `Lit`, `Var`, `Call`, `Sum`, `Product`, `Power`, `Negation`, `Reciprocal` |
+| `parse/Node.java` | the term: `Lit`, `Var`, `Call`, `Sum`, `Product`, `Power`, `Negation`, `Reciprocal`, and the four walks over it |
 | `parse/Parse.java` | text to term, and `T(p,q)` read as a literal |
 | `parse/Functions.java` | what a call means, supplied from outside |
+| `parse/Catalogue.java` | the functions a session knows, each with an exact form, a projected one, both or neither |
+| `parse/Standard.java` | the pre-installed entries: the model's operations, including the two with no glyph |
 | `parse/Folding.java` | the negation switch |
 | `parse/Show.java` | term to text, precedence-aware, round-trips |
 | `engine/projection/Place.java` | where a settled carrier value lands, as coordinates |
