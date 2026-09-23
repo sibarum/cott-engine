@@ -141,6 +141,15 @@ A projection is a pair that is its own square, other than the ring's zero and un
 In the family `ω² = a + b·ω` of Structure, one exists exactly when `b² + 4a = 1`, which is `*`'s ring.
 Under `⊗`, `+` and `⊚` the only pairs that are their own square are `0ω` and `0`,
 under `∥` they are `0ω` and `ω`, and under `*` they are `0ω`, `0`, `ω` and `1`.
+
+Every product loses at most one integer. Against a `k` other than `0ω` whose norm is 0,
+the result is fixed by its own numerator, one linear combination of the other operand's coordinates,
+and keeping that operand's numerator as well gives it back.
+Against `T(c, 0)`, `+` keeps `b` and loses `a`, and `*` keeps `a` and loses `b`.
+Against `T(0, c)`, `*` and `∥` keep `b` and `a` respectively.
+Against `T(c, c)`, `⊚` keeps `b + a`, and against `T(c, −c)` it keeps `b − a`: each light line keeps the
+light-cone coordinate the other loses. `⊗` loses nothing except against `0ω`,
+and against `0ω` every product loses both integers.
 Where it does not come back, the operation is ambiguous there:
 every operand has a distinct partner giving the same result.
 
@@ -320,6 +329,7 @@ Proved in Lean 4 with Mathlib, in `cott-lean`, for every pair, at coordinate equ
 | the parallel sum | `T/Parallel.lean` | `reciprocal_par`, `ParPosition.ringEquiv`, `ParPosition.reciprocalEquiv`, `par_recoverable_iff`, `parAdd_eq`, `open_contrast` |
 | one norm decides recovery and inverses; the two projections | `T/Norm.lean` | `recoverable_iff_norm`, `exists_inverse_iff_norm`, `exists_plus_eq_zero_iff`, `exists_splitTimes_eq_zero_iff`, `exists_times_eq_one_iff`, `exists_par_eq_omega_iff`, `times_omega_oplus_times_zero` |
 | each product's idempotents; `*` alone has projections | `T/Projection.lean` | `qtimes_idempotent_iff`, `times_idempotent_iff`, `par_idempotent_iff`, `times_eq_times_iff_of_q_eq_zero`, `times_recover_with_complement` |
+| each product loses at most one integer | `T/Loss.lean` | `numerator_determines`, `qtimes_eq_qtimes_iff`, `qtimes_recover_with_numerator`, `plus_eq_plus_iff_of_q_eq_zero`, `splitTimes_eq_splitTimes_iff_of_p_eq_q`, `splitTimes_eq_splitTimes_iff_of_p_eq_neg_q`, `par_eq_par_iff_of_p_eq_zero` |
 
 Not formalized: the angle column, `T(a,b)^T(c,d)` off the integers,
 and that the power sum leaves the integer pairs for `n ∉ {1, −1}`.
