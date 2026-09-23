@@ -257,7 +257,7 @@ class ParseTest {
     void theRenderingUsesTheDisplayGlyphs() {
         assertEquals("T(1,1) + T(2,1) · T(3,1)", Parse.of("1+2*3").show());
         assertEquals("a − b", Parse.of("a-b").show());
-        assertEquals("a ÷ b", Parse.of("a/b").show());
+        assertEquals("a / b", Parse.of("a/b").show());
         assertEquals("(a + b) · c", Parse.of("(a+b)*c").show());
         assertEquals("−x^T(2,1)", Parse.of("-x^2").show());
         // bracketed to keep the tree: a + b + c reads back left-nested, which is a different term

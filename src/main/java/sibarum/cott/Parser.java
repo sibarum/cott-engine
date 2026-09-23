@@ -77,11 +77,15 @@ public final class Parser {
 
     private IExpr term() {
         IExpr a = factor();
-        while (p < s.length() && (peek() == Notation.TIMES || peek() == '÷')) {
+        // Both division glyphs, the way the ANTLR grammar's DIV token takes both. The slash is what is
+        // printed now and the obelus is what used to be, and this parser only ever saw the obelus because
+        // Notation.normalize folded one into the other before it got here. That fold is gone, so the
+        // acceptance it stood in for has to be spelled out, or the printer stops being invertible.
+        while (p < s.length() && (peek() == Notation.TIMES || peek() == '/' || peek() == '÷')) {
             char op = next();
             IExpr b = val(factor());
             // Division is a product with a reciprocal, which is how the carrier spells it, and the reciprocal
-            // is KEPT for the same reason the negation above is: y·(1÷y) is the multiplicative residue, and
+            // is KEPT for the same reason the negation above is: y·(1/y) is the multiplicative residue, and
             // which operand it came from is the whole of what makes it reversible.
             a = new MultiplicationOperationExpr(val(a), op == Notation.TIMES ? b : new ReciprocalOperationExpr(b));
         }

@@ -47,7 +47,7 @@ public final class Render {
     }
 
     // How tightly a rendered form binds, mirroring the parser: ^ takes a primary on both sides,
-    // · and ÷ take factors, + takes terms.
+    // · and / take factors, + takes terms.
     private static final int ADD = 1;
     private static final int MUL = 2;
     private static final int POW = 3;
@@ -74,10 +74,10 @@ public final class Render {
     public static String show(IExpr e) {
         // A quotient and a difference are spelled with the operator they were typed with, though the carrier
         // holds them as a product with a reciprocal and a sum with a negation. Recognising them here is what
-        // keeps ÷ and − in the display without putting a second pair of nodes in the engine.
+        // keeps / and − in the display without putting a second pair of nodes in the engine.
         if (e instanceof MultiplicationOperationExpr(IExpr left, IExpr right)
                 && right instanceof ReciprocalOperationExpr(IExpr by)) {
-            return arg(left, MUL) + "÷" + arg(by, POW);
+            return arg(left, MUL) + "/" + arg(by, POW);
         }
         if (e instanceof AdditionOperationExpr(IExpr left, IExpr right)
                 && right instanceof NegationOperationExpr(IExpr taken)) {
@@ -99,7 +99,7 @@ public final class Render {
             // log returns an EXPONENT, so it renders as one: log of -1 to base 0 is ω.
             case LogarithmOperationExpr l -> "log(" + show(l.operand()) + ", " + show(l.base()) + ")";
             case NegationOperationExpr n -> "−" + arg(n.operand(), ATOM);
-            case ReciprocalOperationExpr i -> "1÷" + arg(i.operand(), POW);
+            case ReciprocalOperationExpr i -> "1/" + arg(i.operand(), POW);
             case ExponentialOperationExpr p -> arg(p.base(), ATOM) + "^" + exponentAtom(p.exponent());
             case MultiplicationOperationExpr x -> juxtapose(arg(x.left(), MUL), arg(x.right(), MUL));
             case AdditionOperationExpr x -> sum(x);
@@ -181,7 +181,7 @@ public final class Render {
     }
 
     /**
-     * A pair in the display's own language: {@code (5, 2)} prints as {@code 5÷2}, which is what the keypad
+     * A pair in the display's own language: {@code (5, 2)} prints as {@code 5/2}, which is what the keypad
      * types.
      *
      * <h2>Or as a decimal, when that is shorter AND says the same thing</h2>
@@ -201,7 +201,7 @@ public final class Render {
      * place the printer is not an exact inverse, and it is deliberate.
      */
     private static String rational(BigInteger n, BigInteger d) {
-        String fraction = signed(n.toString()) + "÷" + signed(d.toString());
+        String fraction = signed(n.toString()) + "/" + signed(d.toString());
         String decimal = decimal(n, d);
         return decimal != null && decimal.length() < fraction.length() ? decimal : fraction;
     }
@@ -214,9 +214,9 @@ public final class Render {
         if (d.signum() <= 0 || !isPowerOfTen(d)) {
             return null;
         }
-        // A zero numerator has no decimal spelling that keeps its denominator: 0÷10 as a decimal is 0, which
+        // A zero numerator has no decimal spelling that keeps its denominator: 0/10 as a decimal is 0, which
         // reads back as (0,1) and is a different literal. So (0,10) keeps the quotient — it is zero at those
-        // coordinates, written 0÷10, and none of it is the point zero.
+        // coordinates, written 0/10, and none of it is the point zero.
         if (n.signum() == 0) {
             return null;
         }
@@ -237,7 +237,7 @@ public final class Render {
     /**
      * An exponent in the {@code ^} slot, bracketed only where it has to be. {@code ^} takes a single
      * primary on its right, so {@code 0^2} and {@code 0^-2} read back exactly as printed, while
-     * {@code 0^(1+ω)} and {@code 0^(1÷2)} would lose everything after the first token.
+     * {@code 0^(1+ω)} and {@code 0^(1/2)} would lose everything after the first token.
      */
     private static String exponentAtom(IExpr e) {
         String s = show(e);
@@ -303,7 +303,7 @@ public final class Render {
     private static int precedence(IExpr e) {
         if (e instanceof MultiplicationOperationExpr(IExpr ignored, IExpr right)
                 && right instanceof ReciprocalOperationExpr) {
-            return MUL;   // a quotient: a÷b·c would move which pair the residue belongs to
+            return MUL;   // a quotient: a/b·c would move which pair the residue belongs to
         }
         return switch (e) {
             case AdditionOperationExpr a -> ADD;
@@ -325,7 +325,7 @@ public final class Render {
         if (p.denominator().equals(BigInteger.ONE)) {
             return ATOM;
         }
-        return coordinates(p).indexOf('÷') < 0 ? ATOM : MUL;
+        return coordinates(p).indexOf('/') < 0 ? ATOM : MUL;
     }
 
     /**

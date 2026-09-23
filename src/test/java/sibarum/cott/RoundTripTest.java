@@ -126,11 +126,11 @@ class RoundTripTest {
     /** Coordinates do not reduce, and two spellings of one value stay two literals. */
     @Test
     void aSpellingKeepsTheCoordinatesItWasWrittenAt() {
-        assertEquals("1÷2", Cott.evaluate("1÷2"));
+        assertEquals("1/2", Cott.evaluate("1÷2"));
         assertEquals("0.5", Cott.evaluate("5÷10"));
         assertEquals("2.5", Cott.evaluate("2.5"));
         // The decimal spelling is used only where the denominator is already a power of ten, so what it prints
-        // reads back as the same pair. 1÷3 has no decimal at all and keeps its quotient.
-        assertEquals("1÷3", Cott.evaluate("1÷3"));
+        // reads back as the same pair. 1/3 has no decimal at all and keeps its quotient.
+        assertEquals("1/3", Cott.evaluate("1÷3"));
     }
 }

@@ -161,13 +161,13 @@ class RealTest {
         // A typed decimal is the pair it was written at -- 2.5 is (25, 10) -- so it comes back as typed rather
         // than as the reduced fraction the old carrier turned it into.
         assertEquals("2.5", ev("2.5"));
-        assertEquals("1÷3", ev("1÷3"));
+        assertEquals("1/3", ev("1÷3"));
         // 1÷2w is HALF of omega now, and the pair says which half: ((1,2), -1). It used to be omega itself,
         // because omega was the coordinate pair (1,0) and a zero denominator absorbed the factor -- so
         // halving omega did not move it. Omega is 0^-1 here and the real part holds the 1÷2, which is also
         // what makes 0^(w÷2) spellable; see Parser on i.
-        assertEquals("1÷2ω", ev("1÷2w"));
-        assertEquals("1÷2ω", ev(ev("1÷2w")));
+        assertEquals("1/2ω", ev("1÷2w"));
+        assertEquals("1/2ω", ev(ev("1÷2w")));
     }
 
     /**
@@ -181,6 +181,6 @@ class RealTest {
         assertEquals("0.826821810432", ev("sin(2)^2"));
         // A rounding that would lose the number is not a spelling of it: 2^-50 is small and is not zero, and
         // its quotient says so in fewer characters than a decimal full of zeros would.
-        assertEquals("1÷1125899906842624", ev("1÷2^50"));
+        assertEquals("1/1125899906842624", ev("1÷2^50"));
     }
 }

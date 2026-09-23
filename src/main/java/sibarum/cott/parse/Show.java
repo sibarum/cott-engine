@@ -43,9 +43,9 @@ final class Show {
             case Node.Power(Node b, Node e) ->
                     bracket(show(b, ATOM) + "^" + show(e, INVERSE), POWER, need);
             case Node.Negation(Node x) -> bracket("−" + show(x, INVERSE), INVERSE, need);
-            case Node.Reciprocal(Node x) -> bracket("1÷" + show(x, POWER), INVERSE, need);
+            case Node.Reciprocal(Node x) -> bracket("1/" + show(x, POWER), INVERSE, need);
             case Node.Product(Node l, Node.Reciprocal(Node r)) ->
-                    bracket(show(l, PRODUCT) + " ÷ " + show(r, POWER), PRODUCT, need);
+                    bracket(show(l, PRODUCT) + " / " + show(r, POWER), PRODUCT, need);
             case Node.Product(Node l, Node r) ->
                     bracket(show(l, PRODUCT) + " · " + show(r, INVERSE), PRODUCT, need);
             case Node.Sum(Node l, Node.Negation(Node r)) ->

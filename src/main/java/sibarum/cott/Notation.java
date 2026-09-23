@@ -36,9 +36,14 @@ public final class Notation {
      * which is exactly the set of places this class exists to keep in agreement. It was {@code ×}, and
      * a cross is a poor neighbour for {@code x} in an expression whose subject is usually {@code x}.
      *
-     * <p>{@code ÷}, {@code −} and {@code ^} are still literals below. They have never had to move, and
-     * one constant standing for the one thing that did says more than four that would imply a
-     * configurability nobody has asked for.
+     * <p>{@code −} and {@code ^} are still literals below. They have never had to move, and one constant
+     * standing for the one thing that did says more than four that would imply a configurability nobody
+     * has asked for.
+     *
+     * <p>Division is no longer rewritten at all. It used to be folded to {@code ÷} here, and that glyph
+     * is too close to {@code +} to be read at the size a plot's axis labels are drawn: a rung reading
+     * {@code -_1÷10} was photographed as {@code -_1+10}. A slash goes in and a slash comes out, and
+     * {@code ÷} is still accepted on the way in, so older text is not a syntax error.
      */
     public static final char TIMES = '·';
 
@@ -87,7 +92,7 @@ public final class Notation {
     public static String normalize(String s, Bindings session) {
         return adjacency(s.replaceAll("\\s+", "")
                 .replace('*', TIMES).replace(LEGACY_TIMES, TIMES)
-                .replace('/', '÷').replace('-', '−').replace('w', 'ω'), session);
+                .replace('-', '−').replace('w', 'ω'), session);
     }
 
     /**

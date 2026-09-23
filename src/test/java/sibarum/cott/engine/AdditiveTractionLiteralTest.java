@@ -133,7 +133,7 @@ class AdditiveTractionLiteralTest {
         IExpr inverse = TractionRules.negation(omega, false).orElseThrow().result();
 
         assertEquals(a(ZERO, at(1, -1)), inverse);      // the value is -1; the spelling is not omega's
-        assertEquals("0^(1÷−1)", Render.show(inverse.simplify()));
+        assertEquals("0^(1/−1)", Render.show(inverse.simplify()));
     }
 
     // ---------------------------------------------------------------- the sum, which is not wired
