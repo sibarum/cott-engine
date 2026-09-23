@@ -133,6 +133,14 @@ Under `*`, `ω` and `0` split a pair into its two coordinates, and `⊕` puts th
 ```
 
 So what `*` loses against a pair on an axis is exactly the other projection.
+Against `T(a, 0)` with `a ≠ 0`, two operands give the same result exactly when their `x * ω` agree,
+so keeping `x * 0` alongside the result gives the operand back.
+
+`*` is the only product with projections like these.
+A projection is a pair that is its own square, other than the ring's zero and unit.
+In the family `ω² = a + b·ω` of Structure, one exists exactly when `b² + 4a = 1`, which is `*`'s ring.
+Under `⊗`, `+` and `⊚` the only pairs that are their own square are `0ω` and `0`,
+under `∥` they are `0ω` and `ω`, and under `*` they are `0ω`, `0`, `ω` and `1`.
 Where it does not come back, the operation is ambiguous there:
 every operand has a distinct partner giving the same result.
 
@@ -311,6 +319,7 @@ Proved in Lean 4 with Mathlib, in `cott-lean`, for every pair, at coordinate equ
 | velocity addition, and the light cone | `T/Velocity.lean` | `velAdd_eq`, `lightCone_splitTimes`, `splitTimes_eq_zeroOmega_iff`, `splitTimes_recoverable_iff`, `infinity_contrast`, `one_splitTimes` |
 | the parallel sum | `T/Parallel.lean` | `reciprocal_par`, `ParPosition.ringEquiv`, `ParPosition.reciprocalEquiv`, `par_recoverable_iff`, `parAdd_eq`, `open_contrast` |
 | one norm decides recovery and inverses; the two projections | `T/Norm.lean` | `recoverable_iff_norm`, `exists_inverse_iff_norm`, `exists_plus_eq_zero_iff`, `exists_splitTimes_eq_zero_iff`, `exists_times_eq_one_iff`, `exists_par_eq_omega_iff`, `times_omega_oplus_times_zero` |
+| each product's idempotents; `*` alone has projections | `T/Projection.lean` | `qtimes_idempotent_iff`, `times_idempotent_iff`, `par_idempotent_iff`, `times_eq_times_iff_of_q_eq_zero`, `times_recover_with_complement` |
 
 Not formalized: the angle column, `T(a,b)^T(c,d)` off the integers,
 and that the power sum leaves the integer pairs for `n ∉ {1, −1}`.
