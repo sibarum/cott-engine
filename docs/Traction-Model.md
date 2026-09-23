@@ -28,7 +28,9 @@ and omega can be top-negative `-ω = -1/0` but not bottom-negative.
 Every pair is distinct: not because invariants are removed, but because no invariant is specified by
 default. Equality is coordinate equality, so `T(1,2) ≠ T(2,4)`.
 The ratio, the ray (a positive multiple of both coordinates), the angle and the norm are invariants
-a use may specify. Where a law below holds only under one of them, it says which.
+a use may specify. Away from `0ω`, the angle and the ray are the same invariant:
+two pairs have the same θ exactly when they are positive multiples of one pair.
+Where a law below holds only under one of them, it says which.
 
 | T    | p/q   | T(p,q)   | θ     | tan(θ)    | IEEE 64 | Notes                                                  |
 |------|-------|----------|-------|-----------|---------|--------------------------------------------------------|
@@ -41,6 +43,22 @@ a use may specify. Where a law below holds only under one of them, it says which
 | = -ω | -1/0  | T(-1,0)  | -π/2  | -inf      | -inf    | Omega can only be top-negative                         |
 | = -1 | -1/1  | T(-1,1)  | -π/4  | -1        | -1      | Top negative                                           |
 | = 0ω | 0/0   | T(0, 0)  | none  | undefined | NaN     | The identity of ⊕; absorbing under +, *, ⊗             |
+
+`θ = arg(q + i·p)`, in `(−π, π]`, and `tan θ = p/q` for every pair.
+At a quarter turn both sides are 0 under the convention `x/0 = 0`, so the first line holds as an equation.
+As an angle mod 2π, and for pairs other than `0ω`:
+
+```
+θ(x ⊗ y) = θx + θy          angle addition
+θ(-x)    = −θx              the conjugate
+θ(-_x)   = θx + π           a half turn
+θ(1/x)   = π/2 − θx         the reflection where tan and cot trade
+θ(T^n)   = n·θx             for the ⊗ power
+```
+
+The sign of the angle from `x` to `y` is the sign of `det(x,y) = b·c − a·d`, for `x = T(a,b)`, `y = T(c,d)`.
+Since `det(x, x ⊕ y) = det(x ⊕ y, y) = det(x, y)`, the mediant `x ⊕ y` lies between `x` and `y`.
+`principal` keeps the tangent and moves θ by π or not at all.
 
 
 # Operations
@@ -330,8 +348,9 @@ Proved in Lean 4 with Mathlib, in `cott-lean`, for every pair, at coordinate equ
 | one norm decides recovery and inverses; the two projections | `T/Norm.lean` | `recoverable_iff_norm`, `exists_inverse_iff_norm`, `exists_plus_eq_zero_iff`, `exists_splitTimes_eq_zero_iff`, `exists_times_eq_one_iff`, `exists_par_eq_omega_iff`, `times_omega_oplus_times_zero` |
 | each product's idempotents; `*` alone has projections | `T/Projection.lean` | `qtimes_idempotent_iff`, `times_idempotent_iff`, `par_idempotent_iff`, `times_eq_times_iff_of_q_eq_zero`, `times_recover_with_complement` |
 | each product loses at most one integer | `T/Loss.lean` | `numerator_determines`, `qtimes_eq_qtimes_iff`, `qtimes_recover_with_numerator`, `plus_eq_plus_iff_of_q_eq_zero`, `splitTimes_eq_splitTimes_iff_of_p_eq_q`, `splitTimes_eq_splitTimes_iff_of_p_eq_neg_q`, `par_eq_par_iff_of_p_eq_zero` |
+| the angle column; the angle is the ray; the mediant lies between | `T/Angle.lean` | `tan_theta`, `theta_zero` … `theta_negOne`, `angle_otimes`, `angle_neg`, `angle_oplusInverse`, `angle_reciprocal`, `angle_otimesPowNat`, `theta_eq_theta_iff_sameRay`, `sign_angle_sub`, `mediant_between`, `tan_theta_principal` |
 
-Not formalized: the angle column, `T(a,b)^T(c,d)` off the integers,
+Not formalized: `T(a,b)^T(c,d)` off the integers,
 and that the power sum leaves the integer pairs for `n ∉ {1, −1}`.
 The opposite ray where `b·d < 0` follows directly from `tanAdd_eq` and is not a separate theorem.
 The wheel axioms are checked against the statements on Wikipedia and nLab.
