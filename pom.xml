@@ -10,7 +10,7 @@
 
     <name>cott-engine</name>
     <description>
-        An evaluator for traction, implementing only what cott-lean proves. Pure Java: no
+        The traction calculator, implementing only what cott-lean proves. Pure Java: no
         subprocess, no native code, no reflection.
     </description>
 
@@ -43,6 +43,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- cott-lean checked out beside this repository: every citation is checked against it -->
+                        <cott.lean.declarations>${project.basedir}/../cott-lean/declarations.txt</cott.lean.declarations>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>
