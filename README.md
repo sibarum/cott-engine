@@ -21,9 +21,11 @@ Lean has not proven, the engine does not do.
 x = 1
 > ω(2x)-(0(x+1)+0^2(2x-1))/2
 = 4/0
-> :quotient ratio
-> ω(2x)-(0(x+1)+0^2(2x-1))/2
-= ω
+    ray        ω
+    ratio      ω
+    classical  undefined
+    angle      90°
+    point      4i
 ```
 
 Run it with `mvn compile` and then `java -cp target/classes sibarum.cott.calculator.Repl`.
@@ -35,10 +37,25 @@ Run it with `mvn compile` and then `java -cp target/classes sibarum.cott.calcula
    returned as it is.
 3. **Evaluate** at Level 2, in `T2`: a literal `n` enters as `T2.of(T(n,1))`, and `+`, `·`, `-`, the
    reciprocal and `^` are `T2`'s own operations. `a - b` is `a + (-b)`, and `a / b` is `a · reciprocal(b)`.
-4. **Flatten** the result to a flat pair, `T2(A, B) ↦ A / B`.
-5. **Read** it under the chosen quotient: `none` (the pairs as they are, the default), `ray` (positive
-   multiples identified) or `ratio` (non-zero multiples identified, `0ω` kept apart).
-6. **Display** it: one of the nine named values by its name, otherwise `p` or `p/q`.
+4. **Flatten** the result to a flat pair, `T2(A, B) ↦ A / B`. That pair, with no quotient, is the answer:
+   the ground truth, always kept. It is written as one of the nine named values by its name, otherwise
+   as `p` or `p/q`, unreduced.
+5. **Project** it. Every other reading is a `Projection` of the ground truth, taken on demand and never
+   stored in its place, so any number of them can be read from one value.
+
+## The projections
+
+| name | reading | Lean |
+|---|---|---|
+| `ray` | the class of positive multiples, by its representative | `T.Rel`, positive integers |
+| `ratio` | the class of non-zero multiples, with `0ω` kept apart | `T.Rel`, `T.ratioRel_iff` |
+| `classical` | what a classical calculator says: `p/q`, or `undefined` where `q = 0` | `T.toQa` |
+| `angle` | `θ = arg(q + p·i)`, in degrees; the one reading that is not exact | `T.theta` |
+| `point` | `q + p·i` | `T.toC` |
+
+A projection is `Projection<R>`: a name, `apply(T)`, which cites the Lean map it implements, and
+`display(R)`. `Result.Value.read(projection)` gives the reading itself, and `readings()` all of them,
+written. A new reading is one more class and one line in `Projections.ALL`.
 
 ## The notation
 
@@ -66,7 +83,7 @@ nine named values and on many other pairs; the proof is what makes it hold for a
 
 - a citation names a declaration that is not in cott-lean's `declarations.txt`, so a definition renamed
   or dropped in the Lean cannot silently survive here;
-- a public method of the value layer (`sibarum.cott.traction`) cites nothing;
+- a public method of the value layer (`sibarum.cott.traction`), or a projection's `apply`, cites nothing;
 - a test of the value layer states no theorem.
 
 It reads `../cott-lean/declarations.txt`, so cott-lean must be checked out beside this repository. CI

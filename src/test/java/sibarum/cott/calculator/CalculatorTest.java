@@ -1,8 +1,12 @@
 package sibarum.cott.calculator;
 
 import org.junit.jupiter.api.Test;
-import sibarum.cott.traction.Quotient;
+import sibarum.cott.projection.Projections;
+import sibarum.cott.projection.Rational;
 import sibarum.cott.traction.T;
+
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -25,16 +29,27 @@ class CalculatorTest {
     }
 
     @Test
-    void theQuotientIsARead() {
+    void theGroundTruthHasNoQuotient() {
         Calculator c = new Calculator();
         Result.Value half = value(c, "1/2 + 1/2");
         assertEquals(T.of(4, 4), half.flat());
         assertEquals("4/4", half.text());
-        assertEquals("1", c.quotient(Quotient.RATIO).enter("1/2 + 1/2").text());
-        assertEquals("1", c.quotient(Quotient.RAY).enter("1/2 + 1/2").text());
-        assertEquals("2/-4", c.quotient(Quotient.NONE).enter("2/(-4)").text());
-        assertEquals("1/-2", c.quotient(Quotient.RAY).enter("2/(-4)").text());
-        assertEquals("-1/2", c.quotient(Quotient.RATIO).enter("2/(-4)").text());
+        assertEquals("2/-4", c.enter("2/(-4)").text());
+    }
+
+    @Test
+    void projectionsAreReadingsOfTheSameValue() {
+        Result.Value half = value(new Calculator(), "1/2 + 1/2");
+        assertEquals(T.ONE, half.read(Projections.RAY));
+        assertEquals(T.ONE, half.read(Projections.RATIO));
+        assertEquals(Optional.of(Rational.of(1, 1)), half.read(Projections.CLASSICAL));
+        assertEquals(T.of(4, 4), half.flat(), "a reading leaves the value as it was");
+
+        Result.Value neg = value(new Calculator(), "2/(-4)");
+        assertEquals("1/-2", neg.readings().get("ray"));
+        assertEquals("-1/2", neg.readings().get("ratio"));
+        assertEquals("-1/2", neg.readings().get("classical"));
+        assertEquals(List.of("ray", "ratio", "classical", "angle", "point"), List.copyOf(neg.readings().keySet()));
     }
 
     @Test
@@ -44,7 +59,11 @@ class CalculatorTest {
         Result.Value r = value(c, "ω(2x)-(0(x+1)+0^2(2x-1))/2");
         assertEquals(T.of(4, 0), r.flat());
         assertEquals("4/0", r.text());
-        assertEquals("ω", c.quotient(Quotient.RATIO).enter("ω(2x)-(0(x+1)+0^2(2x-1))/2").text());
+        assertEquals("ω", r.readings().get("ray"));
+        assertEquals("ω", r.readings().get("ratio"));
+        assertEquals("undefined", r.readings().get("classical"));
+        assertEquals("90°", r.readings().get("angle"));
+        assertEquals("4i", r.readings().get("point"));
     }
 
     @Test
@@ -61,17 +80,16 @@ class CalculatorTest {
     void variablesAndFunctionsSubstitute() {
         Calculator c = new Calculator();
         c.enter("f(x) = 2x^2+4x+2");
-        assertEquals("32", c.quotient(Quotient.RATIO).enter("f(3)").text());
+        assertEquals("32", c.enter("f(3)").text());
         c.enter("a = 3");
         c.enter("g(x, y) = x - y");
         assertEquals("1", c.enter("g(a, 2)").text());
-        Result partial = c.enter("g(t, a)");
-        assertEquals("t - 3", partial.text());
+        assertEquals("t - 3", c.enter("g(t, a)").text());
     }
 
     @Test
     void aParameterShadowsAVariable() {
-        Calculator c = new Calculator().quotient(Quotient.RATIO);
+        Calculator c = new Calculator();
         c.enter("x = 100");
         c.enter("f(x) = x + 1");
         assertEquals("2", c.enter("f(1)").text());
@@ -88,7 +106,7 @@ class CalculatorTest {
 
     @Test
     void exponentsAreWholeNumbersForNow() {
-        Calculator c = new Calculator().quotient(Quotient.RATIO);
+        Calculator c = new Calculator();
         assertEquals("8", c.enter("2^3").text());
         assertEquals("1", c.enter("0^0").text());
         c.enter("n = 2");

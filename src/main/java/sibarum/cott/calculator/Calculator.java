@@ -4,8 +4,8 @@ import sibarum.cott.notation.Expr;
 import sibarum.cott.notation.Parser;
 import sibarum.cott.notation.Printer;
 import sibarum.cott.notation.Statement;
+import sibarum.cott.projection.Display;
 import sibarum.cott.traction.Lean;
-import sibarum.cott.traction.Quotient;
 import sibarum.cott.traction.T;
 import sibarum.cott.traction.T2;
 
@@ -15,31 +15,20 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
  * A traction calculator: reads a line, substitutes its variables and inline functions, and either leaves
  * it as it is, when a variable is still free, or evaluates it.
  *
- * <p>Evaluation is at Level 2, in {@link T2}, and opaque: a literal enters by {@link T2#of}, the result is
- * {@link T2#flatten flattened}, read under the chosen {@link Quotient}, and shown as an ordinary number.
+ * <p>Evaluation is at Level 2, in {@link T2}, and opaque: a literal enters by {@link T2#of}, and the result
+ * is {@link T2#flatten flattened}. That flat pair, with no quotient, is the answer; every other reading of
+ * it is a projection the {@link Result.Value} takes on demand.
  */
 public final class Calculator {
 
     private final Map<String, Expr> variables = new HashMap<>();
     private final Map<String, Statement.Define> functions = new HashMap<>();
-    private Quotient quotient = Quotient.NONE;
-
-    public Quotient quotient() {
-        return quotient;
-    }
-
-    /** The invariant results are read under. {@link Quotient#NONE} by default: no invariant is assumed. */
-    public Calculator quotient(Quotient q) {
-        this.quotient = Objects.requireNonNull(q);
-        return this;
-    }
 
     public Result enter(String line) {
         Statement s = new Parser(functions.keySet(), variables.keySet()).statement(line);
@@ -64,8 +53,7 @@ public final class Calculator {
         if (!free(substituted).isEmpty()) return new Result.Unevaluated(substituted, Printer.print(substituted));
         T2 level2 = evaluate(substituted);
         T flat = level2.flatten();
-        T read = quotient.representative(flat);
-        return new Result.Value(level2, flat, quotient, read, display(read));
+        return new Result.Value(level2, flat, Display.of(flat));
     }
 
     // ---- substitution ----
@@ -179,19 +167,5 @@ public final class Calculator {
         } catch (ArithmeticException tooBig) {
             throw new CalculatorException("exponent " + n.value() + " is too large");
         }
-    }
-
-    // ---- display ----
-
-    private static final Map<T, String> NAMED = Map.of(
-            T.ZERO, "0", T.ONE, "1", T.OMEGA, "ω", T.UNDER_ONE, "_1", T.UNDER_ZERO, "_0",
-            T.NEG_UNDER_ONE, "-_1", T.NEG_OMEGA, "-ω", T.NEG_ONE, "-1", T.ZERO_OMEGA, "0ω");
-
-    /** One of the nine named values by its name; otherwise {@code p}, or {@code p/q}. */
-    static String display(T x) {
-        String named = NAMED.get(x);
-        if (named != null) return named;
-        if (x.q().equals(BigInteger.ONE)) return x.p().toString();
-        return x.p() + "/" + x.q();
     }
 }

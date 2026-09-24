@@ -1,6 +1,7 @@
 package sibarum.cott;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.projection.Projection;
 import sibarum.cott.traction.Lean;
 import sibarum.cott.traction.Proves;
 import sibarum.cott.traction.T;
@@ -24,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Every citation names a declaration cott-lean has, and nothing in the value layer goes uncited.
+ * Every citation names a declaration cott-lean has, and nothing that computes a value goes uncited.
  *
  * <p>The declarations are cott-lean's {@code declarations.txt}, found through the system property
  * {@code cott.lean.declarations}, which the build points at the sibling checkout.
@@ -33,12 +34,15 @@ class CitationTest {
 
     private static final Set<String> EXEMPT = Set.of("equals", "hashCode", "toString", "values", "valueOf");
 
+    /** Packages whose tests state theorems. */
+    private static final Set<String> THEORY = Set.of("sibarum.cott.traction", "sibarum.cott.projection");
+
     @Test
     void everyCitationIsALeanDeclaration() throws Exception {
         Set<String> declarations = declarations();
         List<String> dangling = new ArrayList<>();
         int citations = 0;
-        for (Class<?> c : classes()) {
+        for (Class<?> c : concat(classes(T.class), classes(CitationTest.class))) {
             for (AnnotatedElement e : elements(c)) {
                 for (String name : cited(e)) {
                     citations++;
@@ -52,21 +56,26 @@ class CitationTest {
     }
 
     @Test
-    void theValueLayerIsCitedThroughout() throws Exception {
+    void everythingThatComputesAValueIsCited() throws Exception {
         List<String> uncited = new ArrayList<>();
-        for (Class<?> c : classes()) {
-            if (!c.getPackageName().equals(T.class.getPackageName()) || c.isAnnotation()) continue;
-            boolean test = c.getSimpleName().endsWith("Test");
+        for (Class<?> c : classes(T.class)) {
+            if (c.isInterface() || c.isAnnotation()) continue;
+            boolean valueLayer = c.getPackageName().equals(T.class.getPackageName());
+            boolean projection = Projection.class.isAssignableFrom(c);
             for (Method m : c.getDeclaredMethods()) {
-                if (m.isSynthetic() || EXEMPT.contains(m.getName())) continue;
-                if (test) {
-                    if (m.isAnnotationPresent(Test.class) && !m.isAnnotationPresent(Proves.class))
-                        uncited.add(c.getSimpleName() + "." + m.getName() + " states no theorem");
-                } else if (Modifier.isPublic(m.getModifiers()) && Modifier.isPublic(c.getModifiers())
-                        && !m.isAnnotationPresent(Lean.class)) {
+                if (m.isSynthetic() || m.isBridge() || EXEMPT.contains(m.getName()) || m.isAnnotationPresent(Lean.class))
+                    continue;
+                if (valueLayer && Modifier.isPublic(m.getModifiers()) && Modifier.isPublic(c.getModifiers()))
                     uncited.add(c.getSimpleName() + "." + m.getName() + " cites no definition");
-                }
+                if (projection && m.getName().equals("apply"))
+                    uncited.add(c.getSimpleName() + ".apply cites no map");
             }
+        }
+        for (Class<?> c : classes(CitationTest.class)) {
+            if (!THEORY.contains(c.getPackageName()) || !c.getSimpleName().endsWith("Test")) continue;
+            for (Method m : c.getDeclaredMethods())
+                if (m.isAnnotationPresent(Test.class) && !m.isAnnotationPresent(Proves.class))
+                    uncited.add(c.getSimpleName() + "." + m.getName() + " states no theorem");
         }
         if (!uncited.isEmpty()) fail(String.join("\n", uncited));
     }
@@ -105,17 +114,21 @@ class CitationTest {
         return e instanceof Class<?> ? c.getName() : c.getName() + "." + e;
     }
 
-    /** Every class compiled from main and test sources. */
-    private static List<Class<?>> classes() throws IOException, URISyntaxException, ClassNotFoundException {
+    private static List<Class<?>> concat(List<Class<?>> a, List<Class<?>> b) {
+        List<Class<?>> out = new ArrayList<>(a);
+        out.addAll(b);
+        return out;
+    }
+
+    /** Every class compiled into the same output directory as {@code anchor}: main or test. */
+    private static List<Class<?>> classes(Class<?> anchor) throws IOException, URISyntaxException, ClassNotFoundException {
         List<Class<?>> out = new ArrayList<>();
-        for (Class<?> anchor : List.of(T.class, CitationTest.class)) {
-            Path root = Path.of(anchor.getProtectionDomain().getCodeSource().getLocation().toURI());
-            try (Stream<Path> files = Files.walk(root)) {
-                for (Path f : files.filter(p -> p.toString().endsWith(".class")).toList()) {
-                    String name = root.relativize(f).toString().replace('\\', '.').replace('/', '.');
-                    out.add(Class.forName(name.substring(0, name.length() - ".class".length()), false,
-                            CitationTest.class.getClassLoader()));
-                }
+        Path root = Path.of(anchor.getProtectionDomain().getCodeSource().getLocation().toURI());
+        try (Stream<Path> files = Files.walk(root)) {
+            for (Path f : files.filter(p -> p.toString().endsWith(".class")).toList()) {
+                String name = root.relativize(f).toString().replace('\\', '.').replace('/', '.');
+                out.add(Class.forName(name.substring(0, name.length() - ".class".length()), false,
+                        CitationTest.class.getClassLoader()));
             }
         }
         return out;
