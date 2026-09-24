@@ -240,6 +240,35 @@ the split-complex integers have no idempotent but `0` and `1`, so over ℤ the t
 they agree only once 2 is invertible. `∥` is `+` through the reciprocal, which exchanges `0` and `ω` and
 fixes `0ω`, so it is ℤ\[ε] again with those two roles exchanged.
 
+None of these rings has division at coordinate equality, and no other equality can give it to them:
+any equivalence that `⊕` and a product both respect, in which every pair but `0ω` has an inverse,
+identifies every pair with every other. Division for them comes from the level above,
+where a pair of pairs is a fraction.
+
+Every product is a family of Möbius transformations.
+A Möbius transformation of the ratio, `a/b ↦ (αa + βb)/(γa + δb)`, is a 2×2 integer matrix on the pair,
+composing two multiplies their matrices, and these are exactly the maps that respect `⊕`.
+The reciprocal, `-x`, `-_x` and a quarter turn are among them.
+Multiplying by a fixed `T(c,d)` is one too, and its type is set by `trace² − 4·det`:
+
+| product | multiply by `T(c,d)`   | `trace² − 4·det` | type       | fixed points     |
+|---------|------------------------|------------------|------------|------------------|
+| `⊗`     | `[[d, c], [−c, d]]`    | `−4c²`           | elliptic   | none but `0ω`    |
+| `+`     | `[[d, c], [0, d]]`     | `0`              | parabolic  | `ω`'s ray        |
+| `⊚`     | `[[d, c], [c, d]]`     | `4c²`            | hyperbolic | the light lines  |
+| `*`     | `[[c, 0], [0, d]]`     | `(c − d)²`       | hyperbolic | the two axes     |
+| `∥`     | `[[c, 0], [d, c]]`     | `0`              | parabolic  | `0`'s ray        |
+
+The determinant of multiplying by `y` is `y`'s norm, the one that decides recovery above.
+The fixed points are the rays of each product's zero divisors, the directions it loses.
+So a product is fixed by a pair of points on the line of ratios, and its type is the ring's.
+
+Carrying a product through a bijection and back, `g⁻¹(g x · g y)`, is a sandwich: it keeps every law the
+product had, moves its fixed points, and, for a matrix of determinant `±1`, keeps its type.
+`∥` is `+` sandwiched by the reciprocal, and `*` is `ω² = ω` in another basis.
+The light-cone map, of determinant 2, takes `⊚` into `*`.
+`E` below is the complex Cayley transform, sending `⊗` to multiplication on the unit circle.
+
 `0ω` across both:
 
 ```
@@ -349,6 +378,8 @@ Proved in Lean 4 with Mathlib, in `cott-lean`, for every pair, at coordinate equ
 | each product's idempotents; `*` alone has projections | `T/Projection.lean` | `qtimes_idempotent_iff`, `times_idempotent_iff`, `par_idempotent_iff`, `times_eq_times_iff_of_q_eq_zero`, `times_recover_with_complement` |
 | each product loses at most one integer | `T/Loss.lean` | `numerator_determines`, `qtimes_eq_qtimes_iff`, `qtimes_recover_with_numerator`, `plus_eq_plus_iff_of_q_eq_zero`, `splitTimes_eq_splitTimes_iff_of_p_eq_q`, `splitTimes_eq_splitTimes_iff_of_p_eq_neg_q`, `par_eq_par_iff_of_p_eq_zero` |
 | the angle column; the angle is the ray; the mediant lies between | `T/Angle.lean` | `tan_theta`, `theta_zero` … `theta_negOne`, `angle_otimes`, `angle_neg`, `angle_oplusInverse`, `angle_reciprocal`, `angle_otimesPowNat`, `theta_eq_theta_iff_sameRay`, `sign_angle_sub`, `mediant_between`, `tan_theta_principal` |
+| `⊕` and division cannot share an equality | `T/NoDivision.lean` | `no_division_with_oplus`, `no_division_qtimes`, `no_division_times`, `no_division_par` |
+| every product is a family of Möbius transformations; sandwiches | `T/Transform.lean` | `act_mul`, `eq_act_of_oplus`, `qtimes_eq_act`, `det_qmat`, `disc_qmat`, `det_qtimes_self`, `sandwich_oplus`, `par_eq_sandwich`, `times_eq_sandwich`, `lightConeMap_splitTimes`, `disc_conj`, `doubleAngle_otimes`, `norm_otimes` |
 
 Not formalized: `T(a,b)^T(c,d)` off the integers,
 and that the power sum leaves the integer pairs for `n ∉ {1, −1}`.
