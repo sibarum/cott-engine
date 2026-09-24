@@ -1,0 +1,34 @@
+name: Build and check citations
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  # cott-lean can rename or drop a declaration without this repository changing, so check daily too.
+  schedule:
+    - cron: "17 6 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: cott-engine
+
+      # CitationTest reads ../cott-lean/declarations.txt, the list of every declaration cott-lean has.
+      - uses: actions/checkout@v4
+        with:
+          repository: sibarum/cott-lean
+          path: cott-lean
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+          cache-dependency-path: cott-engine/pom.xml
+
+      - name: Test, with every citation checked against cott-lean
+        working-directory: cott-engine
+        run: mvn -B test

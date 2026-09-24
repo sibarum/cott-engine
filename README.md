@@ -1,5 +1,7 @@
 # cott-engine
 
+[![Build and check citations](https://github.com/sibarum/cott-engine/actions/workflows/build.yml/badge.svg)](https://github.com/sibarum/cott-engine/actions/workflows/build.yml)
+
 The traction calculator: an ordinary-looking calculator that divides by zero and gives indeterminate
 forms a value, without error or contradiction. Under it is traction, the number model formalized and
 proven in [cott-lean](https://github.com/sibarum/cott-lean).
@@ -67,8 +69,9 @@ nine named values and on many other pairs; the proof is what makes it hold for a
 - a public method of the value layer (`sibarum.cott.traction`) cites nothing;
 - a test of the value layer states no theorem.
 
-It reads `../cott-lean/declarations.txt`, so cott-lean must be checked out beside this repository. The
-path can be changed with `-Dcott.lean.declarations=…`.
+It reads `../cott-lean/declarations.txt`, so cott-lean must be checked out beside this repository. CI
+checks out both, on every push and once a day, since cott-lean can change without this repository
+changing. The path can be changed with `-Dcott.lean.declarations=…`.
 
 ## History
 
