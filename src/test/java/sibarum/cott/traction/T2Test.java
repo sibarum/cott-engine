@@ -80,4 +80,37 @@ class T2Test {
             }
         }
     }
+
+    @Test
+    @Proves("T2.flatten_plus_of")
+    void plusIsExactOnTheImageOfT() {
+        for (T x : FLAT)
+            for (T y : FLAT)
+                assertEquals(T2.of(x).flatten().plus(T2.of(y).flatten()), T2.of(x).plus(T2.of(y)).flatten());
+    }
+
+    @Test
+    @Proves({"T2.flatten_eq_act", "T2.det_flatten_mat", "T2.flatten_oplus_numerator"})
+    void withTheDenominatorFixedFlattenIsAMoebiusMapOfTheNumerator() {
+        for (T b : FLAT)
+            for (T a : FLAT) {
+                // act [[B.q, 0], [0, B.p]] A
+                assertEquals(new T(b.q().multiply(a.p()), b.p().multiply(a.q())), new T2(a, b).flatten());
+                for (T a2 : FLAT)
+                    assertEquals(new T2(a, b).flatten().oplus(new T2(a2, b).flatten()),
+                            new T2(a.oplus(a2), b).flatten());
+            }
+    }
+
+    @Test
+    @Proves("T2.flatten_recoverable_iff")
+    void theNumeratorComesBackExactlyWhenTheDenominatorIsOffBothAxes() {
+        for (T b : FLAT) {
+            boolean collides = false;
+            for (T a : FLAT)
+                for (T a2 : FLAT)
+                    if (!a.equals(a2) && new T2(a, b).flatten().equals(new T2(a2, b).flatten())) collides = true;
+            assertEquals(!T2.numeratorRecoverable(b), collides, b.toString());
+        }
+    }
 }

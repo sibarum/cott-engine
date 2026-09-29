@@ -75,6 +75,18 @@ public record T(@Lean("T.p") BigInteger p, @Lean("T.q") BigInteger q) {
         return new T(q, p);
     }
 
+    /** {@code T(a,b) ⊕ T(c,d) = T(a+c, b+d)}: the mediant. */
+    @Lean("T.oplus")
+    public T oplus(T y) {
+        return new T(p.add(y.p), q.add(y.q));
+    }
+
+    /** {@code T(a,b) ⊗ T(c,d) = T(ad+cb, bd−ac)}: the product of the points, which adds the angles. */
+    @Lean("T.otimes")
+    public T otimes(T y) {
+        return new T(p.multiply(y.q).add(y.p.multiply(q)), q.multiply(y.q).subtract(p.multiply(y.p)));
+    }
+
     /** {@code T(pⁿ, qⁿ)}, for a natural {@code n}. */
     @Lean("T.power")
     public T power(int n) {

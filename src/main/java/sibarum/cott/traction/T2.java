@@ -65,6 +65,15 @@ public record T2(@Lean("T2.p") T p, @Lean("T2.q") T q) {
         return p.times(q.reciprocal());
     }
 
+    /**
+     * Whether the numerator comes back from {@code flatten(T2(A, B))}, whatever it was: exactly when
+     * {@code B} is off both axes, where the determinant {@code B.p · B.q} of the Möbius map is non-zero.
+     */
+    @Lean({"T2.flatten_recoverable_iff", "T2.flatten_eq_act", "T2.det_flatten_mat"})
+    public static boolean numeratorRecoverable(T b) {
+        return b.p().signum() != 0 && b.q().signum() != 0;
+    }
+
     @Override
     public String toString() {
         return "T2(" + p + "," + q + ")";
