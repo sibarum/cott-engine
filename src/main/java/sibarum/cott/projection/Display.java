@@ -5,7 +5,10 @@ import sibarum.cott.traction.T;
 import java.math.BigInteger;
 import java.util.Map;
 
-/** How a pair is written: one of the nine named values by its name, otherwise {@code p} or {@code p/q}. */
+/**
+ * How a pair is written: one of the nine named values by its name, otherwise {@code p} over {@code 1},
+ * {@code pω} over {@code 0}, or {@code p/q}.
+ */
 public final class Display {
 
     private Display() {}
@@ -18,6 +21,8 @@ public final class Display {
         String named = NAMED.get(x);
         if (named != null) return named;
         if (x.q().equals(BigInteger.ONE)) return x.p().toString();
+        // T(p, 0) is p·ω = T(p,1)·T(1,0) exactly, as 0ω and -ω already are.
+        if (x.q().signum() == 0) return x.p() + "ω";
         return x.p() + "/" + x.q();
     }
 }

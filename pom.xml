@@ -30,13 +30,46 @@
     </dependencies>
 
     <build>
+        <finalName>cott</finalName>
         <plugins>
+            <plugin>
+                <!-- java -jar target/cott.jar: the calculator, with native access enabled for the console -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>sibarum.cott.calculator.Repl</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- mvn -q compile exec:exec: the calculator at a prompt -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <executable>java</executable>
+                    <arguments>
+                        <argument>--enable-native-access=ALL-UNNAMED</argument>
+                        <argument>-Dstdout.encoding=UTF-8</argument>
+                        <argument>-cp</argument>
+                        <argument>${project.build.outputDirectory}</argument>
+                        <argument>sibarum.cott.calculator.Repl</argument>
+                    </arguments>
                 </configuration>
             </plugin>
             <plugin>

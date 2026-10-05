@@ -65,6 +65,45 @@ public record T2(@Lean("T2.p") T p, @Lean("T2.q") T q) {
         return p.times(q.reciprocal());
     }
 
+    // The point reading: T2(A, B) is the complex number B + A·i, each coordinate a ratio.
+
+    /** A flat point {@code T(p, q)}, the Gaussian integer {@code q + p·i}: {@code T2(T(p,1), T(q,1))}. */
+    @Lean("T2.ofPoint")
+    public static T2 ofPoint(T z) {
+        return new T2(new T(z.p(), BigInteger.ONE), new T(z.q(), BigInteger.ONE));
+    }
+
+    /** A flat ratio {@code x}, as the real point {@code x + 0·i}: {@code T2(0, x)}. */
+    @Lean("T2.ofRatio")
+    public static T2 ofRatio(T x) {
+        return new T2(T.ZERO, x);
+    }
+
+    /** {@code T2(A₁,B₁) ⊕ T2(A₂,B₂) = T2(A₁ + A₂, B₁ + B₂)}: the sum of the points. */
+    @Lean("T2.oplus")
+    public T2 oplus(T2 y) {
+        return new T2(p.plus(y.p), q.plus(y.q));
+    }
+
+    /** {@code T2(A₁·B₂ + A₂·B₁, B₁·B₂ − A₁·A₂)}: the product of the points, {@code (B₁ + A₁i)(B₂ + A₂i)}. */
+    @Lean("T2.otimes")
+    public T2 otimes(T2 y) {
+        return new T2(p.times(y.q).plus(y.p.times(q)), q.times(y.q).plus(p.times(y.p).neg()));
+    }
+
+    /** {@code A·A + B·B}, the squared length of the point, as a ratio. */
+    @Lean("T2.normSq")
+    public T normSq() {
+        return p.times(p).plus(q.times(q));
+    }
+
+    /** {@code T2(−A / N, B / N)} with {@code N} the squared length: the inverse of the point, {@code (B − A·i)/N}. */
+    @Lean("T2.pointInv")
+    public T2 pointInv() {
+        T overN = normSq().reciprocal();
+        return new T2(p.neg().times(overN), q.times(overN));
+    }
+
     /**
      * Whether the numerator comes back from {@code flatten(T2(A, B))}, whatever it was: exactly when
      * {@code B} is off both axes, where the determinant {@code B.p · B.q} of the Möbius map is non-zero.

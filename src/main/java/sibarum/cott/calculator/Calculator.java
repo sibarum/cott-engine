@@ -4,13 +4,9 @@ import sibarum.cott.notation.Expr;
 import sibarum.cott.notation.Parser;
 import sibarum.cott.notation.Printer;
 import sibarum.cott.notation.Statement;
-import sibarum.cott.projection.Display;
-import sibarum.cott.traction.Lean;
-import sibarum.cott.traction.T;
-import sibarum.cott.traction.T2;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,17 +14,42 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A traction calculator: reads a line, substitutes its variables and inline functions, and either leaves
- * it as it is, when a variable is still free, or evaluates it.
+ * A calculator: reads a line, substitutes its variables and inline functions, and either leaves it as it
+ * is, when a variable is still free, or evaluates it in the current {@link Arithmetic}.
  *
- * <p>Evaluation is at Level 2, in {@link T2}, and opaque: a literal enters by {@link T2#of}, and the result
- * is {@link T2#flatten flattened}. That flat pair, with no quotient, is the answer; every other reading of
- * it is a projection the {@link Result.Value} takes on demand.
+ * <p>It is in one {@link Mode} of each {@link Modeset} at a time, starting in each modeset's
+ * {@link Modeset#initial() initial} mode. Definitions are kept as written, not as values, so changing the
+ * arithmetic changes what every later line that uses them evaluates to.
  */
 public final class Calculator {
 
     private final Map<String, Expr> variables = new HashMap<>();
     private final Map<String, Statement.Define> functions = new HashMap<>();
+    private final Map<Modeset, Mode> modes = new EnumMap<>(Modeset.class);
+
+    public Calculator() {
+        for (Modeset m : Modeset.values()) modes.put(m, m.initial());
+    }
+
+    /** A calculator in these modes, and in the initial mode of every modeset not named. */
+    public Calculator(Mode... modes) {
+        this();
+        for (Mode m : modes) set(m);
+    }
+
+    /** The current mode of a modeset. */
+    public Mode mode(Modeset modeset) {
+        return modes.get(modeset);
+    }
+
+    /** Puts the calculator in a mode, in place of the current mode of the same modeset. */
+    public void set(Mode mode) {
+        modes.put(mode.modeset(), mode);
+    }
+
+    public Arithmetic arithmetic() {
+        return (Arithmetic) modes.get(Modeset.ARITHMETIC);
+    }
 
     public Result enter(String line) {
         Statement s = new Parser(functions.keySet(), variables.keySet()).statement(line);
@@ -51,9 +72,7 @@ public final class Calculator {
     private Result answer(Expr expr) {
         Expr substituted = substitute(expr, List.of());
         if (!free(substituted).isEmpty()) return new Result.Unevaluated(substituted, Printer.print(substituted));
-        T2 level2 = evaluate(substituted);
-        T flat = level2.flatten();
-        return new Result.Value(level2, flat, Display.of(flat));
+        return arithmetic().evaluate(substituted);
     }
 
     // ---- substitution ----
@@ -62,6 +81,7 @@ public final class Calculator {
     private Expr substitute(Expr e, List<String> expanding) {
         return switch (e) {
             case Expr.Num n -> n;
+            case Expr.Decimal d -> d;
             case Expr.Omega o -> o;
             case Expr.Var v -> {
                 Expr bound = variables.get(v.name());
@@ -103,6 +123,7 @@ public final class Calculator {
     private static Expr bind(Expr e, Map<String, Expr> actual) {
         return switch (e) {
             case Expr.Num n -> n;
+            case Expr.Decimal d -> d;
             case Expr.Omega o -> o;
             case Expr.Var v -> actual.getOrDefault(v.name(), v);
             case Expr.Call c -> new Expr.Call(c.name(), c.args().stream().map(a -> bind(a, actual)).toList());
@@ -124,6 +145,7 @@ public final class Calculator {
     private static void collectFree(Expr e, Set<String> out) {
         switch (e) {
             case Expr.Num n -> {}
+            case Expr.Decimal d -> {}
             case Expr.Omega o -> {}
             case Expr.Var v -> out.add(v.name());
             case Expr.Call c -> c.args().forEach(a -> collectFree(a, out));
@@ -133,39 +155,6 @@ public final class Calculator {
             case Expr.Mul m -> { collectFree(m.left(), out); collectFree(m.right(), out); }
             case Expr.Div d -> { collectFree(d.left(), out); collectFree(d.right(), out); }
             case Expr.Pow p -> { collectFree(p.base(), out); collectFree(p.exponent(), out); }
-        }
-    }
-
-    // ---- evaluation ----
-
-    /**
-     * The notation's operations at Level 2. {@code a - b} is {@code a + (-b)} and {@code a / b} is
-     * {@code a · reciprocal(b)}, the reading {@code flatten} itself gives division.
-     */
-    @Lean({"T2.of", "T2.ω", "T2.plus", "T2.times", "T2.neg_def", "T2.reciprocal", "T2.power", "T2.flatten"})
-    static T2 evaluate(Expr e) {
-        return switch (e) {
-            case Expr.Num n -> T2.of(new T(n.value(), BigInteger.ONE));
-            case Expr.Omega o -> T2.OMEGA;
-            case Expr.Neg n -> evaluate(n.operand()).neg();
-            case Expr.Add a -> evaluate(a.left()).plus(evaluate(a.right()));
-            case Expr.Sub s -> evaluate(s.left()).plus(evaluate(s.right()).neg());
-            case Expr.Mul m -> evaluate(m.left()).times(evaluate(m.right()));
-            case Expr.Div d -> evaluate(d.left()).times(evaluate(d.right()).reciprocal());
-            case Expr.Pow p -> evaluate(p.base()).power(naturalExponent(p.exponent()));
-            case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
-            case Expr.Call c -> throw new IllegalStateException("unexpanded call " + c.name());
-        };
-    }
-
-    /** The proven power takes a natural number, so for now an exponent is written as one. */
-    private static int naturalExponent(Expr e) {
-        if (!(e instanceof Expr.Num n))
-            throw new CalculatorException("an exponent must be a whole number for now, not " + Printer.print(e));
-        try {
-            return n.value().intValueExact();
-        } catch (ArithmeticException tooBig) {
-            throw new CalculatorException("exponent " + n.value() + " is too large");
         }
     }
 }

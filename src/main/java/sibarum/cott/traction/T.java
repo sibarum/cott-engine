@@ -69,6 +69,12 @@ public record T(@Lean("T.p") BigInteger p, @Lean("T.q") BigInteger q) {
         return new T(p.negate(), q);
     }
 
+    /** {@code T(-p, -q)}: the inverse under {@code ⊕}, which is the Gaussian integer's own negation. */
+    @Lean({"T.oplusInverse", "T.toGaussian_oplusInverse"})
+    public T oplusInverse() {
+        return new T(p.negate(), q.negate());
+    }
+
     /** {@code T(q, p)}. */
     @Lean("T.reciprocal")
     public T reciprocal() {

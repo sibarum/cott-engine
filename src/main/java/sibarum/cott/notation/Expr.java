@@ -1,5 +1,6 @@
 package sibarum.cott.notation;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 
@@ -12,6 +13,12 @@ public sealed interface Expr {
             return new Num(BigInteger.valueOf(n));
         }
     }
+
+    /**
+     * A decimal literal, {@code 0.5}, kept as written: {@code 0.50} keeps its scale. Whether it is a value
+     * is up to the arithmetic that evaluates it.
+     */
+    record Decimal(BigDecimal value) implements Expr {}
 
     /** {@code ω}. */
     record Omega() implements Expr {}

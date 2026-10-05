@@ -1,5 +1,6 @@
 package sibarum.cott.notation;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,6 +21,8 @@ import java.util.Set;
  *   <li>A name followed by {@code (} is a call only when it names a function; otherwise it is
  *       multiplication, as in {@code ω(2x)} or {@code x(x+1)}.</li>
  *   <li>{@code ω} is always the constant, never part of a name.</li>
+ *   <li>A decimal literal is digits, a point and digits: {@code 0.5}, not {@code .5} or {@code 5.}. The
+ *       notation only reads it; the arithmetic decides whether it is a value.</li>
  * </ul>
  */
 public final class Parser {
@@ -39,7 +42,7 @@ public final class Parser {
 
     // ---- tokens ----
 
-    enum Kind { NUMBER, WORD, NAME, OMEGA, PLUS, MINUS, TIMES, DIVIDE, CARET, LPAREN, RPAREN, COMMA, EQUALS, END }
+    enum Kind { NUMBER, DECIMAL, WORD, NAME, OMEGA, PLUS, MINUS, TIMES, DIVIDE, CARET, LPAREN, RPAREN, COMMA, EQUALS, END }
 
     record Token(Kind kind, String text, int pos) {}
 
@@ -54,9 +57,14 @@ public final class Parser {
             int start = i;
             if (Character.isDigit(c)) {
                 while (i < s.length() && Character.isDigit(s.charAt(i))) i++;
-                if (i < s.length() && s.charAt(i) == '.')
-                    throw new SyntaxException("decimal literals are not supported yet", i);
-                out.add(new Token(Kind.NUMBER, s.substring(start, i), start));
+                if (i < s.length() && s.charAt(i) == '.') {
+                    if (++i == s.length() || !Character.isDigit(s.charAt(i)))
+                        throw new SyntaxException("a decimal point needs digits after it", i - 1);
+                    while (i < s.length() && Character.isDigit(s.charAt(i))) i++;
+                    out.add(new Token(Kind.DECIMAL, s.substring(start, i), start));
+                } else {
+                    out.add(new Token(Kind.NUMBER, s.substring(start, i), start));
+                }
             } else if (SUPERSCRIPTS.indexOf(c) >= 0) {
                 StringBuilder digits = new StringBuilder();
                 while (i < s.length() && SUPERSCRIPTS.indexOf(s.charAt(i)) >= 0)
@@ -248,7 +256,7 @@ public final class Parser {
 
         private boolean startsPrimary() {
             return switch (peek().kind()) {
-                case NUMBER, NAME, OMEGA, LPAREN -> true;
+                case NUMBER, DECIMAL, NAME, OMEGA, LPAREN -> true;
                 default -> false;
             };
         }
@@ -257,6 +265,7 @@ public final class Parser {
             Token t = next();
             return switch (t.kind()) {
                 case NUMBER -> new Expr.Num(new BigInteger(t.text()));
+                case DECIMAL -> new Expr.Decimal(new BigDecimal(t.text()));
                 case OMEGA -> new Expr.Omega();
                 case NAME -> {
                     if (!functions.contains(t.text())) yield new Expr.Var(t.text());

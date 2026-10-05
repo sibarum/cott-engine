@@ -12,6 +12,7 @@ import sibarum.cott.notation.Expr.Pow;
 import sibarum.cott.notation.Expr.Sub;
 import sibarum.cott.notation.Expr.Var;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -100,8 +101,16 @@ class ParserTest {
     }
 
     @Test
+    void decimalsAreReadAsWritten() {
+        assertEquals(new Expr.Decimal(new BigDecimal("0.50")), parse("0.50"));
+        assertEquals("0.50", Printer.print(parse("0.50")));
+        assertEquals(jux(new Expr.Decimal(new BigDecimal("2.5")), v("x")), parse("2.5x"));
+        assertEquals(new Pow(n(2), new Expr.Decimal(new BigDecimal("0.5"))), parse("2^0.5"));
+    }
+
+    @Test
     void errors() {
-        for (String bad : List.of("", "2+", "(1", "1)", "2 = x", "f(x = 1", "0.5", "2 $ 3", "f(x, x) = x"))
+        for (String bad : List.of("", "2+", "(1", "1)", "2 = x", "f(x = 1", "0.", "1.x", ".5", "2 $ 3", "f(x, x) = x"))
             assertThrows(SyntaxException.class, () -> P.statement(bad), bad);
     }
 
@@ -109,7 +118,7 @@ class ParserTest {
     void printingReadsBackAsTheSameTree() {
         for (String s : List.of("2x^2+4x+2", "ω(2x)-(0(x+1)+0^2(2x-1))/2", "-2^2", "(-2)^2", "2^3^2",
                 "(2^3)^2", "1/2x", "1/(2x)", "1-(2-3)", "2·-3", "x(y+1)", "-(2x)", "2^-1", "(1+2)(3+4)",
-                "2·3", "x^2y"))
+                "2·3", "x^2y", "0.50x", "1.5^2", "-0.25"))
             assertEquals(parse(s), parse(Printer.print(parse(s))), s + " printed as " + Printer.print(parse(s)));
     }
 }

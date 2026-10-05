@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CalculatorTest {
 
-    private static Result.Value value(Calculator c, String line) {
-        return assertInstanceOf(Result.Value.class, c.enter(line), line);
+    private static Result.RatioValue value(Calculator c, String line) {
+        return assertInstanceOf(Result.RatioValue.class, c.enter(line), line);
     }
 
     @Test
@@ -26,12 +26,15 @@ class CalculatorTest {
         assertEquals("ω", c.enter("ω + 1").text());
         assertEquals("0ω", c.enter("0ω").text());
         assertEquals("0ω", c.enter("0·ω").text());
+        assertEquals("3ω", c.enter("3/0").text());
+        assertEquals("3ω", c.enter("3ω").text());
+        assertEquals("-3ω", c.enter("-3/0").text());
     }
 
     @Test
     void theGroundTruthHasNoQuotient() {
         Calculator c = new Calculator();
-        Result.Value half = value(c, "1/2 + 1/2");
+        Result.RatioValue half = value(c, "1/2 + 1/2");
         assertEquals(T.of(4, 4), half.flat());
         assertEquals("4/4", half.text());
         assertEquals("2/-4", c.enter("2/(-4)").text());
@@ -39,13 +42,13 @@ class CalculatorTest {
 
     @Test
     void projectionsAreReadingsOfTheSameValue() {
-        Result.Value half = value(new Calculator(), "1/2 + 1/2");
+        Result.RatioValue half = value(new Calculator(), "1/2 + 1/2");
         assertEquals(T.ONE, half.read(Projections.RAY));
         assertEquals(T.ONE, half.read(Projections.RATIO));
         assertEquals(Optional.of(Rational.of(1, 1)), half.read(Projections.CLASSICAL));
         assertEquals(T.of(4, 4), half.flat(), "a reading leaves the value as it was");
 
-        Result.Value neg = value(new Calculator(), "2/(-4)");
+        Result.RatioValue neg = value(new Calculator(), "2/(-4)");
         assertEquals("1/-2", neg.readings().get("ray"));
         assertEquals("-1/2", neg.readings().get("ratio"));
         assertEquals("-1/2", neg.readings().get("classical"));
@@ -56,9 +59,9 @@ class CalculatorTest {
     void theExampleFromTheBrief() {
         Calculator c = new Calculator();
         c.enter("x = 1");
-        Result.Value r = value(c, "ω(2x)-(0(x+1)+0^2(2x-1))/2");
+        Result.RatioValue r = value(c, "ω(2x)-(0(x+1)+0^2(2x-1))/2");
         assertEquals(T.of(4, 0), r.flat());
-        assertEquals("4/0", r.text());
+        assertEquals("4ω", r.text());
         assertEquals("ω", r.readings().get("ray"));
         assertEquals("ω", r.readings().get("ratio"));
         assertEquals("undefined", r.readings().get("classical"));
