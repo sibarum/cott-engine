@@ -33,14 +33,30 @@ public final class RationalTrig {
         return new Split(m.subtract(rest).divide(B), rest.add(BigInteger.ONE));
     }
 
-    /** The descent at some depth, its bracket, and the pair whose square is the rotation by the turn. */
+    /** Why a descent stopped where it did. */
+    public enum Stop {
+        /** It took the steps it was given. */
+        DEPTH,
+        /** {@code N(L)·N(R)} reached the width asked for. */
+        WIDTH,
+        /** The next comparison would have walked a power larger than allowed. */
+        SIZE
+    }
+
+    /** The descent at some depth, its bracket, the pair whose square is the rotation by the turn, and why it stopped. */
     public record Dialed(@Lean("T.dial") int depth, @Lean("T.dial") Dial.Bracket bracket,
-                         @Lean("T.spinTurn") T spin) {}
+                         @Lean("T.spinTurn") T spin, @Lean("T.dial") Stop stop) {}
 
     /** The pair whose square is the rotation by {@code a/b} of a turn, to depth {@code n}. */
     @Lean("T.spinTurn")
     public static T spinTurn(BigInteger a, long b, int n) {
         return dialed(a, b, n, null).spin();
+    }
+
+    /** {@link #dialed(BigInteger, long, int, BigInteger, long)} with no bound on the size of the powers. */
+    @Lean({"T.spinTurn", "T.dial", "T.sin_sq_dial"})
+    public static Dialed dialed(BigInteger a, long b, int n, BigInteger widthDenominator) {
+        return dialed(a, b, n, widthDenominator, Long.MAX_VALUE);
     }
 
     /** {@code cos(2π·a/b)}, as the pair {@code T(q² − p², N)} of {@link #spinTurn}. */
@@ -58,21 +74,34 @@ public final class RationalTrig {
     /**
      * {@link #spinTurn} at depth {@code n}, with the bracket it came from. Given {@code widthDenominator}, the
      * descent stops early, at the first depth where {@code N(L)·N(R)} reaches it. Every depth is one the
-     * theorems cover, so where it stops needs no proof of its own.
+     * theorems cover, so where it stops needs no proof of its own. It also stops before a step whose comparison
+     * would walk a power of more than {@code maxPowerBits} bits, estimated as the comparison's exponent times
+     * the mediant's larger coordinate's bits.
      */
-    @Lean({"T.spinTurn", "T.dial", "T.sin_sq_dial"})
-    public static Dialed dialed(BigInteger a, long b, int n, BigInteger widthDenominator) {
+    @Lean({"T.spinTurn", "T.dial", "T.sin_sq_dial", "T.powWind"})
+    public static Dialed dialed(BigInteger a, long b, int n, BigInteger widthDenominator, long maxPowerBits) {
         if (b <= 0) throw new IllegalArgumentException("a turn's denominator is positive: " + b);
         long bb = Math.multiplyExact(2, b);
         Split s = quarterSplit(a, BigInteger.valueOf(bb));
         long target = Math.multiplyExact(4, bb);
         Dial.Bracket br = Dial.Bracket.START;
         int depth = 0;
-        while (depth < n && (widthDenominator == null || br.widthDenominator().compareTo(widthDenominator) < 0)) {
+        Stop stop = Stop.DEPTH;
+        while (depth < n) {
+            if (widthDenominator != null && br.widthDenominator().compareTo(widthDenominator) >= 0) {
+                stop = Stop.WIDTH;
+                break;
+            }
+            T m = br.lower().oplus(br.upper());
+            long bits = Math.max(m.p().bitLength(), m.q().bitLength());
+            if (bits > maxPowerBits / target) {
+                stop = Stop.SIZE;
+                break;
+            }
             br = Dial.step(s.rest(), target, br);
             depth++;
         }
         T spin = br.upper().otimes(T.OMEGA.otimesPowNat(s.quarters().mod(BigInteger.TWO).intValueExact()));
-        return new Dialed(depth, br, spin);
+        return new Dialed(depth, br, spin, stop);
     }
 }

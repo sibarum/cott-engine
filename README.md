@@ -87,6 +87,10 @@ In IEEE Floating Point, each operation is the IEEE operation itself: `3/5` is `0
 every machine, and `-0` is kept apart from `0`. A value is written with the fewest digits that read back as
 the same double, and its readings are the `exact` value the double holds, its `hex` form and its `bits`.
 
+The second modeset is **Recursion limits**: how far a recursion may go before it is stopped. For now that is the
+mediant descent behind `cos` and `sin` (see [Recursion limits](#recursion-limits)). A new calculator starts in
+`standard`.
+
 ## For a front end
 
 The engine does all the evaluating, so a GUI only has to draw it:
@@ -175,16 +179,32 @@ In T(T,T) Compound Ratio these are the built-in functions `cos(t)` and `sin(t)`,
 = 154194255969364838344903323227965255696/154194255969364838344903323227965255696
 ```
 
-- The turn is the argument's flat pair `T(a, b)`, as it is. `b` must be positive and, for now, at most 2000: the
-  comparison walks powers up to `x^(8b)`, and past that the answer takes too long. Any positive multiple of the
-  turn gives the same answer, so `cos(2/12)` is `cos(1/6)`.
+- The turn is the argument's flat pair `T(a, b)`, as it is. `b` must be positive and at most the Recursion limits
+  mode's bound. Any positive multiple of the turn gives the same answer, so `cos(2/12)` is `cos(1/6)`.
 - The answer is the unreduced pair `T(q² − p², N)` (or `T(2pq, N)`) of the pair the descent ends on. `cos(1/4)`
   is `0/2`.
-- With one argument the descent stops at the first depth where `N(L)·N(R)` reaches `2^64`, or at 4096 steps,
-  which is where it stops when the target is exactly a pair's turn (a multiple of a quarter turn, after halving).
-  `cos(t, n)` dials to depth `n`, the Lean's own `n`, up to 4096.
-- The reading named after the call is its certificate: the depth, the bracket `L, R` of the halved turn's
-  remainder, and `sin²` of the angle between them.
+- With one argument the descent goes until a recursion limit stops it. When the target is exactly a pair's turn
+  (a multiple of a quarter turn, after halving), the width grows too slowly, and it is the step limit that stops it.
+  `cos(t, n)` dials to depth `n`, the Lean's own `n`; it is refused, not cut short, if a limit would stop it first.
+- The reading named after the call is its certificate: the depth, which limit stopped it if not the precision, the
+  bracket `L, R` of the halved turn's remainder, and `sin²` of the angle between them.
+
+### Recursion limits
+
+The second modeset bounds the descent. Every bound is a count, never a time, so a line answers the same on every
+machine. The descent stops at the first of: the precision, `N(L)·N(R) ≥ 2^precision`; the step limit; or a
+comparison that would walk a power larger than the size limit. Its size is about `8b` times the mediant's bits,
+and that is what each comparison's cost grows with.
+
+| key | precision | steps | `b` up to | power size | slowest measured |
+|---|---|---|---|---|---|
+| `shallow` | `2^-32` | 256 | 360 | 2^16 bits | under 0.1 s |
+| `standard` (initial) | `2^-64` | 1024 | 1000 | 2^19 bits | 1.8 s, `cos(7/999, 1024)` before it is refused |
+| `deep` | `2^-128` | 16384 | 10000 | 2^24 bits | 57 s `cos(500/2000)`, 94 s `cos(1/10000)`; `cos(333/999, 4096)` over 5 min; `cos(2500/10000)` and the largest explicit depths are estimated at tens of minutes to hours |
+
+The slowest one-argument case in each mode is an exact quarter turn with the largest denominator, such as
+`cos(250/1000)`, which runs to the step limit. With an explicit depth and a large `b`, the size limit is usually
+what refuses it: in `standard`, `cos(333/999, n)` is refused past depth 102.
 - `cos` and `sin` are built in and cannot be redefined. The other arithmetics refuse them for now.
 
 ## The notation

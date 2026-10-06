@@ -48,6 +48,10 @@ public final class Calculator {
         modes.put(mode.modeset(), mode);
     }
 
+    public Limits limits() {
+        return (Limits) modes.get(Modeset.LIMITS);
+    }
+
     public Arithmetic arithmetic() {
         return (Arithmetic) modes.get(Modeset.ARITHMETIC);
     }
@@ -79,7 +83,7 @@ public final class Calculator {
     private Result answer(Expr expr) {
         Expr substituted = substitute(expr, List.of());
         if (!free(substituted).isEmpty()) return new Result.Unevaluated(substituted, Printer.print(substituted));
-        return arithmetic().evaluate(substituted);
+        return arithmetic().evaluate(substituted, limits());
     }
 
     // ---- substitution ----

@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -84,5 +85,19 @@ class ModeTest {
         assertTrue(out.contains("    exact  ∞"), out);
         assertTrue(out.contains("  * ieee             IEEE Floating Point"), out);
         assertTrue(out.contains("! no mode 'wheel'"), out);
+    }
+
+    @Test
+    void theRecursionLimitsModeset() {
+        assertEquals(List.of(Limits.SHALLOW, Limits.STANDARD, Limits.DEEP), Modeset.LIMITS.modes());
+        assertEquals(Limits.STANDARD, Modeset.LIMITS.initial());
+        assertEquals(Optional.of(Limits.DEEP), Modeset.LIMITS.mode("deep"));
+        Calculator c = new Calculator();
+        c.set(Limits.DEEP);
+        assertEquals(Limits.DEEP, c.limits());
+        assertEquals(Arithmetic.TRACTION_RATIO, c.arithmetic(), "a mode of one modeset leaves the others");
+        Set<String> keys = new HashSet<>();
+        for (Modeset set : Modeset.values())
+            for (Mode m : set.modes()) assertTrue(keys.add(m.key()), "key " + m.key() + " is in two modesets");
     }
 }

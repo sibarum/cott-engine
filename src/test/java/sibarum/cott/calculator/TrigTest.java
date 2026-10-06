@@ -20,7 +20,8 @@ class TrigTest {
     void cosAndSinTakeATurnAndAnswerWithTheUnreducedPair() {
         Calculator c = new Calculator();
         Result.RatioValue cos = value(c, "cos(1/6)");
-        T spin = RationalTrig.dialed(BigInteger.ONE, 6, Trig.MAX_DEPTH, Trig.WIDTH).spin();
+        T spin = RationalTrig.dialed(BigInteger.ONE, 6, Limits.STANDARD.maxSteps(), Limits.STANDARD.width(),
+                Limits.STANDARD.maxPowerBits()).spin();
         assertEquals(new T(spin.q().pow(2).subtract(spin.p().pow(2)), spin.norm()), cos.flat());
         assertEquals(0.5, cos.flat().p().doubleValue() / cos.flat().q().doubleValue(), 1e-9);
         assertTrue(cos.readings().get("cos(1/6)").startsWith("depth "));
@@ -87,5 +88,32 @@ class TrigTest {
     @Test
     void aFreeVariableLeavesTheCallAsWritten() {
         assertEquals("cos(y)", new Calculator().enter("cos(y)").text());
+    }
+
+    @Test
+    void theLimitsModeBoundsTheDescent() {
+        Calculator c = new Calculator();
+        assertEquals(Limits.STANDARD, c.limits());
+        assertThrows(CalculatorException.class, () -> c.enter("cos(1/1500)"));
+        c.set(Limits.DEEP);
+        assertTrue(value(c, "cos(1/1500)").readings().get("cos(1/1500)").startsWith("depth "));
+        c.set(Limits.SHALLOW);
+        assertThrows(CalculatorException.class, () -> c.enter("cos(1/500)"));
+        assertThrows(CalculatorException.class, () -> c.enter("cos(1/6, 300)"));
+    }
+
+    @Test
+    void theCertificateSaysWhichLimitStoppedIt() {
+        Calculator c = new Calculator();
+        assertTrue(value(c, "cos(1/6)").readings().get("cos(1/6)").matches("depth [0-9]+, between .*"));
+        assertTrue(value(c, "cos(1/4)").readings().get("cos(1/4)").startsWith("depth 1024 (step limit)"));
+        assertTrue(value(c, "cos(250/1000)").readings().get("cos(250/1000)").startsWith("depth 1024 (step limit)"));
+    }
+
+    @Test
+    void anExplicitDepthIsRefusedRatherThanCutShort() {
+        Calculator c = new Calculator();
+        CalculatorException e = assertThrows(CalculatorException.class, () -> c.enter("cos(333/999, 1000)"));
+        assertTrue(e.getMessage().contains("past standard limits"), e.getMessage());
     }
 }

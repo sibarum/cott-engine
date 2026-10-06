@@ -4,7 +4,7 @@ package sibarum.cott.calculator;
  * One setting of a {@link Modeset}: {@link Arithmetic#IEEE_FLOATING_POINT} is a mode of
  * {@link Modeset#ARITHMETIC}. A calculator has exactly one mode of each modeset at a time.
  */
-public sealed interface Mode permits Arithmetic {
+public sealed interface Mode permits Arithmetic, Limits {
 
     /** The modeset this is one setting of. */
     Modeset modeset();

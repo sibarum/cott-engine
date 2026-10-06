@@ -11,7 +11,9 @@ import java.util.Optional;
 public enum Modeset {
 
     /** What a value is, and how the operations act on it. */
-    ARITHMETIC("Arithmetic");
+    ARITHMETIC("Arithmetic"),
+    /** How far a recursion may go before it is stopped. */
+    LIMITS("Recursion limits");
 
     private final String label;
 
@@ -27,6 +29,7 @@ public enum Modeset {
     public List<Mode> modes() {
         return switch (this) {
             case ARITHMETIC -> List.of(Arithmetic.values());
+            case LIMITS -> List.of(Limits.values());
         };
     }
 
@@ -34,6 +37,7 @@ public enum Modeset {
     public Mode initial() {
         return switch (this) {
             case ARITHMETIC -> Arithmetic.TRACTION_RATIO;
+            case LIMITS -> Limits.STANDARD;
         };
     }
 
