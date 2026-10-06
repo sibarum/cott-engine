@@ -52,7 +52,7 @@ class CalculatorTest {
         assertEquals("1/-2", neg.readings().get("ray"));
         assertEquals("-1/2", neg.readings().get("ratio"));
         assertEquals("-1/2", neg.readings().get("classical"));
-        assertEquals(List.of("ray", "ratio", "classical", "angle", "point"), List.copyOf(neg.readings().keySet()));
+        assertEquals(List.of("ray", "ratio", "classical", "angle", "point", "rotation"), List.copyOf(neg.readings().keySet()));
     }
 
     @Test
@@ -67,6 +67,7 @@ class CalculatorTest {
         assertEquals("undefined", r.readings().get("classical"));
         assertEquals("90°", r.readings().get("angle"));
         assertEquals("4i", r.readings().get("point"));
+        assertEquals("-1", r.readings().get("rotation"));
     }
 
     @Test

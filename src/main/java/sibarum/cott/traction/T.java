@@ -106,6 +106,33 @@ public record T(@Lean("T.p") BigInteger p, @Lean("T.q") BigInteger q) {
         return new T(k.multiply(p), k.multiply(q));
     }
 
+    /** {@code x ⊗ x ⊗ … ⊗ x}, {@code n} factors, starting from {@code 0}: the angle scaled {@code n} times. */
+    @Lean("T.otimesPowNat")
+    public T otimesPowNat(int n) {
+        if (n < 0) throw new IllegalArgumentException("otimesPowNat takes a natural exponent: " + n);
+        T out = ZERO;
+        for (int i = 0; i < n; i++) out = out.otimes(this);
+        return out;
+    }
+
+    /** {@code x ⊗ x = T(2pq, q² − p²)}: the point squared, which doubles the angle. */
+    @Lean({"T.doubleAngle", "T.doubleAngle_eq"})
+    public T doubleAngle() {
+        return otimes(this);
+    }
+
+    /** {@code p² + q²}: the point's squared length. */
+    @Lean("T.norm")
+    public BigInteger norm() {
+        return p.pow(2).add(q.pow(2));
+    }
+
+    /** {@code det(x, y) = q·y.p − p·y.q}: the cross product of the two points. */
+    @Lean("T.det")
+    public BigInteger det(T y) {
+        return q.multiply(y.p).subtract(p.multiply(y.q));
+    }
+
     /** {@code T(0, k)}, the one term by which a law as written can differ from its exact result. */
     @Lean("T.residue")
     public static T residue(BigInteger k) {

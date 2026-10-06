@@ -134,10 +134,34 @@ evaluator, and a new modeset is one more `Modeset` constant.
 | `classical` | what a classical calculator says: `p/q`, or `undefined` where `q = 0` | `T.toQa` |
 | `angle` | `θ = arg(q + p·i)`, in degrees; the one reading that is not exact | `T.theta` |
 | `point` | `q + p·i` | `T.toC` |
+| `rotation` | the rotation the pair squares to, `(q² − p²)/N + (2pq/N)·i`: exact, and by **twice** `angle` | `T.rot` |
+
+`rotation` is the one reading that turns by `2θ`, not `θ`: `1` reads `i`, a quarter turn, and `ω` reads `-1`. Its
+entries are rationals with no π (`T.rot_mem_specialOrthogonalGroup`), two pairs read the same exactly when they lie on
+one line through the origin (`T.rot_eq_rot_iff`), and every rotation with rational entries is some pair's
+(`T.rot_surjective`).
 
 A projection is `Projection<R>`: a name, `apply(T)`, which cites the Lean map it implements, and
 `display(R)`. `Result.RatioValue.read(projection)` gives the reading itself, and `readings()` all of them,
 written. A new reading is one more class and one line in `Projections.ALL`.
+
+## Trigonometry in turns
+
+The cosine and sine of a rational turn `a/b` come out as two rationals exactly on the unit circle, from integers
+alone. Only their angle is approximate, and by a bracket that is certified, not rounded. Four parts of the value
+layer, one per cott-lean file:
+
+| class | what it does | Lean |
+|---|---|---|
+| `Spin` | `rotCos`, `rotSin`: the rotation a pair squares to, as the pairs `T(q² − p², N)` and `T(2pq, N)`, unreduced | `T/Spin` |
+| `Winding` | `turnLt x a b`: whether `x`'s turn is under `a/b`, by counting how often the powers of `x` cross the positive real ray, in `O(log b)` products | `T/Winding` |
+| `Dial` | the mediant descent from `(0, ω)` toward a turn in `(0, 1/4]`, keeping `turn L < a/b ≤ turn R` with `det L R = 1` at every depth | `T/Dial` |
+| `RationalTrig` | `cosTurn`, `sinTurn`: halve the turn, split off quarter turns, dial the rest, and square | `T/RationalTrig` |
+
+`turnLt` is meaningful for a pair in the upper half-plane or on the positive real ray (`T.turnLt_iff`); elsewhere it
+computes, as the Lean's definition does, but nothing is proved of it. The bracket's width is exact:
+`sin²(θR − θL) = 1/(N(L)·N(R))` (`T.sin_sq_dial`). `RationalTrig.dialed` can stop at the first depth where that
+denominator reaches a bound, since every depth is one the theorems cover.
 
 ## The notation
 
