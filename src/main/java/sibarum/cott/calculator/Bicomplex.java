@@ -43,7 +43,7 @@ final class Bicomplex {
             case Expr.Decimal d -> throw new CalculatorException(
                     "a decimal is not a C(C,C) Bicomplex value: " + Printer.print(d));
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
-            case Expr.Call c -> throw new IllegalStateException("unexpanded call " + c.name());
+            case Expr.Call c -> throw Trig.notHere(c);
         };
     }
 

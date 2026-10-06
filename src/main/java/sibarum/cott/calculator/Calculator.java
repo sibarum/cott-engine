@@ -8,6 +8,7 @@ import sibarum.cott.notation.Statement;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +53,13 @@ public final class Calculator {
     }
 
     public Result enter(String line) {
-        Statement s = new Parser(functions.keySet(), variables.keySet()).statement(line);
+        Set<String> callable = new HashSet<>(functions.keySet());
+        callable.addAll(Trig.NAMES);
+        Statement s = new Parser(callable, variables.keySet()).statement(line);
+        if (!(s instanceof Statement.Expression)) {
+            String name = s instanceof Statement.Assign a ? a.name() : ((Statement.Define) s).name();
+            if (Trig.isBuiltIn(name)) throw new CalculatorException("'" + name + "' is built in, and cannot be redefined");
+        }
         return switch (s) {
             case Statement.Assign a -> {
                 functions.remove(a.name());
@@ -87,6 +94,10 @@ public final class Calculator {
                 Expr bound = variables.get(v.name());
                 if (bound == null) yield v;
                 yield substitute(bound, expand(expanding, v.name()));
+            }
+            case Expr.Call c when Trig.isBuiltIn(c.name()) -> {
+                Trig.checkArity(c);
+                yield new Expr.Call(c.name(), c.args().stream().map(a -> substitute(a, expanding)).toList());
             }
             case Expr.Call c -> {
                 Statement.Define f = functions.get(c.name());

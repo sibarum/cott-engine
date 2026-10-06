@@ -37,7 +37,7 @@ final class IeeeFloatingPoint {
             case Expr.Pow p -> StrictMath.pow(value(p.base()), value(p.exponent()));
             case Expr.Omega o -> throw new CalculatorException("ω is not an IEEE Floating Point value");
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
-            case Expr.Call c -> throw new IllegalStateException("unexpanded call " + c.name());
+            case Expr.Call c -> throw Trig.notHere(c);
         };
     }
 

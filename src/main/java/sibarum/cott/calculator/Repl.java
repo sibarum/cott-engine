@@ -60,6 +60,8 @@ public final class Repl {
 
     private static void help(Calculator calc, PrintStream out) {
         out.println("Type an expression, or a definition: x = 2, f(x, y) = x^2 + y.");
+        if (calc.arithmetic() == Arithmetic.TRACTION_RATIO)
+            out.println("cos(t) and sin(t) take a turn, as in cos(1/6) for 60°; cos(t, n) dials to depth n.");
         symbols(calc, out);
         out.println(":symbols lists the symbols of the current arithmetic and their escapes.");
         out.println(":mode lists the modes, and :mode <key> changes one, as in :mode ieee.");

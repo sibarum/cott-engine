@@ -8,6 +8,8 @@ import sibarum.cott.traction.T;
 import sibarum.cott.traction.T2;
 
 import java.math.BigInteger;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * {@link Arithmetic#TRACTION_RATIO}: evaluation at Level 2, in {@link T2}, and opaque. A literal enters by
@@ -19,9 +21,10 @@ final class TractionRatio {
     private TractionRatio() {}
 
     static Result.RatioValue evaluate(Expr closed) {
-        T2 level2 = level2(closed);
+        Map<String, String> certificates = new LinkedHashMap<>();
+        T2 level2 = level2(closed, certificates);
         T flat = level2.flatten();
-        return new Result.RatioValue(level2, flat, Display.of(flat));
+        return new Result.RatioValue(level2, flat, Display.of(flat), certificates);
     }
 
     /**
@@ -29,20 +32,22 @@ final class TractionRatio {
      * {@code a · reciprocal(b)}, the reading {@code flatten} itself gives division.
      */
     @Lean({"T2.of", "T2.ω", "T2.plus", "T2.times", "T2.neg_def", "T2.reciprocal", "T2.power", "T2.flatten"})
-    static T2 level2(Expr e) {
+    static T2 level2(Expr e, Map<String, String> certificates) {
         return switch (e) {
             case Expr.Num n -> T2.of(new T(n.value(), BigInteger.ONE));
             case Expr.Omega o -> T2.OMEGA;
-            case Expr.Neg n -> level2(n.operand()).neg();
-            case Expr.Add a -> level2(a.left()).plus(level2(a.right()));
-            case Expr.Sub s -> level2(s.left()).plus(level2(s.right()).neg());
-            case Expr.Mul m -> level2(m.left()).times(level2(m.right()));
-            case Expr.Div d -> level2(d.left()).times(level2(d.right()).reciprocal());
-            case Expr.Pow p -> level2(p.base()).power(naturalExponent(p.exponent()));
+            case Expr.Neg n -> level2(n.operand(), certificates).neg();
+            case Expr.Add a -> level2(a.left(), certificates).plus(level2(a.right(), certificates));
+            case Expr.Sub s -> level2(s.left(), certificates).plus(level2(s.right(), certificates).neg());
+            case Expr.Mul m -> level2(m.left(), certificates).times(level2(m.right(), certificates));
+            case Expr.Div d -> level2(d.left(), certificates).times(level2(d.right(), certificates).reciprocal());
+            case Expr.Pow p -> level2(p.base(), certificates).power(naturalExponent(p.exponent()));
             case Expr.Decimal d -> throw new CalculatorException(
                     "a decimal is not a T(T,T) Compound Ratio value yet: whether " + Printer.print(d)
                             + " is a pair over a power of ten or its lowest terms is not chosen");
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
+            case Expr.Call c when Trig.isBuiltIn(c.name()) ->
+                    T2.of(Trig.evaluate(c, level2(c.args().getFirst(), certificates).flatten(), certificates));
             case Expr.Call c -> throw new IllegalStateException("unexpanded call " + c.name());
         };
     }

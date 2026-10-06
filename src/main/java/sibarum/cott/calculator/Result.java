@@ -38,9 +38,18 @@ public sealed interface Result {
     /**
      * A {@link Arithmetic#TRACTION_RATIO} value: computed at Level 2 and flattened. {@code flat} is the
      * ground truth, with no quotient, and {@code text} writes it. Every other reading is a
-     * {@link Projection} of it, taken on demand.
+     * {@link Projection} of it, taken on demand. {@code certificates} says, for each {@code cos} or
+     * {@code sin} in the line, how far the descent went and the bracket it ended on.
      */
-    record RatioValue(T2 level2, T flat, String text) implements Value {
+    record RatioValue(T2 level2, T flat, String text, Map<String, String> certificates) implements Value {
+
+        public RatioValue {
+            certificates = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(certificates));
+        }
+
+        public RatioValue(T2 level2, T flat, String text) {
+            this(level2, flat, text, Map.of());
+        }
 
         @Override
         public Arithmetic arithmetic() {
@@ -51,11 +60,12 @@ public sealed interface Result {
             return projection.apply(flat);
         }
 
-        /** Every projection the calculator offers, by name, as written. */
+        /** Every projection the calculator offers, by name, as written, then the certificates. */
         @Override
         public Map<String, String> readings() {
             Map<String, String> out = new LinkedHashMap<>();
             for (Projection<?> p : Projections.ALL) out.put(p.name(), p.read(flat));
+            out.putAll(certificates);
             return out;
         }
     }

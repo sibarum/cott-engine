@@ -43,7 +43,7 @@ final class BicomplexRatio {
                     "a decimal is not a C(T(C,C),T(C,C)) Bicomplex Ratio value yet: whether " + Printer.print(d)
                             + " is a pair over a power of ten or its lowest terms is not chosen");
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
-            case Expr.Call c -> throw new IllegalStateException("unexpanded call " + c.name());
+            case Expr.Call c -> throw Trig.notHere(c);
         };
     }
 

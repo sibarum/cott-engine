@@ -163,6 +163,30 @@ computes, as the Lean's definition does, but nothing is proved of it. The bracke
 `sin²(θR − θL) = 1/(N(L)·N(R))` (`T.sin_sq_dial`). `RationalTrig.dialed` can stop at the first depth where that
 denominator reaches a bound, since every depth is one the theorems cover.
 
+In T(T,T) Compound Ratio these are the built-in functions `cos(t)` and `sin(t)`, with `t` in turns:
+
+```
+> cos(1/6)
+= 1761923520/3523847042
+    classical  880961760/1761923521
+    ...
+    cos(1/6)   depth 26, between T(40545,70226) and T(29681,51409), sin² of the gap 1/23171366679119247242
+> cos(1/6)^2 + sin(1/6)^2
+= 154194255969364838344903323227965255696/154194255969364838344903323227965255696
+```
+
+- The turn is the argument's flat pair `T(a, b)`, as it is. `b` must be positive and, for now, at most 2000: the
+  comparison walks powers up to `x^(8b)`, and past that the answer takes too long. Any positive multiple of the
+  turn gives the same answer, so `cos(2/12)` is `cos(1/6)`.
+- The answer is the unreduced pair `T(q² − p², N)` (or `T(2pq, N)`) of the pair the descent ends on. `cos(1/4)`
+  is `0/2`.
+- With one argument the descent stops at the first depth where `N(L)·N(R)` reaches `2^64`, or at 4096 steps,
+  which is where it stops when the target is exactly a pair's turn (a multiple of a quarter turn, after halving).
+  `cos(t, n)` dials to depth `n`, the Lean's own `n`, up to 4096.
+- The reading named after the call is its certificate: the depth, the bracket `L, R` of the halved turn's
+  remainder, and `sin²` of the angle between them.
+- `cos` and `sin` are built in and cannot be redefined. The other arithmetics refuse them for now.
+
 ## The notation
 
 - Juxtaposition is multiplication at the precedence of `·` and `/`, left to right: `2x`, `ω(2x)`,
