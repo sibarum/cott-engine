@@ -6,8 +6,10 @@ package sibarum.cott.traction;
  *
  * <p>cott-lean has two rules, and they differ by one quarter turn ({@code divZero_eq_divAlong_otimes}). The
  * first line of the model, {@code p/0 = tan(arg(p·i))}, is {@link #divZero}; {@link #divAlong} is the same
- * without the {@code ·i}, the point at infinity of homogeneous coordinates. They agree on integers over
- * zero. Which one a calculator answers with is not decided here: both are available.
+ * without the {@code ·i}, the point at infinity of homogeneous coordinates. What they share is the
+ * model's reading of an integer over zero: {@code tan(arg)} of {@code divAlong(T(n, 0))} is
+ * {@code tan(arg(n·i))} ({@code tan_arg_divAlong_intCast}), though the two methods return different pairs
+ * for the same input. Which one a calculator answers with is not decided here: both are available.
  */
 public final class DivZero {
 

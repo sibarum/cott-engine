@@ -27,6 +27,17 @@ class RationalTrigTest {
     }
 
     @Test
+    @Proves({"T.spinTurn_scale", "T.cosTurn_scale", "T.sinTurn_scale"})
+    void aPositiveMultipleOfTheTurnIsTheSameTurn() {
+        for (long a = -13; a <= 13; a++)
+            for (long b = 1; b <= 12; b++)
+                for (long k = 2; k <= 5; k++)
+                    for (int n = 0; n <= 20; n += 4)
+                        assertEquals(RationalTrig.spinTurn(big(a), b, n), RationalTrig.spinTurn(big(k * a), k * b, n),
+                                k + "·" + a + "/" + k + "·" + b + " at " + n);
+    }
+
+    @Test
     @Proves({"T.cosTurn_sq_add_sinTurn_sq", "T.spinTurn_ne"})
     void theAnswerIsExactlyOnTheCircle() {
         for (long a = -13; a <= 13; a++)

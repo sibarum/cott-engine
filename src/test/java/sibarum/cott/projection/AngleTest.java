@@ -42,6 +42,17 @@ class AngleTest {
     }
 
     @Test
+    @Proves("T.tan_theta")
+    void tanThetaIsTheRatioForPairsTooLargeForADouble() {
+        BigInteger big = BigInteger.ONE.shiftLeft(1000);
+        double tiny = Math.scalb(1.0, -1000);
+        for (int p : new int[] {1, -1, 3, -3}) {
+            double theta = A.apply(new T(BigInteger.valueOf(p), big));
+            assertEquals(p * tiny, Math.tan(theta), Math.abs(p * tiny) * 1e-15, "T(" + p + ", 2^1000)");
+        }
+    }
+
+    @Test
     @Proves("T.theta_scale")
     void aPositiveMultiplierKeepsTheta() {
         BigInteger huge = BigInteger.ONE.shiftLeft(2000);

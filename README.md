@@ -36,12 +36,13 @@ these readings or is read from one.
 > x = 1
 x = 1
 > ω(2x)-(0(x+1)+0^2(2x-1))/2
-= 4/0
+= 4ω
     ray        ω
     ratio      ω
     classical  undefined
     angle      90°
     point      4i
+    rotation   -1
 ```
 
 Build it with `mvn package` and run it with `java -jar target/cott.jar`. On Windows it puts the console in
@@ -63,7 +64,7 @@ value is, and how the operations act on it.
 | `ieee` | IEEE Floating Point: binary64, round to nearest even | `∞` | `NaN` | no | yes |
 | `compound` | T(T,T) Compound Ratio: `T2(A, B)` as the ratio `A / B` of two ratios, flattened (`Nested/Basic`) | `ω` | `0ω` | yes | not yet |
 | `point` | C(T,T) Point: `T2(A, B)` as the point `B + A·i` over ratios (`Nested/Point`) | `0ω + 0ω·i` | `0ω + 0ω·i` | yes, as `i` | not yet |
-| `complex` | T(C,C) Complex Ratio: a ratio `z/w` of two Gaussian integers (`Nested/RatioPoint`) | `1/0` | `0/0` | yes, as `1/0` | not yet |
+| `complex` | T(C,C) Complex Ratio: a ratio `z/w` of two Gaussian integers (`Nested/RatioPoint`) | `ω` | `0ω` | yes, as `1/0` | not yet |
 | `bicomplex` | C(C,C) Bicomplex: the point `B + A·j` with Gaussian-integer coordinates (`Nested/Bicomplex`) | no `/` | no `/` | no | no |
 | `bicomplex-ratio` | C(T(C,C),T(C,C)) Bicomplex Ratio: the point `B + A·j` over ratios of Gaussian integers (`Nested/BicomplexRatio`) | `0ω + 0ω·j` | `0ω + 0ω·j` | yes, as `1/0` | not yet |
 
@@ -74,7 +75,7 @@ The four corners are T(T,T) Compound Ratio, C(T,T) Point, T(C,C) Complex Ratio a
 In the two `C`-coordinate modes a Gaussian integer is held as the flat point it already is, `T(p, q) = q + p·i`
 (`T.toGaussian`), with `⊕` as its `+` and `⊗` as its `·`. In T(C,C) Complex Ratio, `+`, `·`, `-` and the
 reciprocal are `T`'s formulas over the Gaussian integers (`TOver`), and `/` is `a · reciprocal(b)`, a swap. So
-`3/0` stays `3/0`, keeping its numerator, and `(3/0)·0` is `0/0`. The readings are the complex `value` and the
+`3/0` stays `3/0`, keeping its numerator, and is written `3ω`; `(3/0)·0` is `0/0`, written `0ω`. The readings are the complex `value` and the
 `point` the ratio rationalizes to, `(z·w̄)/N(w)`, where every `z/0` becomes `0ω + 0ω·i` (`TC.rationalize_infinite`).
 `ω` enters as `1/0`, so for now every coordinate typed is a plain integer.
 
@@ -141,7 +142,7 @@ evaluator, and a new modeset is one more `Modeset` constant.
    reciprocal and `^` are `T2`'s own operations. `a - b` is `a + (-b)`, and `a / b` is `a · reciprocal(b)`.
 5. **Flatten** the result to a flat pair, `T2(A, B) ↦ A / B`. That pair, with no quotient, is the answer:
    the ground truth, always kept. It is written as one of the nine named values by its name, otherwise
-   as `p` or `p/q`, unreduced.
+   as `p`, `pω` or `p/q`, unreduced.
 6. **Project** it. Every other reading is a `Projection` of the ground truth, taken on demand and never
    stored in its place, so any number of them can be read from one value.
 
@@ -206,7 +207,8 @@ In T(T,T) Compound Ratio these are the built-in functions `cos(t)` and `sin(t)`,
 ```
 
 - The turn is the argument's flat pair `T(a, b)`, as it is. `b` must be positive and at most the Recursion limits
-  mode's bound. Any positive multiple of the turn gives the same answer, so `cos(2/12)` is `cos(1/6)`.
+  mode's bound. Any positive multiple of the turn gives the same answer, so `cos(2/12)` is `cos(1/6)`
+  (`T.cosTurn_scale`).
 - The answer is the unreduced pair `T(q² − p², N)` (or `T(2pq, N)`) of the pair the descent ends on. `cos(1/4)`
   is `0/2`.
 - With one argument the descent goes until a recursion limit stops it. When the target is exactly a pair's turn
