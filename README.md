@@ -11,7 +11,7 @@ Lean definition it implements, and every test of the value layer names the theor
 Lean has not proven, the engine does not do.
 
 A value is an **unquotiented pair** `T(p, q)`, and that pair is the answer, always kept. Every number it
-stands for is a reading of it, and cott-lean names six (`T.Unquotiented`):
+stands for is a reading of it, and cott-lean names seven (`T.Unquotiented`):
 
 ```
 C(p,q) = q + i·p        as a complex number
@@ -20,6 +20,7 @@ D(p,q) = p − q          as a difference
 S(p,q) = p + q          as a sum
 Q(p,q) = p / q          as a ratio
 P(p,q) = p · q          as a product
+A(p,q) = arg(q + i·p)   as an angle
 ```
 
 The calculator shows its [projections](#the-projections), and each is one of these readings or is read
@@ -148,18 +149,21 @@ evaluator, and a new modeset is one more `Modeset` constant.
 
 | name | of | reading | Lean |
 |---|---|---|---|
-| `ray` | `Im L` | the class of positive multiples, by its representative | `T.Rel`, positive integers |
+| `ray` | `A` | the class of positive multiples, by its representative | `T.Rel`, positive integers |
 | `ratio` | `Q` | the class of non-zero multiples, with `0ω` kept apart | `T.Rel`, `T.ratioRel_iff` |
 | `classical` | `Q` | what a classical calculator says: `p/q`, or `undefined` where `q = 0` | `T.toQa` |
-| `angle` | `Im L` | `θ = arg(q + p·i)`, in degrees; the one reading that is not exact | `T.theta` |
+| `angle` | `A` | `θ = arg(q + p·i)`, in degrees; the one reading that is not exact | `T.theta` |
 | `point` | `C` | `q + p·i` | `T.toC` |
-| `rotation` | `C²/\|C\|²` | the rotation the pair squares to, `(q² − p²)/N + (2pq/N)·i`: exact, and by **twice** `angle` | `T.rot` |
+| `rotation` | `e^(2iA)` | the rotation the pair squares to, `(q² − p²)/N + (2pq/N)·i`: exact, and by **twice** `angle` | `T.rot` |
 
-The `of` column names the reading each projection shows. `ray` and `angle` are one invariant away from
-`0ω` (`T.theta_eq_theta_iff_sameRay`): the direction `Im L` keeps. `ratio` keeps less, the direction as a
-line, since `Q` does not change when the pair is scaled by any `t ≠ 0`, `−1` included
-(`T.Unquotiented.Q_smul`). `classical` is `Q` taken as a number. `rotation` is `C²` over its norm, and
-since `C² = −S·D + 2i·P` (`T.Unquotiented.C_sq`), its entries are `−S·D/N` and `2P/N`.
+The `of` column names the reading each projection shows. `ray` and `angle` both show `A`, the direction
+as a ray: on the integers `A` is `θ` (`T.Unquotiented.A_theta`), and off `0ω` two pairs have one `A`
+exactly when one is a positive multiple of the other (`T.Unquotiented.A_eq_A_iff`). `angle` writes `A`
+itself, and `ray` writes the class it names. `ratio` keeps less, the direction as a line, since `Q` does not
+change when the pair is scaled by any `t ≠ 0`, `−1` included (`T.Unquotiented.Q_smul`), while the half
+turn moves `A` (`T.Unquotiented.A_neg`). `classical` is `Q` taken as a number. `rotation` is `e^(2iA)`,
+`C²` over its norm, and since `C² = −S·D + 2i·P` (`T.Unquotiented.C_sq`), its entries are `−S·D/N` and
+`2P/N`.
 
 `D`, `S`, `P` and the scale `Re L` have no projection yet.
 
