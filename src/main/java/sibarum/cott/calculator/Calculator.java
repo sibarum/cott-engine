@@ -94,6 +94,8 @@ public final class Calculator {
             case Expr.Num n -> n;
             case Expr.Decimal d -> d;
             case Expr.Omega o -> o;
+            case Expr.Named n -> n;
+            case Expr.Construct c -> new Expr.Construct(c.algebra(), substitute(c.p(), expanding), substitute(c.q(), expanding));
             case Expr.Var v -> {
                 Expr bound = variables.get(v.name());
                 if (bound == null) yield v;
@@ -140,6 +142,8 @@ public final class Calculator {
             case Expr.Num n -> n;
             case Expr.Decimal d -> d;
             case Expr.Omega o -> o;
+            case Expr.Named n -> n;
+            case Expr.Construct c -> new Expr.Construct(c.algebra(), bind(c.p(), actual), bind(c.q(), actual));
             case Expr.Var v -> actual.getOrDefault(v.name(), v);
             case Expr.Call c -> new Expr.Call(c.name(), c.args().stream().map(a -> bind(a, actual)).toList());
             case Expr.Neg n -> new Expr.Neg(bind(n.operand(), actual));
@@ -162,6 +166,8 @@ public final class Calculator {
             case Expr.Num n -> {}
             case Expr.Decimal d -> {}
             case Expr.Omega o -> {}
+            case Expr.Named n -> {}
+            case Expr.Construct c -> { collectFree(c.p(), out); collectFree(c.q(), out); }
             case Expr.Var v -> out.add(v.name());
             case Expr.Call c -> c.args().forEach(a -> collectFree(a, out));
             case Expr.Neg n -> collectFree(n.operand(), out);

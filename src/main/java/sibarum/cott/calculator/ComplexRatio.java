@@ -29,6 +29,7 @@ final class ComplexRatio {
     static TC value(Expr e) {
         return switch (e) {
             case Expr.Num n -> TC.of(n.value());
+            case Expr.Named _, Expr.Construct _ -> throw Arithmetic.notYet(e);
             case Expr.Omega o -> TC.of(BigInteger.ONE).times(TC.of(BigInteger.ZERO).reciprocal());
             case Expr.Neg n -> value(n.operand()).neg();
             case Expr.Add a -> value(a.left()).plus(value(a.right()));

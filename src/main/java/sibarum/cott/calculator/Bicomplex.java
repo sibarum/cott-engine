@@ -31,6 +31,7 @@ final class Bicomplex {
     static CC value(Expr e) {
         return switch (e) {
             case Expr.Num n -> CC.ofOuter(new T(BigInteger.ZERO, n.value()));
+            case Expr.Named _, Expr.Construct _ -> throw Arithmetic.notYet(e);
             case Expr.Omega o -> throw new CalculatorException(
                     "ω is not a C(C,C) Bicomplex value: it is 1/0, and cott-lean gives C(C,C) no inverse yet");
             case Expr.Neg n -> MINUS_ONE.otimes(value(n.operand()));

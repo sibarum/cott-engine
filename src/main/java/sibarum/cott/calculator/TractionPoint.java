@@ -35,6 +35,7 @@ final class TractionPoint {
     static T2 point(Expr e) {
         return switch (e) {
             case Expr.Num n -> T2.ofPoint(new T(BigInteger.ZERO, n.value()));
+            case Expr.Named _, Expr.Construct _ -> throw Arithmetic.notYet(e);
             case Expr.Omega o -> T2.ofPoint(T.OMEGA);
             case Expr.Neg n -> MINUS_ONE.otimes(point(n.operand()));
             case Expr.Add a -> point(a.left()).oplus(point(a.right()));

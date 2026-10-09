@@ -63,6 +63,12 @@ public enum Arithmetic implements Mode {
         return decimals;
     }
 
+    /** What every arithmetic here throws at a constructor or a named value: the traction algebras read those. */
+    static CalculatorException notYet(Expr e) {
+        return new CalculatorException(sibarum.cott.notation.Printer.print(e)
+                + " is read by the traction algebras, which the calculator does not evaluate with yet");
+    }
+
     /** The value of an expression with no variables or calls left in it. */
     public Result.Value evaluate(Expr closed) {
         return evaluate(closed, (Limits) Modeset.LIMITS.initial());

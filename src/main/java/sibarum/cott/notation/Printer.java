@@ -17,6 +17,8 @@ public final class Printer {
             case Expr.Num n -> n.value().toString();
             case Expr.Decimal d -> d.value().toPlainString();
             case Expr.Omega o -> "ω";
+            case Expr.Named n -> n.name();
+            case Expr.Construct c -> c.algebra() + "(" + print(c.p()) + ", " + print(c.q()) + ")";
             case Expr.Var v -> v.name();
             case Expr.Call c -> c.name() + c.args().stream().map(Printer::print).collect(Collectors.joining(", ", "(", ")"));
             case Expr.Neg n -> "-" + wrap(n.operand(), SIGN);
@@ -54,6 +56,8 @@ public final class Printer {
             case Expr.Num n -> ATOM;
             case Expr.Decimal d -> ATOM;
             case Expr.Omega o -> ATOM;
+            case Expr.Named n -> ATOM;
+            case Expr.Construct c -> ATOM;
             case Expr.Var v -> ATOM;
             case Expr.Call c -> ATOM;
         };

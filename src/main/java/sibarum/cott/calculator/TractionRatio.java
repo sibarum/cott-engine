@@ -35,6 +35,7 @@ final class TractionRatio {
     static T2 level2(Expr e, Limits limits, Map<String, String> certificates) {
         return switch (e) {
             case Expr.Num n -> T2.of(new T(n.value(), BigInteger.ONE));
+            case Expr.Named _, Expr.Construct _ -> throw Arithmetic.notYet(e);
             case Expr.Omega o -> T2.OMEGA;
             case Expr.Neg n -> level2(n.operand(), limits, certificates).neg();
             case Expr.Add a -> level2(a.left(), limits, certificates).plus(level2(a.right(), limits, certificates));

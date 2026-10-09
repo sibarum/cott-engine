@@ -32,6 +32,7 @@ final class BicomplexRatio {
     static CTC value(Expr e) {
         return switch (e) {
             case Expr.Num n -> integer(n.value());
+            case Expr.Named _, Expr.Construct _ -> throw Arithmetic.notYet(e);
             case Expr.Omega o -> integer(BigInteger.ONE).otimes(integer(BigInteger.ZERO).inv());
             case Expr.Neg n -> MINUS_ONE.otimes(value(n.operand()));
             case Expr.Add a -> value(a.left()).oplus(value(a.right()));

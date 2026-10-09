@@ -23,6 +23,15 @@ public sealed interface Expr {
     /** {@code ω}. */
     record Omega() implements Expr {}
 
+    /** A named value other than {@code ω}: {@code _0}, {@code _1} or {@code i}. */
+    record Named(String name) implements Expr {}
+
+    /**
+     * A pair written by its constructor, {@code Q(1, 2)}: the traction algebra by its letter, and the two
+     * coordinates, each any expression.
+     */
+    record Construct(String algebra, Expr p, Expr q) implements Expr {}
+
     record Var(String name) implements Expr {}
 
     record Neg(Expr operand) implements Expr {}

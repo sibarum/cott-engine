@@ -1,10 +1,9 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.algebra.IeeeLevel;
 import sibarum.cott.notation.Expr;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 
 /**
  * {@link Arithmetic#IEEE_FLOATING_POINT}: IEEE 754 binary64, the {@code double} of most languages and of
@@ -35,31 +34,16 @@ final class IeeeFloatingPoint {
             case Expr.Mul m -> value(m.left()) * value(m.right());
             case Expr.Div d -> value(d.left()) / value(d.right());
             case Expr.Pow p -> StrictMath.pow(value(p.base()), value(p.exponent()));
+            case Expr.Named _, Expr.Construct _ -> throw Arithmetic.notYet(e);
             case Expr.Omega o -> throw new CalculatorException("ω is not an IEEE Floating Point value");
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
             case Expr.Call c -> throw Trig.notHere(c);
         };
     }
 
-    /**
-     * A double the way a calculator writes it: the fewest digits that read back as the same double, in
-     * positional notation from {@code 10^-6} up to {@code 10^21} and as {@code 1.5e-7} outside that.
-     * {@code ∞}, {@code -∞}, {@code NaN} and {@code -0} are written as themselves.
-     */
+    /** {@link IeeeLevel#display}. */
     static String display(double x) {
-        if (Double.isNaN(x)) return "NaN";
-        if (Double.isInfinite(x)) return x > 0 ? "∞" : "-∞";
-        if (x == 0) return Double.doubleToRawLongBits(x) < 0 ? "-0" : "0";
-        BigDecimal shortest = new BigDecimal(Double.toString(x)).stripTrailingZeros();
-        // Double.toString gives two digits where one reads back but two are nearer: 4.9e-324 for 5e-324
-        BigDecimal oneDigit = shortest.round(new MathContext(1, RoundingMode.HALF_EVEN));
-        if (oneDigit.doubleValue() == x) shortest = oneDigit.stripTrailingZeros();
-        double magnitude = Math.abs(x);
-        if (magnitude >= 1e-6 && magnitude < 1e21) return shortest.toPlainString();
-        String digits = shortest.unscaledValue().abs().toString();
-        int exponent = digits.length() - 1 - shortest.scale();
-        String mantissa = digits.length() == 1 ? digits : digits.charAt(0) + "." + digits.substring(1);
-        return (x < 0 ? "-" : "") + mantissa + "e" + exponent;
+        return IeeeLevel.display(x);
     }
 
     /** The exact value the double holds, which a decimal literal is usually only near. */

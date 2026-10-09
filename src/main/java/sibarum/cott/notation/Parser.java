@@ -21,11 +21,21 @@ import java.util.Set;
  *   <li>A name followed by {@code (} is a call only when it names a function; otherwise it is
  *       multiplication, as in {@code ω(2x)} or {@code x(x+1)}.</li>
  *   <li>{@code ω} is always the constant, never part of a name.</li>
+ *   <li>{@code C}, {@code D}, {@code S}, {@code Q} and {@code P} are constructors, always followed by
+ *       {@code (p, q)}: {@code Q(1, 2)}, {@code C(Q(0, 1), Q(1, 2))}. They cannot be defined.</li>
+ *   <li>{@code _0}, {@code _1} and {@code i} are named values, as {@code ω} is. {@code i} cannot be defined, and in
+ *       a run of letters it is a name of its own, as any letter is: {@code 3i}, {@code xi}.</li>
  *   <li>A decimal literal is digits, a point and digits: {@code 0.5}, not {@code .5} or {@code 5.}. The
  *       notation only reads it; the arithmetic decides whether it is a value.</li>
  * </ul>
  */
 public final class Parser {
+
+    /** The traction algebras, by the letter that constructs a pair of each. */
+    public static final Set<String> CONSTRUCTORS = Set.of("C", "D", "S", "Q", "P");
+
+    /** The named values written with an underscore. */
+    public static final Set<String> NAMED = Set.of("_0", "_1");
 
     private final Set<String> functions;
     private final Set<String> variables;
@@ -42,7 +52,7 @@ public final class Parser {
 
     // ---- tokens ----
 
-    enum Kind { NUMBER, DECIMAL, WORD, NAME, OMEGA, PLUS, MINUS, TIMES, DIVIDE, CARET, LPAREN, RPAREN, COMMA, EQUALS, END }
+    enum Kind { NUMBER, DECIMAL, WORD, NAME, OMEGA, NAMED, PLUS, MINUS, TIMES, DIVIDE, CARET, LPAREN, RPAREN, COMMA, EQUALS, END }
 
     record Token(Kind kind, String text, int pos) {}
 
@@ -73,6 +83,12 @@ public final class Parser {
                 out.add(new Token(Kind.NUMBER, digits.toString(), start));
             } else if (c == 'ω') {
                 out.add(new Token(Kind.OMEGA, "ω", i++));
+            } else if (c == '_') {
+                i++;
+                while (i < s.length() && Character.isDigit(s.charAt(i))) i++;
+                String name = s.substring(start, i);
+                if (!NAMED.contains(name)) throw new SyntaxException("no named value '" + name + "'", start);
+                out.add(new Token(Kind.NAMED, name, start));
             } else if (Character.isLetter(c)) {
                 while (i < s.length() && Character.isLetter(s.charAt(i)) && s.charAt(i) != 'ω') i++;
                 out.add(new Token(Kind.WORD, s.substring(start, i), start));
@@ -129,6 +145,7 @@ public final class Parser {
         if (lhs.isEmpty() || lhs.getFirst().kind() != Kind.WORD)
             throw new SyntaxException("a definition starts with the name it defines", raw.getFirst().pos());
         String name = lhs.getFirst().text();
+        reserved(name, lhs.getFirst().pos());
         if (lhs.size() == 1) {
             return new Statement.Assign(name, expression(rhs, known(Set.of(name), Set.of())));
         }
@@ -139,6 +156,7 @@ public final class Parser {
             Token p = lhs.size() > i ? lhs.get(i) : raw.get(eq);
             if (p.kind() != Kind.WORD) throw new SyntaxException("expected a parameter name", p.pos());
             if (params.contains(p.text())) throw new SyntaxException("parameter '" + p.text() + "' repeats", p.pos());
+            reserved(p.text(), p.pos());
             params.add(p.text());
             i++;
             Token sep = lhs.size() > i ? lhs.get(i) : raw.get(eq);
@@ -168,6 +186,13 @@ public final class Parser {
 
     private Expr expression(List<Token> raw, Set<String> known) {
         return new Reader(splitWords(raw, known)).whole();
+    }
+
+    private static void reserved(String name, int pos) {
+        if (name.equals("i"))
+            throw new SyntaxException("'i' is a named value, and cannot be defined", pos);
+        if (CONSTRUCTORS.contains(name))
+            throw new SyntaxException("'" + name + "' is the constructor of a traction algebra, and cannot be defined", pos);
     }
 
     private static void expectAt(List<Token> ts, int i, Kind k) {
@@ -256,7 +281,7 @@ public final class Parser {
 
         private boolean startsPrimary() {
             return switch (peek().kind()) {
-                case NUMBER, DECIMAL, NAME, OMEGA, LPAREN -> true;
+                case NUMBER, DECIMAL, NAME, OMEGA, NAMED, LPAREN -> true;
                 default -> false;
             };
         }
@@ -267,7 +292,17 @@ public final class Parser {
                 case NUMBER -> new Expr.Num(new BigInteger(t.text()));
                 case DECIMAL -> new Expr.Decimal(new BigDecimal(t.text()));
                 case OMEGA -> new Expr.Omega();
+                case NAMED -> new Expr.Named(t.text());
                 case NAME -> {
+                    if (t.text().equals("i")) yield new Expr.Named("i");
+                    if (CONSTRUCTORS.contains(t.text())) {
+                        expect(Kind.LPAREN, "'(': " + t.text() + " is a constructor, written " + t.text() + "(p, q)");
+                        Expr p = additive();
+                        expect(Kind.COMMA, "',': a pair has two coordinates");
+                        Expr q = additive();
+                        expect(Kind.RPAREN, "')': a pair has two coordinates");
+                        yield new Expr.Construct(t.text(), p, q);
+                    }
                     if (!functions.contains(t.text())) yield new Expr.Var(t.text());
                     if (peek().kind() != Kind.LPAREN)
                         throw new SyntaxException("function '" + t.text() + "' needs its arguments", peek().pos());
