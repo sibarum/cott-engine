@@ -1,5 +1,9 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.algebra.Form;
+import sibarum.cott.algebra.NumberType;
+import sibarum.cott.algebra.SizeLimit;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -10,8 +14,12 @@ import java.util.Optional;
  */
 public enum Modeset {
 
-    /** What a value is, and how the operations act on it. */
-    ARITHMETIC("Arithmetic"),
+    /** The numbers at the bottom of every value. */
+    NUMBER_TYPE("Number type"),
+    /** How large those numbers may be. */
+    SIZE_LIMIT("Size limit"),
+    /** How a sum and a product nest when they meet. */
+    FORM("Form"),
     /** How far a recursion may go before it is stopped. */
     LIMITS("Recursion limits");
 
@@ -28,7 +36,9 @@ public enum Modeset {
     /** Every mode of this modeset, in the order they are offered. */
     public List<Mode> modes() {
         return switch (this) {
-            case ARITHMETIC -> List.of(Arithmetic.values());
+            case NUMBER_TYPE -> List.of(NumberType.values());
+            case SIZE_LIMIT -> List.of(SizeLimit.values());
+            case FORM -> List.of(Form.values());
             case LIMITS -> List.of(Limits.values());
         };
     }
@@ -36,7 +46,9 @@ public enum Modeset {
     /** The mode a new calculator starts in. */
     public Mode initial() {
         return switch (this) {
-            case ARITHMETIC -> Arithmetic.TRACTION_RATIO;
+            case NUMBER_TYPE -> NumberType.INTEGER;
+            case SIZE_LIMIT -> SizeLimit.MEDIUM;
+            case FORM -> Form.SUM_OF_PRODUCTS;
             case LIMITS -> Limits.STANDARD;
         };
     }

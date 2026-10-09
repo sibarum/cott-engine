@@ -27,7 +27,7 @@ class LevelTest {
 
     @Test
     void integersAreExactAndNeverDivide() {
-        IntegerLevel z = new IntegerLevel(SizeLimit.STANDARD.integerBits());
+        IntegerLevel z = new IntegerLevel(SizeLimit.MEDIUM.integerBits());
         assertEquals(i(7), z.add(i(3), i(4)));
         assertEquals(i(-1), z.sub(i(3), i(4)));
         assertEquals(i(12), z.mul(i(3), i(4)));
@@ -39,7 +39,7 @@ class LevelTest {
 
     @Test
     void integerPowersAreWholeAndNonNegative() {
-        IntegerLevel z = new IntegerLevel(SizeLimit.STANDARD.integerBits());
+        IntegerLevel z = new IntegerLevel(SizeLimit.MEDIUM.integerBits());
         assertEquals(Optional.of(i(1024)), z.pow(i(2), i(10)));
         assertEquals(Optional.of(i(1)), z.pow(i(0), i(0)));
         assertEquals(Optional.of(i(-1)), z.pow(i(-1), i(3)));
@@ -63,7 +63,7 @@ class LevelTest {
 
     @Test
     void decimalsAreExactWithinTheLimit() {
-        DecimalLevel x = new DecimalLevel(SizeLimit.STANDARD.decimalDigits());
+        DecimalLevel x = new DecimalLevel(SizeLimit.MEDIUM.decimalDigits());
         assertEquals(0, d("0.3").compareTo(x.add(d("0.1"), d("0.2"))));
         assertEquals(Optional.of(d("0.25")), x.divide(d("1"), d("4")));
         assertEquals(Optional.of(d("0.001")), x.pow(d("10"), d("-3")));
@@ -88,7 +88,7 @@ class LevelTest {
 
     @Test
     void aDecimalDividedByZeroMeetsQ() {
-        DecimalLevel x = new DecimalLevel(SizeLimit.STANDARD.decimalDigits());
+        DecimalLevel x = new DecimalLevel(SizeLimit.MEDIUM.decimalDigits());
         assertEquals(Optional.empty(), x.divide(d("1"), d("0")));
         assertEquals(Optional.empty(), x.pow(d("0"), d("-1")));
         assertEquals(Optional.empty(), x.pow(d("2"), d("0.5")));
@@ -96,7 +96,7 @@ class LevelTest {
 
     @Test
     void decimalsAreWrittenAsDoublesAre() {
-        DecimalLevel x = new DecimalLevel(SizeLimit.STANDARD.decimalDigits());
+        DecimalLevel x = new DecimalLevel(SizeLimit.MEDIUM.decimalDigits());
         assertEquals("1.5e-7", x.write(d("0.00000015")));
         assertEquals("1e21", x.write(d("1E+21")));
         assertEquals("-2.5", x.write(d("-2.5")));
@@ -120,8 +120,8 @@ class LevelTest {
 
     @Test
     void eachNumberTypeGivesItsLevel() {
-        assertInstanceOf(IntegerLevel.class, NumberType.INTEGER.level(SizeLimit.STANDARD));
-        assertInstanceOf(DecimalLevel.class, NumberType.DECIMAL.level(SizeLimit.STANDARD));
+        assertInstanceOf(IntegerLevel.class, NumberType.INTEGER.level(SizeLimit.MEDIUM));
+        assertInstanceOf(DecimalLevel.class, NumberType.DECIMAL.level(SizeLimit.MEDIUM));
         assertInstanceOf(IeeeLevel.class, NumberType.IEEE.level(SizeLimit.SMALL));
         assertEquals("IEEE 64-bit", NumberType.IEEE.label());
     }

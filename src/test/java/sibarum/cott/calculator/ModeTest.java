@@ -1,6 +1,9 @@
 package sibarum.cott.calculator;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.algebra.Form;
+import sibarum.cott.algebra.NumberType;
+import sibarum.cott.algebra.SizeLimit;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,77 +16,88 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModeTest {
 
     @Test
-    void theArithmeticModeset() {
-        assertEquals(List.of(Arithmetic.IEEE_FLOATING_POINT, Arithmetic.TRACTION_RATIO, Arithmetic.TRACTION_POINT,
-                        Arithmetic.COMPLEX_RATIO, Arithmetic.BICOMPLEX, Arithmetic.BICOMPLEX_RATIO),
-                Modeset.ARITHMETIC.modes());
-        assertEquals("IEEE Floating Point", Arithmetic.IEEE_FLOATING_POINT.label());
-        assertEquals("T(T,T) Compound Ratio", Arithmetic.TRACTION_RATIO.label());
-        assertEquals(Optional.of(Arithmetic.IEEE_FLOATING_POINT), Modeset.ARITHMETIC.mode("ieee"));
-        assertEquals(Optional.empty(), Modeset.ARITHMETIC.mode("wheel"));
+    void theModesets() {
+        assertEquals(List.of(Modeset.NUMBER_TYPE, Modeset.SIZE_LIMIT, Modeset.FORM, Modeset.LIMITS), List.of(Modeset.values()));
+        assertEquals(List.of(NumberType.INTEGER, NumberType.DECIMAL, NumberType.IEEE), Modeset.NUMBER_TYPE.modes());
+        assertEquals(List.of(SizeLimit.SMALL, SizeLimit.MEDIUM, SizeLimit.LARGE), Modeset.SIZE_LIMIT.modes());
+        assertEquals(List.of(Form.SUM_OF_PRODUCTS, Form.PRODUCT_OF_SUMS), Modeset.FORM.modes());
+        assertEquals("IEEE 64-bit", NumberType.IEEE.label());
+        assertEquals(Optional.of(NumberType.IEEE), Modeset.NUMBER_TYPE.mode("ieee64"));
+        assertEquals(Optional.empty(), Modeset.NUMBER_TYPE.mode("wheel"));
     }
 
     @Test
     void everyModeBelongsToItsModesetAndKeysAreUnique() {
+        Set<String> keys = new HashSet<>();
         for (Modeset set : Modeset.values()) {
             assertTrue(set.modes().contains(set.initial()), set.label());
-            for (Mode m : set.modes()) assertEquals(set, m.modeset(), m.label());
-            assertEquals(set.modes().size(), new HashSet<>(set.modes().stream().map(Mode::key).toList()).size());
+            for (Mode m : set.modes()) {
+                assertEquals(set, m.modeset(), m.label());
+                assertTrue(keys.add(m.key()), "key " + m.key() + " is in two modes");
+            }
         }
     }
 
     @Test
-    void aCalculatorStartsInTractionRatioAndChangesMode() {
+    void aCalculatorStartsOverIntegersAndChangesMode() {
         Calculator c = new Calculator();
-        assertEquals(Arithmetic.TRACTION_RATIO, c.arithmetic());
-        assertEquals(Arithmetic.TRACTION_RATIO, c.mode(Modeset.ARITHMETIC));
-        c.set(Arithmetic.IEEE_FLOATING_POINT);
-        assertEquals(Arithmetic.IEEE_FLOATING_POINT, c.arithmetic());
-        assertEquals(Arithmetic.TRACTION_RATIO, new Calculator(Arithmetic.TRACTION_RATIO).arithmetic());
+        assertEquals(NumberType.INTEGER, c.numberType());
+        assertEquals(SizeLimit.MEDIUM, c.sizeLimit());
+        assertEquals(Form.SUM_OF_PRODUCTS, c.form());
+        assertEquals(Limits.STANDARD, c.limits());
+        c.set(NumberType.IEEE);
+        assertEquals(NumberType.IEEE, c.numberType());
+        assertEquals(Form.SUM_OF_PRODUCTS, c.form(), "a mode of one modeset leaves the others");
+        assertEquals(NumberType.DECIMAL, new Calculator(NumberType.DECIMAL).numberType());
     }
 
     @Test
-    void aDefinitionIsEvaluatedInTheArithmeticOfTheLineThatUsesIt() {
+    void aDefinitionIsEvaluatedInTheModesOfTheLineThatUsesIt() {
         Calculator c = new Calculator();
         c.enter("x = 1/3");
-        assertEquals("1/3", c.enter("x").text());
-        assertInstanceOf(Result.RatioValue.class, c.enter("x"));
-        c.set(Arithmetic.IEEE_FLOATING_POINT);
+        assertEquals("Q(1, 3)", c.enter("x").text());
+        c.set(NumberType.IEEE);
         assertEquals("0.3333333333333333", c.enter("x").text());
-        assertInstanceOf(Result.IeeeValue.class, c.enter("x"));
-        c.set(Arithmetic.TRACTION_RATIO);
-        assertEquals("ω", c.enter("1/0").text());
+        c.set(NumberType.DECIMAL);
+        assertEquals("0.3333333333333333333333333333333333", c.enter("x").text());
+        c.set(SizeLimit.SMALL);
+        assertEquals("0.3333333333333333", c.enter("x").text());
     }
 
     @Test
-    void whatEachArithmeticTakesAsAValue() {
-        assertTrue(Arithmetic.TRACTION_RATIO.hasOmega());
-        assertTrue(!Arithmetic.TRACTION_RATIO.hasDecimals());
-        assertTrue(!Arithmetic.IEEE_FLOATING_POINT.hasOmega());
-        assertTrue(Arithmetic.IEEE_FLOATING_POINT.hasDecimals());
+    void theSizeLimitBoundsIntegers() {
+        Calculator c = new Calculator(SizeLimit.SMALL);
+        assertEquals("9223372036854775808", c.enter("2^63").text());
+        assertThrows(CalculatorException.class, () -> c.enter("2^64"));
+        c.set(SizeLimit.MEDIUM);
+        assertEquals("18446744073709551616", c.enter("2^64").text());
+    }
+
+    @Test
+    void integersTakeNoDecimal() {
         assertThrows(CalculatorException.class, () -> new Calculator().enter("0.5"));
-        assertThrows(CalculatorException.class, () -> new Calculator(Arithmetic.IEEE_FLOATING_POINT).enter("ω"));
+        assertEquals("0.5", new Calculator(NumberType.DECIMAL).enter("0.5").text());
     }
 
     @Test
     void theReplListsAndChangesModes() throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        Repl.run(new ByteArrayInputStream(":mode\n1/0\n:mode ieee\n1/0\n:mode\n:mode wheel\n".getBytes(StandardCharsets.UTF_8)),
+        Repl.run(new ByteArrayInputStream(":mode\n1/0\n:mode ieee64\n1/0\n:mode\n:mode wheel\n".getBytes(StandardCharsets.UTF_8)),
                 new PrintStream(bytes, true, StandardCharsets.UTF_8));
         String out = bytes.toString(StandardCharsets.UTF_8);
-        assertTrue(out.contains("  * compound         T(T,T) Compound Ratio"), out);
-        assertTrue(out.contains("Arithmetic: IEEE Floating Point"), out);
-        assertTrue(out.contains("= ω"), out);
+        assertTrue(out.contains("  * integer  Integer"), out);
+        assertTrue(out.contains("  * sum-of-products  Sum of products"), out);
+        assertTrue(out.contains("Number type: IEEE 64-bit"), out);
+        assertTrue(out.contains("= Q(1, 0)"), out);
         assertTrue(out.contains("= ∞"), out);
         assertTrue(out.contains("    exact  ∞"), out);
-        assertTrue(out.contains("  * ieee             IEEE Floating Point"), out);
+        assertTrue(out.contains("  * ieee64   IEEE 64-bit"), out);
         assertTrue(out.contains("! no mode 'wheel'"), out);
     }
 
@@ -95,9 +109,6 @@ class ModeTest {
         Calculator c = new Calculator();
         c.set(Limits.DEEP);
         assertEquals(Limits.DEEP, c.limits());
-        assertEquals(Arithmetic.TRACTION_RATIO, c.arithmetic(), "a mode of one modeset leaves the others");
-        Set<String> keys = new HashSet<>();
-        for (Modeset set : Modeset.values())
-            for (Mode m : set.modes()) assertTrue(keys.add(m.key()), "key " + m.key() + " is in two modesets");
+        assertEquals(NumberType.INTEGER, c.numberType(), "a mode of one modeset leaves the others");
     }
 }

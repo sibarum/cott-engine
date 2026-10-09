@@ -96,4 +96,20 @@ public final class IeeeLevel implements Level<Double> {
         String mantissa = digits.length() == 1 ? digits : digits.charAt(0) + "." + digits.substring(1);
         return (x < 0 ? "-" : "") + mantissa + "e" + exponent;
     }
+
+    /** The exact value the double holds, which a decimal literal is usually only near. */
+    public static String exact(double x) {
+        if (Double.isNaN(x) || Double.isInfinite(x) || x == 0) return display(x);
+        BigDecimal exact = new BigDecimal(x);
+        double magnitude = Math.abs(x);
+        return magnitude >= 1e-6 && magnitude < 1e21 ? exact.toPlainString() : exact.toString().replace("E+", "e").replace("E", "e");
+    }
+
+    /**
+     * The 64 bits: sign, 11 of exponent, 52 of fraction. A NaN is written as the one canonical NaN, since
+     * which NaN an operation leaves differs from one processor to another.
+     */
+    public static String bits(double x) {
+        return String.format("0x%016X", Double.doubleToLongBits(x));
+    }
 }

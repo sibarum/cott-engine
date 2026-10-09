@@ -1,5 +1,6 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.algebra.NumberType;
 import sibarum.cott.notation.SyntaxException;
 
 import java.io.BufferedReader;
@@ -13,8 +14,8 @@ import java.util.Map;
 
 /**
  * The calculator at a prompt. A line is an expression or a definition, and a value is shown with every
- * projection of it beneath. Symbols are typed as {@link Escapes escapes}, {@code \o} for {@code ω}, and
- * always printed as themselves. {@code :symbols} lists the escapes the current arithmetic can use,
+ * reading of it beneath. Symbols are typed as {@link Escapes escapes}, {@code \o} for {@code ω}, and
+ * always printed as themselves. {@code :symbols} lists the symbols and their escapes,
  * {@code :help} lists them and the commands, {@code :mode} lists and changes the
  * {@link Mode modes}, and {@code :quit} leaves.
  */
@@ -32,7 +33,7 @@ public final class Repl {
     static void run(InputStream input, PrintStream out) throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         Calculator calc = new Calculator();
-        out.println("The traction calculator, in " + calc.arithmetic().label() + ".");
+        out.println("The traction calculator, over " + calc.numberType().label() + " numbers.");
         out.println("Type :help for symbols, modes and commands, or :quit to leave.");
         out.print("> ");
         for (String line; (line = in.readLine()) != null; out.print("> ")) {
@@ -60,15 +61,17 @@ public final class Repl {
 
     private static void help(Calculator calc, PrintStream out) {
         out.println("Type an expression, or a definition: x = 2, f(x, y) = x^2 + y.");
-        if (calc.arithmetic() == Arithmetic.TRACTION_RATIO)
+        out.println("A pair is written by its algebra: Q(1, 2) is 1/2, C(3, 4) is 4 + 3i, and D, S and P read q − p, p + q and p·q.");
+        out.println("Pairs nest and mix: C(0, Q(1, 2)). A bare number takes the algebra of the pair it meets.");
+        if (calc.numberType() == NumberType.INTEGER)
             out.println("cos(t) and sin(t) take a turn, as in cos(1/6) for 60°; cos(t, n) dials to depth n.");
         symbols(calc, out);
-        out.println(":symbols lists the symbols of the current arithmetic and their escapes.");
-        out.println(":mode lists the modes, and :mode <key> changes one, as in :mode ieee.");
+        out.println(":symbols lists the symbols and their escapes.");
+        out.println(":mode lists the modes, and :mode <key> changes one, as in :mode decimal.");
         out.println(":help shows this, :quit leaves.");
     }
 
-    /** The symbols every arithmetic reads from a plain keyboard, and what each is. */
+    /** The symbols read from a plain keyboard, and what each is. */
     private static final Map<String, String> PLAIN = new LinkedHashMap<>();
 
     static {
@@ -79,16 +82,20 @@ public final class Repl {
         PLAIN.put("^", "to the power of");
         PLAIN.put("( )", "grouping");
         PLAIN.put("=", "defines a variable or a function, as in f(x) = x^2");
-        PLAIN.put(",", "separates a function's parameters and arguments");
+        PLAIN.put(",", "separates a function's parameters and arguments, and a pair's coordinates");
+        PLAIN.put("C D S Q P", "construct a pair, as in Q(1, 2)");
+        PLAIN.put("i", "C(1, 0), the imaginary unit");
+        PLAIN.put("_0 _1", "Q(0, -1) and Q(1, -1)");
     }
 
-    /** The symbols the current arithmetic can use: the plain ones, then the escaped ones with their escapes. */
+    /** The plain symbols, then the escaped ones with their escapes. */
     private static void symbols(Calculator calc, PrintStream out) {
-        out.println("Symbols in " + calc.arithmetic().label() + ":");
+        out.println("Symbols:");
         out.println("  typed as they are:");
-        PLAIN.forEach((symbol, meaning) -> out.println("    " + symbol + " ".repeat(5 - symbol.length()) + meaning));
+        int width = PLAIN.keySet().stream().mapToInt(String::length).max().orElse(0);
+        PLAIN.forEach((symbol, meaning) -> out.println("    " + symbol + " ".repeat(width + 2 - symbol.length()) + meaning));
         out.println("  typed as escapes, or as themselves:");
-        Escapes.in(calc.arithmetic()).forEach((key, symbol) ->
+        Escapes.ALL.forEach((key, symbol) ->
                 out.println("    \\" + key + "  " + symbol + "  " + Escapes.meaning(symbol)));
     }
 

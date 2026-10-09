@@ -1,10 +1,13 @@
 package sibarum.cott.algebra;
 
+import sibarum.cott.calculator.Mode;
+import sibarum.cott.calculator.Modeset;
+
 /**
  * The numbers at the bottom of every value. A pair of Integers under {@code Q} is the rationals, unreduced; a Decimal
  * can divide, so it can bring an expression down to one pair; IEEE 64-bit is the {@code double}.
  */
-public enum NumberType {
+public enum NumberType implements Mode {
 
     INTEGER("integer", "Integer"),
     DECIMAL("decimal", "Decimal"),
@@ -18,10 +21,17 @@ public enum NumberType {
         this.label = label;
     }
 
+    @Override
+    public Modeset modeset() {
+        return Modeset.NUMBER_TYPE;
+    }
+
+    @Override
     public String key() {
         return key;
     }
 
+    @Override
     public String label() {
         return label;
     }

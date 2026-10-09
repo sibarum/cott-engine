@@ -1,6 +1,8 @@
 package sibarum.cott.calculator;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.algebra.IeeeLevel;
+import sibarum.cott.algebra.NumberType;
 
 import java.util.List;
 
@@ -12,11 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class IeeeFloatingPointTest {
 
     private static Calculator ieee() {
-        return new Calculator(Arithmetic.IEEE_FLOATING_POINT);
+        return new Calculator(NumberType.IEEE);
     }
 
-    private static Result.IeeeValue value(String line) {
-        return assertInstanceOf(Result.IeeeValue.class, ieee().enter(line), line);
+    private static Result.Value value(String line) {
+        return assertInstanceOf(Result.Value.class, ieee().enter(line), line);
     }
 
     private static String text(String line) {
@@ -75,9 +77,9 @@ class IeeeFloatingPointTest {
         for (int i = 0; i < 200_000; i++) {
             double x = Double.longBitsToDouble(random.nextLong());
             if (!Double.isFinite(x)) continue;
-            String written = IeeeFloatingPoint.display(x);
+            String written = IeeeLevel.display(x);
             assertEquals(x, Double.parseDouble(written), written);
-            assertEquals(x, new java.math.BigDecimal(IeeeFloatingPoint.exact(x)).doubleValue(), written);
+            assertEquals(x, new java.math.BigDecimal(IeeeLevel.exact(x)).doubleValue(), written);
             int digits = new java.math.BigDecimal(written.replace('e', 'E')).stripTrailingZeros().precision();
             int javaDigits = new java.math.BigDecimal(Double.toString(x)).stripTrailingZeros().precision();
             assertTrue(digits <= javaDigits, written + " vs " + x);
@@ -86,7 +88,7 @@ class IeeeFloatingPointTest {
 
     @Test
     void readingsAreTheExactValueTheHexAndTheBits() {
-        Result.IeeeValue tenth = value("0.1");
+        Result.Value tenth = value("0.1");
         assertEquals("0.1000000000000000055511151231257827021181583404541015625", tenth.readings().get("exact"));
         assertEquals("0x1.999999999999ap-4", tenth.readings().get("hex"));
         assertEquals("0x3FB999999999999A", tenth.readings().get("bits"));
@@ -94,12 +96,12 @@ class IeeeFloatingPointTest {
         assertEquals("0x8000000000000000", value("-0").readings().get("bits"));
         assertEquals("∞", value("1/0").readings().get("exact"));
         assertEquals("0x7FF8000000000000", value("0/0").readings().get("bits"));
-        assertEquals(Arithmetic.IEEE_FLOATING_POINT, tenth.arithmetic());
     }
 
     @Test
-    void omegaIsNotAnIeeeValue() {
-        assertThrows(CalculatorException.class, () -> ieee().enter("ω + 1"));
+    void omegaIsAPairOfDoubles() {
+        assertEquals("Q(1, 0)", text("ω + 1"));
+        assertEquals("C(1, 0.5)", text("0.5 + i"));
     }
 
     @Test

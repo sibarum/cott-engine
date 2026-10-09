@@ -1,14 +1,26 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.algebra.Evaluator;
+import sibarum.cott.algebra.Form;
+import sibarum.cott.algebra.IeeeLevel;
+import sibarum.cott.algebra.NumberType;
+import sibarum.cott.algebra.Pair;
+import sibarum.cott.algebra.SizeLimit;
+import sibarum.cott.algebra.TractionAlgebra;
 import sibarum.cott.notation.Expr;
 import sibarum.cott.notation.Parser;
 import sibarum.cott.notation.Printer;
 import sibarum.cott.notation.Statement;
+import sibarum.cott.projection.Projection;
+import sibarum.cott.projection.Projections;
+import sibarum.cott.traction.T;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -16,11 +28,12 @@ import java.util.Set;
 
 /**
  * A calculator: reads a line, substitutes its variables and inline functions, and either leaves it as it
- * is, when a variable is still free, or evaluates it in the current {@link Arithmetic}.
+ * is, when a variable is still free, or evaluates it in the traction algebras over the current
+ * {@link NumberType}.
  *
  * <p>It is in one {@link Mode} of each {@link Modeset} at a time, starting in each modeset's
- * {@link Modeset#initial() initial} mode. Definitions are kept as written, not as values, so changing the
- * arithmetic changes what every later line that uses them evaluates to.
+ * {@link Modeset#initial() initial} mode. Definitions are kept as written, not as values, so changing a
+ * mode changes what every later line that uses them evaluates to.
  */
 public final class Calculator {
 
@@ -52,8 +65,16 @@ public final class Calculator {
         return (Limits) modes.get(Modeset.LIMITS);
     }
 
-    public Arithmetic arithmetic() {
-        return (Arithmetic) modes.get(Modeset.ARITHMETIC);
+    public NumberType numberType() {
+        return (NumberType) modes.get(Modeset.NUMBER_TYPE);
+    }
+
+    public SizeLimit sizeLimit() {
+        return (SizeLimit) modes.get(Modeset.SIZE_LIMIT);
+    }
+
+    public Form form() {
+        return (Form) modes.get(Modeset.FORM);
     }
 
     public Result enter(String line) {
@@ -83,7 +104,40 @@ public final class Calculator {
     private Result answer(Expr expr) {
         Expr substituted = substitute(expr, List.of());
         if (!free(substituted).isEmpty()) return new Result.Unevaluated(substituted, Printer.print(substituted));
-        return arithmetic().evaluate(substituted, limits());
+        Map<String, String> certificates = new LinkedHashMap<>();
+        Evaluator.Result r = Evaluator.evaluate(substituted, numberType(), sizeLimit(), form(),
+                (call, args) -> builtIn(call, args, certificates));
+        Map<String, String> readings = new LinkedHashMap<>();
+        switch (r.value()) {
+            case Double d -> {
+                readings.put("exact", IeeeLevel.exact(d));
+                readings.put("hex", Double.toHexString(d));
+                readings.put("bits", IeeeLevel.bits(d));
+            }
+            case Pair<?>(TractionAlgebra a, BigInteger p, BigInteger q) when a == TractionAlgebra.Q -> {
+                for (Projection<?> projection : Projections.ALL) readings.put(projection.name(), projection.read(new T(p, q)));
+            }
+            default -> {}
+        }
+        if (r.rounded()) readings.put("rounded", "to " + sizeLimit().decimalDigits() + " significant digits");
+        readings.putAll(certificates);
+        return new Result.Value(r.value(), r.text(), readings);
+    }
+
+    /**
+     * {@code cos} and {@code sin}, for a turn written over the Integers: a whole number, or {@code Q(a, b)}. The
+     * answer is the {@code Q} pair the descent dials in.
+     */
+    private Object builtIn(Expr.Call call, List<Object> args, Map<String, String> certificates) {
+        if (!Trig.isBuiltIn(call.name())) throw new IllegalStateException("unexpanded call " + call.name());
+        T turn = switch (args.getFirst()) {
+            case BigInteger n -> new T(n, BigInteger.ONE);
+            case Pair<?>(TractionAlgebra a, BigInteger p, BigInteger q) when a == TractionAlgebra.Q -> new T(p, q);
+            default -> throw new CalculatorException(call.name() + " takes a turn over the Integers, a whole number or Q(a, b), not "
+                    + Printer.print(call.args().getFirst()));
+        };
+        T answer = Trig.evaluate(call, turn, limits(), certificates);
+        return new Pair<>(TractionAlgebra.Q, answer.p(), answer.q());
     }
 
     // ---- substitution ----

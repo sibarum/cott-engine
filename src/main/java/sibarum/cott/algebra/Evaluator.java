@@ -6,6 +6,7 @@ import sibarum.cott.notation.Printer;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -27,6 +28,12 @@ import java.util.Optional;
  */
 public final class Evaluator {
 
+    /** The built-in functions, given a call and its arguments, evaluated. */
+    @FunctionalInterface
+    public interface Calls {
+        Object call(Expr.Call call, List<Object> args);
+    }
+
     /** What an evaluation answers: the value, how it is written, and whether a Decimal was rounded. */
     public record Result(Object value, String text, boolean rounded) {}
 
@@ -35,15 +42,23 @@ public final class Evaluator {
 
     private final Level<Object> numbers;
     private final Form form;
+    private final Calls calls;
 
     @SuppressWarnings("unchecked")
-    Evaluator(NumberType type, SizeLimit limit, Form form) {
+    Evaluator(NumberType type, SizeLimit limit, Form form, Calls calls) {
         this.numbers = (Level<Object>) type.level(limit);
         this.form = form;
+        this.calls = calls;
     }
 
     public static Result evaluate(Expr closed, NumberType type, SizeLimit limit, Form form) {
-        Evaluator ev = new Evaluator(type, limit, form);
+        return evaluate(closed, type, limit, form, (c, args) -> {
+            throw new CalculatorException(c.name() + " is not in the traction algebras yet");
+        });
+    }
+
+    public static Result evaluate(Expr closed, NumberType type, SizeLimit limit, Form form, Calls calls) {
+        Evaluator ev = new Evaluator(type, limit, form, calls);
         Object v = ev.eval(closed);
         boolean rounded = (Object) ev.numbers instanceof DecimalLevel d && d.rounded();
         return new Result(v, ev.write(v), rounded);
@@ -72,7 +87,7 @@ public final class Evaluator {
             case Expr.Div d -> div(eval(d.left()), eval(d.right()));
             case Expr.Pow p -> pow(eval(p.base()), eval(p.exponent()), p);
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
-            case Expr.Call c -> throw new CalculatorException(c.name() + " is not in the traction algebras yet");
+            case Expr.Call c -> calls.call(c, c.args().stream().map(this::eval).toList());
         };
     }
 

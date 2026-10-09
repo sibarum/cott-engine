@@ -28,13 +28,6 @@ public final class Escapes {
         ALL.put('-', "−");
     }
 
-    /** The escapes whose symbol the arithmetic can use: {@code ω} only where it is a value. */
-    public static Map<Character, String> in(Arithmetic arithmetic) {
-        Map<Character, String> out = new LinkedHashMap<>(ALL);
-        if (!arithmetic.hasOmega()) out.values().remove("ω");
-        return out;
-    }
-
     /** What a symbol is, in words: {@code ÷} is "divided by". */
     public static String meaning(String symbol) {
         return MEANING.getOrDefault(symbol, "");

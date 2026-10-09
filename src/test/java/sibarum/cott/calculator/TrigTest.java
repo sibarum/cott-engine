@@ -1,6 +1,7 @@
 package sibarum.cott.calculator;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.algebra.NumberType;
 import sibarum.cott.traction.RationalTrig;
 import sibarum.cott.traction.T;
 
@@ -12,51 +13,55 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TrigTest {
 
-    private static Result.RatioValue value(Calculator c, String line) {
-        return (Result.RatioValue) c.enter(line);
+    private static Result.Value value(Calculator c, String line) {
+        return (Result.Value) c.enter(line);
+    }
+
+    private static T flat(Calculator c, String line) {
+        return value(c, line).flat().orElseThrow();
     }
 
     @Test
     void cosAndSinTakeATurnAndAnswerWithTheUnreducedPair() {
         Calculator c = new Calculator();
-        Result.RatioValue cos = value(c, "cos(1/6)");
+        Result.Value cos = value(c, "cos(1/6)");
         T spin = RationalTrig.dialed(BigInteger.ONE, 6, Limits.STANDARD.maxSteps(), Limits.STANDARD.width(),
                 Limits.STANDARD.maxPowerBits()).spin();
-        assertEquals(new T(spin.q().pow(2).subtract(spin.p().pow(2)), spin.norm()), cos.flat());
-        assertEquals(0.5, cos.flat().p().doubleValue() / cos.flat().q().doubleValue(), 1e-9);
+        assertEquals(new T(spin.q().pow(2).subtract(spin.p().pow(2)), spin.norm()), cos.flat().orElseThrow());
+        assertEquals(0.5, cos.flat().orElseThrow().p().doubleValue() / cos.flat().orElseThrow().q().doubleValue(), 1e-9);
         assertTrue(cos.readings().get("cos(1/6)").startsWith("depth "));
 
-        Result.RatioValue sin = value(c, "sin(1/6)");
-        assertEquals(Math.sqrt(3) / 2, sin.flat().p().doubleValue() / sin.flat().q().doubleValue(), 1e-9);
-        assertEquals(cos.flat().q(), sin.flat().q());
+        Result.Value sin = value(c, "sin(1/6)");
+        assertEquals(Math.sqrt(3) / 2, sin.flat().orElseThrow().p().doubleValue() / sin.flat().orElseThrow().q().doubleValue(), 1e-9);
+        assertEquals(cos.flat().orElseThrow().q(), sin.flat().orElseThrow().q());
     }
 
     @Test
     void theAnswerIsExactlyOnTheCircle() {
-        Result.RatioValue one = value(new Calculator(), "cos(1/7)^2 + sin(1/7)^2");
+        Result.Value one = value(new Calculator(), "cos(1/7)^2 + sin(1/7)^2");
         assertEquals("1", one.readings().get("classical"));
     }
 
     @Test
     void aMultipleOfTheTurnGivesTheSameAnswer() {
         Calculator c = new Calculator();
-        assertEquals(value(c, "cos(1/6)").flat(), value(c, "cos(2/12)").flat());
-        assertEquals(value(c, "sin(5/7)").flat(), value(c, "sin(10/14)").flat());
+        assertEquals(flat(c, "cos(1/6)"), flat(c, "cos(2/12)"));
+        assertEquals(flat(c, "sin(5/7)"), flat(c, "sin(10/14)"));
     }
 
     @Test
     void theQuarterAndHalfTurnsLandExactly() {
         Calculator c = new Calculator();
-        assertEquals(T.of(0, 2), value(c, "cos(1/4)").flat());
-        assertEquals(T.of(2, 2), value(c, "sin(1/4)").flat());
-        assertEquals(T.of(-1, 1), value(c, "cos(1/2)").flat());
-        assertEquals(T.of(1, 1), value(c, "cos(0)").flat());
+        assertEquals(T.of(0, 2), flat(c, "cos(1/4)"));
+        assertEquals(T.of(2, 2), flat(c, "sin(1/4)"));
+        assertEquals(T.of(-1, 1), flat(c, "cos(1/2)"));
+        assertEquals(T.of(1, 1), flat(c, "cos(0)"));
     }
 
     @Test
     void aSecondArgumentIsTheDepth() {
         Calculator c = new Calculator();
-        assertEquals(RationalTrig.cosTurn(BigInteger.ONE, 6, 5), value(c, "cos(1/6, 5)").flat());
+        assertEquals(RationalTrig.cosTurn(BigInteger.ONE, 6, 5), flat(c, "cos(1/6, 5)"));
         assertEquals("depth 5, between T(4,7) and T(3,5), sin² of the gap 1/2210",
                 value(c, "cos(1/6, 5)").readings().get("cos(1/6, 5)"));
         assertThrows(CalculatorException.class, () -> c.enter("cos(1/6, 1/2)"));
@@ -68,8 +73,8 @@ class TrigTest {
         Calculator c = new Calculator();
         c.enter("t = 1/8");
         c.enter("f(x) = 2sin(x)");
-        Result.RatioValue r = value(c, "f(t)");
-        assertEquals(Math.sqrt(2), r.flat().p().doubleValue() / r.flat().q().doubleValue(), 1e-9);
+        Result.Value r = value(c, "f(t)");
+        assertEquals(Math.sqrt(2), r.flat().orElseThrow().p().doubleValue() / r.flat().orElseThrow().q().doubleValue(), 1e-9);
     }
 
     @Test
@@ -81,7 +86,8 @@ class TrigTest {
         assertThrows(CalculatorException.class, () -> c.enter("cos(1, 2, 3)"));
         assertThrows(CalculatorException.class, () -> c.enter("cos = 2"));
         assertThrows(CalculatorException.class, () -> c.enter("sin(x) = x"));
-        c.set(Arithmetic.TRACTION_POINT);
+        assertThrows(CalculatorException.class, () -> c.enter("cos(C(1, 2))"));
+        c.set(NumberType.DECIMAL);
         assertThrows(CalculatorException.class, () -> c.enter("cos(1/6)"));
     }
 

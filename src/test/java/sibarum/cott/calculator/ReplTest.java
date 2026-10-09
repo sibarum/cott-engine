@@ -37,40 +37,37 @@ class ReplTest {
     @Test
     void anEscapeIsTypedAndTheSymbolIsPrinted() throws IOException {
         String out = session("1/0\n\\o + 1\nw = \\o\n:quit\n");
-        assertTrue(out.contains("= ω"), out);
+        assertTrue(out.contains("= Q(1, 0)"), out);
         assertTrue(out.contains("w = ω"), out);
         assertTrue(!out.contains("\\"), out);
     }
 
     @Test
     void aTypedSymbolStillWorks() throws IOException {
-        assertTrue(session("ω + 1\n").contains("= ω"));
+        assertTrue(session("ω + 1\n").contains("= Q(1, 0)"));
     }
 
     @Test
     void aBadEscapeIsReportedAndTheSessionGoesOn() throws IOException {
         String out = session("\\q\n1/0\n");
         assertTrue(out.contains("! unknown escape '\\q'"), out);
-        assertTrue(out.contains("= ω"), out);
+        assertTrue(out.contains("= Q(1, 0)"), out);
     }
 
     @Test
-    void symbolsListsWhatTheCurrentArithmeticCanUse() throws IOException {
-        String out = session(":symbols\n:mode ieee\n:symbols\n");
-        int ieee = out.indexOf("Symbols in IEEE Floating Point");
-        assertTrue(out.indexOf("Symbols in T(T,T) Compound Ratio") >= 0, out);
-        assertTrue(ieee > 0, out);
-        assertTrue(out.substring(0, ieee).contains("\\o  ω  omega"), out);
-        assertTrue(!out.substring(ieee).contains("ω"), out);
-        assertTrue(out.substring(ieee).contains("\\/  ÷  divided by"), out);
-        assertTrue(out.substring(ieee).contains("    ^    to the power of"), out);
-        assertTrue(out.substring(ieee).contains("    ( )  grouping"), out);
+    void symbolsListsThePlainSymbolsAndTheEscapes() throws IOException {
+        String out = session(":symbols\n");
+        assertTrue(out.contains("\\o  ω  omega"), out);
+        assertTrue(out.contains("\\/  ÷  divided by"), out);
+        assertTrue(out.contains("    ^          to the power of"), out);
+        assertTrue(out.contains("    C D S Q P  construct a pair, as in Q(1, 2)"), out);
+        assertTrue(out.contains("    i          C(1, 0), the imaginary unit"), out);
     }
 
     @Test
     void aSessionOpensWithAWelcomeThatPointsToHelp() throws IOException {
         String out = session("");
-        assertTrue(out.startsWith("The traction calculator, in T(T,T) Compound Ratio." + System.lineSeparator()), out);
+        assertTrue(out.startsWith("The traction calculator, over Integer numbers." + System.lineSeparator()), out);
         assertTrue(out.contains("Type :help"), out);
     }
 

@@ -31,13 +31,6 @@ final class Trig {
         return NAMES.contains(name);
     }
 
-    /** What an arithmetic without {@code cos} and {@code sin} throws at a call left after substitution. */
-    static RuntimeException notHere(Expr.Call c) {
-        if (isBuiltIn(c.name()))
-            return new CalculatorException(c.name() + " is only in " + Arithmetic.TRACTION_RATIO.label() + " for now");
-        return new IllegalStateException("unexpanded call " + c.name());
-    }
-
     static void checkArity(Expr.Call c) {
         if (c.args().size() != 1 && c.args().size() != 2)
             throw new CalculatorException(c.name() + " takes a turn, and optionally a depth, not "

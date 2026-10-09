@@ -14,7 +14,7 @@ import static sibarum.cott.algebra.Form.SUM_OF_PRODUCTS;
 class EvaluatorTest {
 
     private static Evaluator.Result in(NumberType type, Form form, String line) {
-        return Evaluator.evaluate(new Parser().expression(line), type, SizeLimit.STANDARD, form);
+        return Evaluator.evaluate(new Parser().expression(line), type, SizeLimit.MEDIUM, form);
     }
 
     private static String integers(String line) {
