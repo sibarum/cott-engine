@@ -26,7 +26,7 @@ class BaseTest {
     @Test
     void eIsSetToABaseByName() {
         Calculator c = new Calculator();
-        assertEquals("e = -1: e^x is -1^x, counted in half turns", c.enter("e = -1").text());
+        assertEquals("e = -1: e^x is (-1)^x, counted in half turns", c.enter("e = -1").text());
         assertEquals(Base.NEG_ONE, c.base());
         c.enter("e = i");
         assertEquals(Base.I, c.base());

@@ -23,7 +23,8 @@ import java.util.Optional;
  *       gives the same value for many pairs, a quotient.</li>
  *   <li>{@code norm} and {@code turn}: of a value off the real line, its squared length, the scale without the
  *       direction, and its direction as a fraction of a turn, without the scale.</li>
- *   <li>{@code lowest terms}: each {@code Q} of two Integers in lowest terms, where one is not.</li>
+ *   <li>{@code lowest terms}: each {@code Q} of two Integers in lowest terms, where one is not, inside a nested value;
+ *       a flat {@code Q}'s is its {@code ratio}.</li>
  *   <li>{@code cott-lean}: the file that proves this nesting's operations, or that none does.</li>
  * </ul>
  */
@@ -54,7 +55,7 @@ public final class Readings {
             }
         }
         String lowest = lowestTerms(value);
-        if (!lowest.equals(write(value))) out.add(new Reading("lowest terms", lowest, Rung.QUOTIENT));
+        if (!flatRatio && !lowest.equals(write(value))) out.add(new Reading("lowest terms", lowest, Rung.QUOTIENT));
         out.add(new Reading("cott-lean", covered(value).orElse("no file covers this nesting; computed by the engine's rules"), null));
         return out;
     }

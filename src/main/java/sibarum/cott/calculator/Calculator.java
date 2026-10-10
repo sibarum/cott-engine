@@ -99,7 +99,8 @@ public final class Calculator {
             case Statement.Assign a when a.name().equals("e") -> {
                 String written = Printer.print(a.value());
                 base = Base.named(written).orElseThrow(() -> new CalculatorException("e is a base: 1, -1, i, 0, ω or e, not " + written));
-                yield new Result.Defined("e", "e = " + base.written() + ": e^x is " + base.written() + "^x, counted in " + base.unit());
+                String power = base.written().startsWith("-") ? "(" + base.written() + ")" : base.written();
+                yield new Result.Defined("e", "e = " + base.written() + ": e^x is " + power + "^x, counted in " + base.unit());
             }
             case Statement.Assign a -> {
                 functions.remove(a.name());
