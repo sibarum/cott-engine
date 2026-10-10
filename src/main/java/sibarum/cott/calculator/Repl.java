@@ -1,6 +1,5 @@
 package sibarum.cott.calculator;
 
-import sibarum.cott.algebra.NumberType;
 import sibarum.cott.algebra.Rung;
 import sibarum.cott.notation.SyntaxException;
 
@@ -68,8 +67,10 @@ public final class Repl {
         out.println("Type an expression, or a definition: x = 2, f(x, y) = x^2 + y.");
         out.println("A pair is written by its algebra: Q(1, 2) is 1/2, C(3, 4) is 4 + 3i, and D, S and P read q − p, p + q and p·q.");
         out.println("Pairs nest and mix: C(0, Q(1, 2)). A bare number takes the algebra of the pair it meets.");
-        if (calc.numberType() == NumberType.INTEGER)
-            out.println("cos(t) and sin(t) take a turn, as in cos(1/6) for 60°; cos(t, n) dials to depth n.");
+        out.println("e is the base, now " + calc.base().written() + ", counting in " + calc.base().unit()
+                + ": e^x is the rotation by x units, and cos(x) and sin(x) count in them too.");
+        out.println("e = 1 counts in turns, e = -1 in half turns, e = i in quarter turns, e = e in radians (IEEE 64-bit).");
+        out.println("Over the Integers they are dialed exactly onto the circle, as in cos(1/6) for 60°; cos(t, n) dials to depth n.");
         symbols(calc, out);
         out.println(":symbols lists the symbols and their escapes.");
         out.println(":mode lists the modes, and :mode <key> changes one, as in :mode decimal.");
@@ -90,6 +91,7 @@ public final class Repl {
         PLAIN.put(",", "separates a function's parameters and arguments, and a pair's coordinates");
         PLAIN.put("C D S Q P", "construct a pair, as in Q(1, 2)");
         PLAIN.put("i", "C(1, 0), the imaginary unit");
+        PLAIN.put("e", "the base, set by e = b; e^x is the rotation by x of its units");
         PLAIN.put("_0 _1", "Q(0, -1) and Q(1, -1)");
     }
 

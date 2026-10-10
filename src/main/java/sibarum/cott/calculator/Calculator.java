@@ -1,5 +1,6 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.algebra.Base;
 import sibarum.cott.algebra.Evaluator;
 import sibarum.cott.algebra.Form;
 import sibarum.cott.algebra.IeeeLevel;
@@ -15,6 +16,7 @@ import sibarum.cott.notation.Printer;
 import sibarum.cott.notation.Statement;
 import sibarum.cott.projection.Projection;
 import sibarum.cott.projection.Projections;
+import sibarum.cott.projection.Rational;
 import sibarum.cott.traction.T;
 
 import java.math.BigInteger;
@@ -42,6 +44,7 @@ public final class Calculator {
     private final Map<String, Expr> variables = new HashMap<>();
     private final Map<String, Statement.Define> functions = new HashMap<>();
     private final Map<Modeset, Mode> modes = new EnumMap<>(Modeset.class);
+    private Base base;
 
     public Calculator() {
         for (Modeset m : Modeset.values()) modes.put(m, m.initial());
@@ -79,6 +82,11 @@ public final class Calculator {
         return (Form) modes.get(Modeset.FORM);
     }
 
+    /** What {@code e} is: as set by {@code e = b}, or else the classical {@code e} in IEEE 64-bit and the full-turn {@code 1} otherwise. */
+    public Base base() {
+        return base != null ? base : numberType() == NumberType.IEEE ? Base.E : Base.ONE;
+    }
+
     public Result enter(String line) {
         Set<String> callable = new HashSet<>(functions.keySet());
         callable.addAll(Trig.NAMES);
@@ -88,6 +96,11 @@ public final class Calculator {
             if (Trig.isBuiltIn(name)) throw new CalculatorException("'" + name + "' is built in, and cannot be redefined");
         }
         return switch (s) {
+            case Statement.Assign a when a.name().equals("e") -> {
+                String written = Printer.print(a.value());
+                base = Base.named(written).orElseThrow(() -> new CalculatorException("e is a base: 1, -1, i, 0, ω or e, not " + written));
+                yield new Result.Defined("e", "e = " + base.written() + ": e^x is " + base.written() + "^x, counted in " + base.unit());
+            }
             case Statement.Assign a -> {
                 functions.remove(a.name());
                 variables.put(a.name(), a.value());
@@ -167,19 +180,74 @@ public final class Calculator {
     }
 
     /**
-     * {@code cos} and {@code sin}, for a turn written over the Integers: a whole number, or {@code Q(a, b)}. The
-     * answer is the {@code Q} pair the descent dials in.
+     * {@code cos(x)}, {@code sin(x)} and {@code exp(x)}, which {@code e^x} is, with {@code x} counted in the base's
+     * units: {@code e^x} is the rotation by {@code x} units, {@code C(sin, cos)}. Over the Integers the turn is
+     * {@code x} times the base's turn unit, and the answer is the pair the descent dials in. In IEEE 64-bit they are a
+     * double's, and with the classical {@code e} {@code x} is in radians and {@code e^x} is the real exponential.
      */
     private Object builtIn(Expr.Call call, List<Object> args, Map<String, String> certificates) {
         if (!Trig.isBuiltIn(call.name())) throw new IllegalStateException("unexpanded call " + call.name());
+        Base b = base();
+        String written = call.name().equals("exp") ? "e^(" + Printer.print(call.args().getFirst()) + ")" : Printer.print(call);
+        if (numberType() == NumberType.IEEE) return inDoubles(call, args.getFirst(), b, written);
+        if (numberType() == NumberType.DECIMAL)
+            throw new CalculatorException(written + " is dialed over the Integers or computed in IEEE 64-bit, not in Decimal");
+        if (b == Base.E) throw new CalculatorException(written + " counts in radians with e = e, which take π: IEEE 64-bit has it");
+        Rational unit = b.turnUnit().orElseThrow(() ->
+                new CalculatorException(written + " needs a turn, and e = " + b.written() + " has " + b.unit()));
         T turn = switch (args.getFirst()) {
-            case BigInteger n -> new T(n, BigInteger.ONE);
-            case Pair<?>(TractionAlgebra a, BigInteger p, BigInteger q) when a == TractionAlgebra.Q -> new T(p, q);
-            default -> throw new CalculatorException(call.name() + " takes a turn over the Integers, a whole number or Q(a, b), not "
-                    + Printer.print(call.args().getFirst()));
+            case BigInteger n -> new T(n.multiply(unit.num()), unit.den());
+            case Pair<?>(TractionAlgebra a, BigInteger p, BigInteger q) when a == TractionAlgebra.Q ->
+                    new T(p.multiply(unit.num()), q.multiply(unit.den()));
+            default -> throw new CalculatorException(written + " takes a number of " + b.unit()
+                    + " over the Integers, a whole number or Q(a, b), not " + Printer.print(call.args().getFirst()));
         };
-        T answer = Trig.evaluate(call, turn, limits(), certificates);
-        return new Pair<>(TractionAlgebra.Q, answer.p(), answer.q());
+        if (!call.name().equals("exp")) {
+            T answer = Trig.evaluate(call, turn, limits(), certificates);
+            return new Pair<>(TractionAlgebra.Q, answer.p(), answer.q());
+        }
+        Map<String, String> dialed = new LinkedHashMap<>();
+        T cos = Trig.evaluate(new Expr.Call("cos", call.args()), turn, limits(), dialed);
+        T sin = Trig.evaluate(new Expr.Call("sin", call.args()), turn, limits(), dialed);
+        certificates.put(written, dialed.values().iterator().next());
+        return new Pair<>(TractionAlgebra.C, new Pair<>(TractionAlgebra.Q, sin.p(), sin.q()),
+                new Pair<>(TractionAlgebra.Q, cos.p(), cos.q()));
+    }
+
+    /** The built-ins as a double's: a turn of {@code 2π}, or radians with the classical {@code e}. */
+    private static Object inDoubles(Expr.Call call, Object arg, Base b, String written) {
+        if (!(arg instanceof Double x))
+            throw new CalculatorException(written + " takes a number, not " + Printer.print(call.args().getFirst()));
+        double radians;
+        if (b == Base.E) {
+            if (call.name().equals("exp")) return Math.exp(x);
+            radians = x;
+        } else {
+            Rational unit = b.turnUnit().orElseThrow(() ->
+                    new CalculatorException(written + " needs a turn, and e = " + b.written() + " has " + b.unit()));
+            radians = 2 * Math.PI * x * unit.num().doubleValue() / unit.den().doubleValue();
+        }
+        return switch (call.name()) {
+            case "cos" -> Math.cos(radians);
+            case "sin" -> Math.sin(radians);
+            default -> new Pair<>(TractionAlgebra.C, Math.sin(radians), Math.cos(radians));
+        };
+    }
+
+    /** What {@code e} stands for as a value: the base's value, the full-turn {@code 1} being {@code 1}. */
+    private Expr baseValue() {
+        return switch (base()) {
+            case ONE -> Expr.Num.of(1);
+            case NEG_ONE -> new Expr.Neg(Expr.Num.of(1));
+            case I -> new Expr.Named("i");
+            case ZERO -> Expr.Num.of(0);
+            case OMEGA -> new Expr.Omega();
+            case E -> {
+                if (numberType() != NumberType.IEEE)
+                    throw new CalculatorException("the classical e is a value in IEEE 64-bit only");
+                yield new Expr.Decimal(new java.math.BigDecimal(Double.toString(Math.E)));
+            }
+        };
     }
 
     // ---- substitution ----
@@ -190,6 +258,7 @@ public final class Calculator {
             case Expr.Num n -> n;
             case Expr.Decimal d -> d;
             case Expr.Omega o -> o;
+            case Expr.Named n when n.name().equals("e") -> baseValue();
             case Expr.Named n -> n;
             case Expr.Construct c -> new Expr.Construct(c.algebra(), substitute(c.p(), expanding), substitute(c.q(), expanding));
             case Expr.Var v -> {
@@ -217,6 +286,8 @@ public final class Calculator {
             case Expr.Sub s -> new Expr.Sub(substitute(s.left(), expanding), substitute(s.right(), expanding));
             case Expr.Mul m -> new Expr.Mul(substitute(m.left(), expanding), substitute(m.right(), expanding), m.implicit());
             case Expr.Div d -> new Expr.Div(substitute(d.left(), expanding), substitute(d.right(), expanding));
+            case Expr.Pow p when p.base() instanceof Expr.Named(String name) && name.equals("e") ->
+                    new Expr.Call("exp", List.of(substitute(p.exponent(), expanding)));
             case Expr.Pow p -> new Expr.Pow(substitute(p.base(), expanding), substitute(p.exponent(), expanding));
         };
     }

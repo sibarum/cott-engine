@@ -25,7 +25,7 @@ final class Trig {
 
     private Trig() {}
 
-    static final Set<String> NAMES = Set.of("cos", "sin");
+    static final Set<String> NAMES = Set.of("cos", "sin", "exp");
 
     static boolean isBuiltIn(String name) {
         return NAMES.contains(name);

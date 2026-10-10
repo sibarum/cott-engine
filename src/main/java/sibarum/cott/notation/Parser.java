@@ -23,8 +23,9 @@ import java.util.Set;
  *   <li>{@code ω} is always the constant, never part of a name.</li>
  *   <li>{@code C}, {@code D}, {@code S}, {@code Q} and {@code P} are constructors, always followed by
  *       {@code (p, q)}: {@code Q(1, 2)}, {@code C(Q(0, 1), Q(1, 2))}. They cannot be defined.</li>
- *   <li>{@code _0}, {@code _1} and {@code i} are named values, as {@code ω} is. {@code i} cannot be defined, and in
- *       a run of letters it is a name of its own, as any letter is: {@code 3i}, {@code xi}.</li>
+ *   <li>{@code _0}, {@code _1}, {@code i} and {@code e} are named values, as {@code ω} is. In a run of letters each
+ *       is a name of its own, as any letter is: {@code 3i}, {@code xi}. {@code i} cannot be defined, and {@code e}
+ *       only by {@code e = b}, which sets the base.</li>
  *   <li>A decimal literal is digits, a point and digits: {@code 0.5}, not {@code .5} or {@code 5.}. The
  *       notation only reads it; the arithmetic decides whether it is a value.</li>
  * </ul>
@@ -145,7 +146,7 @@ public final class Parser {
         if (lhs.isEmpty() || lhs.getFirst().kind() != Kind.WORD)
             throw new SyntaxException("a definition starts with the name it defines", raw.getFirst().pos());
         String name = lhs.getFirst().text();
-        reserved(name, lhs.getFirst().pos());
+        if (!(name.equals("e") && lhs.size() == 1)) reserved(name, lhs.getFirst().pos());
         if (lhs.size() == 1) {
             return new Statement.Assign(name, expression(rhs, known(Set.of(name), Set.of())));
         }
@@ -189,6 +190,8 @@ public final class Parser {
     }
 
     private static void reserved(String name, int pos) {
+        if (name.equals("e"))
+            throw new SyntaxException("'e' is the base, set by e = b, and cannot be a function or a parameter", pos);
         if (name.equals("i"))
             throw new SyntaxException("'i' is a named value, and cannot be defined", pos);
         if (CONSTRUCTORS.contains(name))
@@ -294,7 +297,7 @@ public final class Parser {
                 case OMEGA -> new Expr.Omega();
                 case NAMED -> new Expr.Named(t.text());
                 case NAME -> {
-                    if (t.text().equals("i")) yield new Expr.Named("i");
+                    if (t.text().equals("i") || t.text().equals("e")) yield new Expr.Named(t.text());
                     if (CONSTRUCTORS.contains(t.text())) {
                         expect(Kind.LPAREN, "'(': " + t.text() + " is a constructor, written " + t.text() + "(p, q)");
                         Expr p = additive();
