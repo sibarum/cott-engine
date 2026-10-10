@@ -3,6 +3,7 @@ package sibarum.cott.algebra;
 import sibarum.cott.calculator.CalculatorException;
 import sibarum.cott.notation.Expr;
 import sibarum.cott.notation.Printer;
+import sibarum.cott.traction.Lean;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -111,6 +112,7 @@ public final class Evaluator {
      * {@code v} entered whole into {@code a} on its slot: {@code q} with {@code 0} on {@code p}, or for {@code Q}
      * {@code p} over {@code 1}, and for {@code P} {@code q} times {@code 1}. The identity is a typeless number.
      */
+    @Lean({"T.ratioInt", "T.complexInt"})
     Pair<Object> slot(TractionAlgebra a, Object v) {
         return switch (a) {
             case Q -> new Pair<>(a, v, numbers.one());
@@ -139,6 +141,7 @@ public final class Evaluator {
 
     // ---- the operations ----
 
+    @Lean({"TOver.instNeg", "T2.neg_def", "T.oplusInverse"})
     Object neg(Object x) {
         if (!isPair(x)) return numbers.neg(x);
         Pair<Object> v = pair(x);
@@ -149,6 +152,8 @@ public final class Evaluator {
     }
 
     /** {@code Q}: the sum of fractions, {@code (ps + rq, qs)}. {@code C}, {@code D}, {@code S}: the sum of the points. {@code P}: {@code S(x, y)}. */
+    @Lean({"T.Unquotiented.pairPlus", "TOver.instAdd", "T2.plus", "T2.oplus", "CC.oplus", "CTC.oplus",
+            "T.Unquotiented.D_add", "T.Unquotiented.S_add"})
     Object add(Object x, Object y) {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.add(x, y);
@@ -174,6 +179,8 @@ public final class Evaluator {
      * {@code Q}, {@code P}: coordinate by coordinate, {@code (pr, qs)}. {@code C}: {@code ⊗}, {@code (ps + rq, qs − pr)}.
      * {@code D}, {@code S}: {@code ⊚}, {@code (ps + rq, qs + pr)}.
      */
+    @Lean({"T.Unquotiented.pairTimes", "T.Unquotiented.pairOtimes", "T.Unquotiented.pairSplit", "TOver.instMul",
+            "T2.times", "T2.otimes", "CC.otimes", "CTC.otimes"})
     Object mul(Object x, Object y) {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.mul(x, y);
@@ -193,6 +200,7 @@ public final class Evaluator {
      * In the product-of-sums form a sum divided by a sum is {@code Q(x, y)} instead. Two numbers the number type
      * cannot divide are {@code Q(x, y)}.
      */
+    @Lean({"TOver.reciprocal", "T2.reciprocal", "T2.pointInv", "CTC.inv"})
     Object div(Object x, Object y) {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.divide(x, y).orElseGet(() -> new Pair<>(TractionAlgebra.Q, x, y));
@@ -231,6 +239,7 @@ public final class Evaluator {
         return n.signum() >= 0 ? positive : div(numbers.one(), positive);
     }
 
+    @Lean({"T2.power", "T.power"})
     private Object power(Object base, BigInteger n) {
         if (!isPair(base))
             return numbers.power(base, n).orElseThrow(() -> new IllegalStateException("no power " + n + " of a number"));

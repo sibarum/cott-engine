@@ -56,7 +56,10 @@ class CalculatorTest {
         assertEquals("1/-2", neg.readings().get("ray"));
         assertEquals("-1/2", neg.readings().get("ratio"));
         assertEquals("-1/2", neg.readings().get("classical"));
-        assertEquals(List.of("ray", "ratio", "classical", "angle", "point", "rotation"), List.copyOf(neg.readings().keySet()));
+        assertEquals(List.of("rung", "ray", "ratio", "classical", "angle", "point", "rotation", "lowest terms", "cott-lean"),
+                List.copyOf(neg.readings().keySet()));
+        assertEquals("exact", neg.readings().get("rung"));
+        assertEquals("Q(-1, 2)", neg.readings().get("lowest terms"));
     }
 
     @Test
@@ -96,8 +99,8 @@ class CalculatorTest {
     @Test
     void aDecimalSaysWhenItWasRounded() {
         Calculator c = new Calculator(NumberType.DECIMAL);
-        assertEquals("to 34 significant digits", value(c, "1/3").readings().get("rounded"));
-        assertEquals(null, value(c, "1/4").readings().get("rounded"));
+        assertEquals("up to error: rounded to 34 significant digits", value(c, "1/3").readings().get("rung"));
+        assertEquals("exact", value(c, "1/4").readings().get("rung"));
         assertEquals("0.25", c.enter("1/4").text());
     }
 

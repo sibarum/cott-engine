@@ -92,7 +92,7 @@ class IeeeFloatingPointTest {
         assertEquals("0.1000000000000000055511151231257827021181583404541015625", tenth.readings().get("exact"));
         assertEquals("0x1.999999999999ap-4", tenth.readings().get("hex"));
         assertEquals("0x3FB999999999999A", tenth.readings().get("bits"));
-        assertEquals(List.of("exact", "hex", "bits"), List.copyOf(tenth.readings().keySet()));
+        assertEquals(List.of("rung", "exact", "hex", "bits"), List.copyOf(tenth.readings().keySet()));
         assertEquals("0x8000000000000000", value("-0").readings().get("bits"));
         assertEquals("∞", value("1/0").readings().get("exact"));
         assertEquals("0x7FF8000000000000", value("0/0").readings().get("bits"));

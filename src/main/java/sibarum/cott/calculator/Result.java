@@ -1,6 +1,7 @@
 package sibarum.cott.calculator;
 
 import sibarum.cott.algebra.Pair;
+import sibarum.cott.algebra.Rung;
 import sibarum.cott.algebra.TractionAlgebra;
 import sibarum.cott.notation.Expr;
 import sibarum.cott.projection.Projection;
@@ -26,12 +27,14 @@ public sealed interface Result {
     /**
      * A value: a number of the number type, or a {@link Pair} of a traction algebra whose coordinates are values.
      * {@link #text} writes it as it was computed, by its constructors, and reads back as the same value.
-     * {@link #readings} gives the other ways of reading it, by name, written.
+     * {@link #readings} gives the other ways of reading it, by name, written, and {@link #rungs} the {@link Rung} of
+     * each that is a reading of it: {@code rung} is the answer's own.
      */
-    record Value(Object value, String text, Map<String, String> readings) implements Result {
+    record Value(Object value, String text, Map<String, String> readings, Map<String, Rung> rungs) implements Result {
 
         public Value {
             readings = Collections.unmodifiableMap(new LinkedHashMap<>(readings));
+            rungs = Collections.unmodifiableMap(new LinkedHashMap<>(rungs));
         }
 
         /** The value as a flat pair {@code T(p, q)}, when it is a {@code Q} of two Integers. */

@@ -1,6 +1,7 @@
 package sibarum.cott.calculator;
 
 import sibarum.cott.algebra.NumberType;
+import sibarum.cott.algebra.Rung;
 import sibarum.cott.notation.SyntaxException;
 
 import java.io.BufferedReader;
@@ -48,8 +49,12 @@ public final class Repl {
                 if (r instanceof Result.Value v) {
                     out.println("= " + v.text());
                     int width = v.readings().keySet().stream().mapToInt(String::length).max().orElse(0);
-                    for (Map.Entry<String, String> e : v.readings().entrySet())
-                        out.println("    " + e.getKey() + " ".repeat(width - e.getKey().length() + 2) + e.getValue());
+                    for (Map.Entry<String, String> e : v.readings().entrySet()) {
+                        Rung rung = v.rungs().get(e.getKey());
+                        boolean tag = rung != null && rung != Rung.EXACT && !e.getKey().equals("rung");
+                        out.println("    " + e.getKey() + " ".repeat(width - e.getKey().length() + 2) + e.getValue()
+                                + (tag ? "   (" + rung.label() + ")" : ""));
+                    }
                 } else {
                     out.println(r.text());
                 }

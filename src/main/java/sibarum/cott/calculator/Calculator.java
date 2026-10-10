@@ -5,6 +5,8 @@ import sibarum.cott.algebra.Form;
 import sibarum.cott.algebra.IeeeLevel;
 import sibarum.cott.algebra.NumberType;
 import sibarum.cott.algebra.Pair;
+import sibarum.cott.algebra.Readings;
+import sibarum.cott.algebra.Rung;
 import sibarum.cott.algebra.SizeLimit;
 import sibarum.cott.algebra.TractionAlgebra;
 import sibarum.cott.notation.Expr;
@@ -108,6 +110,10 @@ public final class Calculator {
         Evaluator.Result r = Evaluator.evaluate(substituted, numberType(), sizeLimit(), form(),
                 (call, args) -> builtIn(call, args, certificates));
         Map<String, String> readings = new LinkedHashMap<>();
+        Map<String, Rung> rungs = new LinkedHashMap<>();
+        Rung rung = rung(r, certificates);
+        readings.put("rung", rung.label() + reason(r, certificates));
+        rungs.put("rung", rung);
         switch (r.value()) {
             case Double d -> {
                 readings.put("exact", IeeeLevel.exact(d));
@@ -115,13 +121,49 @@ public final class Calculator {
                 readings.put("bits", IeeeLevel.bits(d));
             }
             case Pair<?>(TractionAlgebra a, BigInteger p, BigInteger q) when a == TractionAlgebra.Q -> {
-                for (Projection<?> projection : Projections.ALL) readings.put(projection.name(), projection.read(new T(p, q)));
+                for (Projection<?> projection : Projections.ALL) {
+                    readings.put(projection.name(), projection.read(new T(p, q)));
+                    Rung of = PROJECTION_RUNGS.get(projection.name());
+                    if (of != null) rungs.put(projection.name(), of);
+                }
             }
             default -> {}
         }
-        if (r.rounded()) readings.put("rounded", "to " + sizeLimit().decimalDigits() + " significant digits");
-        readings.putAll(certificates);
-        return new Result.Value(r.value(), r.text(), readings);
+        for (Readings.Reading reading : Readings.of(r.value())) {
+            readings.put(reading.name(), reading.text());
+            if (reading.rung() != null) rungs.put(reading.name(), reading.rung());
+        }
+        certificates.forEach((call, certificate) -> {
+            readings.put(call, certificate);
+            rungs.put(call, Rung.UP_TO_ERROR);
+        });
+        return new Result.Value(r.value(), r.text(), readings, rungs);
+    }
+
+    /** The rungs of the flat ratio's projections: three quotients, and an angle that is a direction in a double. */
+    private static final Map<String, Rung> PROJECTION_RUNGS = Map.of(
+            "ray", Rung.QUOTIENT, "ratio", Rung.QUOTIENT, "classical", Rung.QUOTIENT, "angle", Rung.UP_TO_ERROR);
+
+    /**
+     * The answer's rung: an error where a double is {@code NaN}; up to error where a double, a rounded Decimal or a
+     * dialed {@code cos} or {@code sin} is in it; otherwise exact, since evaluation reduces nothing it cannot undo.
+     */
+    private Rung rung(Evaluator.Result r, Map<String, String> certificates) {
+        if (hasNaN(r.value())) return Rung.ERROR;
+        if (numberType() == NumberType.IEEE || r.rounded() || !certificates.isEmpty()) return Rung.UP_TO_ERROR;
+        return Rung.EXACT;
+    }
+
+    private String reason(Evaluator.Result r, Map<String, String> certificates) {
+        if (hasNaN(r.value())) return ": NaN";
+        if (numberType() == NumberType.IEEE) return ": IEEE 64-bit rounding";
+        if (r.rounded()) return ": rounded to " + sizeLimit().decimalDigits() + " significant digits";
+        if (!certificates.isEmpty()) return ": cos and sin are dialed to a bracket";
+        return "";
+    }
+
+    private static boolean hasNaN(Object v) {
+        return v instanceof Double d ? d.isNaN() : v instanceof Pair<?> x && (hasNaN(x.p()) || hasNaN(x.q()));
     }
 
     /**
