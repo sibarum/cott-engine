@@ -14,10 +14,8 @@ public final class Projections {
     public static final QuotientProjection RATIO = new QuotientProjection(Quotient.RATIO);
     public static final Classical CLASSICAL = new Classical();
     public static final Angle ANGLE = new Angle();
-    public static final Point POINT = new Point();
-    public static final Rotation ROTATION = new Rotation();
 
-    public static final List<Projection<?>> ALL = List.of(RAY, RATIO, CLASSICAL, ANGLE, POINT, ROTATION);
+    public static final List<Projection<?>> ALL = List.of(RAY, RATIO, CLASSICAL, ANGLE);
 
     public static Optional<Projection<?>> named(String name) {
         return ALL.stream().filter(p -> p.name().equals(name)).findFirst();

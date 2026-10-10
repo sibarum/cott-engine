@@ -56,7 +56,7 @@ class CalculatorTest {
         assertEquals("1/-2", neg.readings().get("ray"));
         assertEquals("-1/2", neg.readings().get("ratio"));
         assertEquals("-1/2", neg.readings().get("classical"));
-        assertEquals(List.of("rung", "ray", "ratio", "classical", "angle", "point", "rotation", "lowest terms", "cott-lean"),
+        assertEquals(List.of("rung", "ray", "ratio", "classical", "angle", "lowest terms", "cott-lean"),
                 List.copyOf(neg.readings().keySet()));
         assertEquals("exact", neg.readings().get("rung"));
         assertEquals("Q(-1, 2)", neg.readings().get("lowest terms"));
@@ -73,8 +73,6 @@ class CalculatorTest {
         assertEquals("ω", r.readings().get("ratio"));
         assertEquals("undefined", r.readings().get("classical"));
         assertEquals("90°", r.readings().get("angle"));
-        assertEquals("4i", r.readings().get("point"));
-        assertEquals("-1", r.readings().get("rotation"));
     }
 
     @Test
