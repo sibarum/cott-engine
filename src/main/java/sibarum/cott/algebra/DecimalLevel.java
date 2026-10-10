@@ -108,7 +108,7 @@ public final class DecimalLevel implements Level<BigDecimal> {
         return n.signum() < 0 ? divide(BigDecimal.ONE, result) : Optional.of(result);
     }
 
-    /** Positional from {@code 10^-6} up to {@code 10^21}, and as {@code 1.5e-7} outside that, as a double is written. */
+    /** Positional from {@code 10^-6} up to {@code 10^21}, and as {@code 1.5·10^-7} outside that, as a double is written. */
     @Override
     public String write(BigDecimal a) {
         if (a.signum() == 0) return a.scale() <= 0 ? "0" : a.toPlainString();
@@ -116,7 +116,7 @@ public final class DecimalLevel implements Level<BigDecimal> {
         if (exponent >= -6 && exponent < 21) return a.toPlainString();
         String digits = a.unscaledValue().abs().toString();
         String mantissa = digits.length() == 1 ? digits : digits.charAt(0) + "." + digits.substring(1);
-        return (a.signum() < 0 ? "-" : "") + mantissa + "e" + exponent;
+        return (a.signum() < 0 ? "-" : "") + mantissa + "·10^" + exponent;
     }
 
     private BigDecimal limited(BigDecimal exact) {

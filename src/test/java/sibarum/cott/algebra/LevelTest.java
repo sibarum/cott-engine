@@ -97,8 +97,10 @@ class LevelTest {
     @Test
     void decimalsAreWrittenAsDoublesAre() {
         DecimalLevel x = new DecimalLevel(SizeLimit.MEDIUM.decimalDigits());
-        assertEquals("1.5e-7", x.write(d("0.00000015")));
-        assertEquals("1e21", x.write(d("1E+21")));
+        assertEquals("1.5·10^-7", x.write(d("0.00000015")));
+        assertEquals("1.5·10^-7", sibarum.cott.algebra.Evaluator.evaluate(new sibarum.cott.notation.Parser().expression("1.5·10^-7"),
+                NumberType.DECIMAL, SizeLimit.MEDIUM, Form.SUM_OF_PRODUCTS).text(), "what is written reads back");
+        assertEquals("1·10^21", x.write(d("1E+21")));
         assertEquals("-2.5", x.write(d("-2.5")));
         assertEquals("0", x.write(BigDecimal.ZERO));
     }

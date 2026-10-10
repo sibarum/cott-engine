@@ -99,6 +99,6 @@ class BaseTest {
         assertEquals("-1", c.enter("cos(3.141592653589793)").text());
         c.enter("e = 1");
         assertEquals("-1", c.enter("cos(0.5)").text());
-        assertEquals("C(1, 6.123233995736766e-17)", c.enter("e^0.25").text());
+        assertEquals("C(1, 6.123233995736766·10^-17)", c.enter("e^0.25").text());
     }
 }

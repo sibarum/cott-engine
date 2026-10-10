@@ -63,12 +63,12 @@ class IeeeFloatingPointTest {
     void writtenWithTheFewestDigitsThatReadBack() {
         assertEquals("4", text("2+2"));
         assertEquals("100000000000000000000", text("10^20"));
-        assertEquals("1e21", text("10^21"));
+        assertEquals("1·10^21", text("10^21"));
         assertEquals("0.000001", text("10^-6"));
-        assertEquals("1e-7", text("10^-7"));
-        assertEquals("-1.5e-7", text("-1.5/10^7"));
-        assertEquals("1.7976931348623157e308", text("2^1023·(2 - 2^-52)"));
-        assertEquals("5e-324", text("2^-1074"));
+        assertEquals("1·10^-7", text("10^-7"));
+        assertEquals("-1.5·10^-7", text("-1.5/10^7"));
+        assertEquals("1.7976931348623157·10^308", text("2^1023·(2 - 2^-52)"));
+        assertEquals("5·10^-324", text("2^-1074"));
     }
 
     @Test
@@ -78,9 +78,9 @@ class IeeeFloatingPointTest {
             double x = Double.longBitsToDouble(random.nextLong());
             if (!Double.isFinite(x)) continue;
             String written = IeeeLevel.display(x);
-            assertEquals(x, Double.parseDouble(written), written);
-            assertEquals(x, new java.math.BigDecimal(IeeeLevel.exact(x)).doubleValue(), written);
-            int digits = new java.math.BigDecimal(written.replace('e', 'E')).stripTrailingZeros().precision();
+            assertEquals(x, Double.parseDouble(written.replace("·10^", "e")), written);
+            assertEquals(x, new java.math.BigDecimal(IeeeLevel.exact(x).replace("·10^", "E")).doubleValue(), written);
+            int digits = new java.math.BigDecimal(written.replace("·10^", "E")).stripTrailingZeros().precision();
             int javaDigits = new java.math.BigDecimal(Double.toString(x)).stripTrailingZeros().precision();
             assertTrue(digits <= javaDigits, written + " vs " + x);
         }

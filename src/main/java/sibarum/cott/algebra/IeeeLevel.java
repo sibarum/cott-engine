@@ -78,7 +78,7 @@ public final class IeeeLevel implements Level<Double> {
 
     /**
      * A double the way a calculator writes it: the fewest digits that read back as the same double, in
-     * positional notation from {@code 10^-6} up to {@code 10^21} and as {@code 1.5e-7} outside that.
+     * positional notation from {@code 10^-6} up to {@code 10^21} and as {@code 1.5·10^-7} outside that, which reads back.
      * {@code ∞}, {@code -∞}, {@code NaN} and {@code -0} are written as themselves.
      */
     public static String display(double x) {
@@ -94,7 +94,7 @@ public final class IeeeLevel implements Level<Double> {
         String digits = shortest.unscaledValue().abs().toString();
         int exponent = digits.length() - 1 - shortest.scale();
         String mantissa = digits.length() == 1 ? digits : digits.charAt(0) + "." + digits.substring(1);
-        return (x < 0 ? "-" : "") + mantissa + "e" + exponent;
+        return (x < 0 ? "-" : "") + mantissa + "·10^" + exponent;
     }
 
     /** The exact value the double holds, which a decimal literal is usually only near. */
@@ -102,7 +102,7 @@ public final class IeeeLevel implements Level<Double> {
         if (Double.isNaN(x) || Double.isInfinite(x) || x == 0) return display(x);
         BigDecimal exact = new BigDecimal(x);
         double magnitude = Math.abs(x);
-        return magnitude >= 1e-6 && magnitude < 1e21 ? exact.toPlainString() : exact.toString().replace("E+", "e").replace("E", "e");
+        return magnitude >= 1e-6 && magnitude < 1e21 ? exact.toPlainString() : exact.toString().replace("E+", "·10^").replace("E", "·10^");
     }
 
     /**
