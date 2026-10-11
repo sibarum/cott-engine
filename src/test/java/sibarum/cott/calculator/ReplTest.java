@@ -59,9 +59,9 @@ class ReplTest {
         String out = session(":symbols\n");
         assertTrue(out.contains("\\o  ω  omega"), out);
         assertTrue(out.contains("\\/  ÷  divided by"), out);
-        assertTrue(out.contains("    ^          to the power of"), out);
-        assertTrue(out.contains("    C D S Q P  construct a pair, as in Q(1, 2)"), out);
-        assertTrue(out.contains("    i          C(1, 0), the imaginary unit"), out);
+        assertTrue(out.contains("    ^                to the power of"), out);
+        assertTrue(out.contains("    C D S Q P Z E B  construct a pair, as in Q(1, 2)"), out);
+        assertTrue(out.contains("    i                C(1, 0), the imaginary unit"), out);
     }
 
     @Test

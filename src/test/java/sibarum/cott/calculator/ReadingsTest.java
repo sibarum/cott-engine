@@ -80,6 +80,51 @@ class ReadingsTest {
     }
 
     @Test
+    void zIsReadAsAPowerOfZeroAndItsLogarithm() {
+        Result.Value z = value("Z(3, 2)");
+        assertEquals("3·0^2", z.readings().get("value"));
+        assertEquals(Rung.EXACT, z.rungs().get("value"), "off a zero coefficient Z is faithful");
+        assertEquals("2 - 0·ln 3", z.readings().get("log₀"));
+        assertEquals(Rung.EXACT, z.rungs().get("log₀"), "on a positive coefficient E keeps both");
+        assertEquals("T/ZeroAlgebra and T/Residual: Z of two numbers", z.readings().get("cott-lean"));
+        assertEquals("0", value("Z(1, 1)").readings().get("value"));
+        assertEquals("-0", value("-Z(1, 1)").readings().get("value"));
+        assertEquals("ω", value("Z(1, -1)").readings().get("value"));
+        assertEquals("(1/2)·ω^3", value("Z(1/2, -3)").readings().get("value"));
+        assertEquals("1", value("Z(1, 1)").readings().get("log₀"));
+        assertEquals("-1", value("Z(1, -1)").readings().get("log₀"));
+        Result.Value residual = value("Z(6/2, 0) - Z(6/2, 0)");
+        assertEquals("3·0", residual.readings().get("value"));
+        assertEquals(Rung.QUOTIENT, residual.rungs().get("value"), "Z(Q(6, 2), 1) and Z(3, 1) are one value");
+        assertEquals("T/Residual: Z of Q", residual.readings().get("cott-lean"));
+    }
+
+    @Test
+    void eIsReadAsALogarithmInBaseZero() {
+        Result.Value e = value("E(3, 2)");
+        assertEquals("2 - 0·ln 3", e.readings().get("value"));
+        assertEquals("3·0^2", e.readings().get("0^E"));
+        assertEquals("-0·ln(1/2)", value("E(1/2, 0)").readings().get("value"));
+        assertEquals("1 - 0·ln|-3|", value("E(-3, 1)").readings().get("value"), "the real logarithm, of |p|");
+        assertEquals("3", value("E(0, 2)").readings().get("value"), "log₀ 0 = 1");
+        assertEquals(Rung.QUOTIENT, value("E(0, 2)").rungs().get("value"), "E(0, 2) and E(1, 3) are one value");
+        assertEquals("T/ZeroAlgebra: E of two numbers", e.readings().get("cott-lean"));
+    }
+
+    @Test
+    void bIsReadAsALogarithm() {
+        Result.Value b = value("E(8, 0) / E(2, 0)");
+        assertEquals("3", b.readings().get("value"));
+        assertEquals(Rung.QUOTIENT, b.rungs().get("value"));
+        assertEquals("3/2", value("B(4, 8)").readings().get("value"));
+        assertEquals("-2", value("B(2, 1/4)").readings().get("value"));
+        assertTrue(value("B(2, 3)").readings().get("value").startsWith("1.58496250072"), value("B(2, 3)").readings().get("value"));
+        assertEquals(Rung.UP_TO_ERROR, value("B(2, 3)").rungs().get("value"));
+        assertFalse(value("B(1, 3)").readings().containsKey("value"), "log_1 has no value");
+        assertEquals("T/ZeroAlgebra: B of two numbers", b.readings().get("cott-lean"));
+    }
+
+    @Test
     void theAnswersRung() {
         assertEquals("exact", value("6/3").readings().get("rung"));
         Calculator ieee = new Calculator(NumberType.IEEE);

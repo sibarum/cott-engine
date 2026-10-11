@@ -26,9 +26,13 @@ reading turns into `+` and `×` (`T.Unquotiented`, `T/PairAlgebras`):
 | `S(p, q)` | `p + q` | the sum of the points | `⊚` | `S(0, v)` |
 | `Q(p, q)` | `p / q` | `(ps + rq, qs)` | `(pr, qs)` | `Q(v, 1)` |
 | `P(p, q)` | `p · q` | none: no flat operation adds it | `(pr, qs)` | `P(1, v)` |
+| `Z(p, q)` | `p · 0^q` | `(p + r, q)` at one order | `(pr, q + s)` | `Z(v, 0)` |
+| `E(p, q)` | `q + log₀ p` | `(pr, q + s)` | a whole multiple only | `E(1, v)` |
+| `B(p, q)` | `log_p q` | none | composition only | none |
 
-`C`, `D` and `S` are sums, and `Q` and `P` products. A number enters an algebra on one coordinate, its slot,
-with the identity on the other. The slot is `q`, except in `Q`, where `q` is the denominator.
+`C`, `D`, `S` and `E` are sums, and `Q`, `P` and `Z` products. A number enters an algebra on one coordinate, its
+slot, with the identity on the other. The slot is `q`, except in `Q`, where `q` is the denominator, and in `Z`,
+where it is the order. `Z`, `E` and `B` are zero's own algebras, [below](#zero-z-e-and-b).
 
 Pairs nest and mix. A coordinate is any value, and the two need not be alike: `C(0, Q(1, 2))` holds a number
 beside a `Q`. Each algebra is written once, in terms of its coordinates' own `+` and `·`, so nesting follows
@@ -129,6 +133,10 @@ changing the pair it is in, so it is refused; a Decimal is rounded, and says so.
 
 **Form**: `sum-of-products` (initial) or `product-of-sums`, as above.
 
+**Cancellation**: what an exact cancellation in `Z`'s `+` leaves. `residual` (initial) keeps what cancelled,
+`x − x = 0·x`; `absorb` lets the coefficient reach `0`. Both are kept, since which invariants are tracked and
+which erased depends on the use. [Below](#the-residual-of-an-exact-cancellation).
+
 **Recursion limits**: how far the descent behind `cos` and `sin` may go, [below](#recursion-limits).
 
 ## Readings and rungs
@@ -151,7 +159,8 @@ The prompt tags each reading with its rung unless it is exact. The readings are:
   a rounded Decimal or a dialed `cos` or `sin` is in it, and an error where a double is `NaN`.
 - **`value`**: the number the pair stands for, each algebra read as its meaning all the way down, so
   `C(3, Q(9, 2))` is `9/2 + 3i`. A `C` of `C`s over numbers loses nothing by it (`C_injective`); any other value
-  is a quotient. A zero denominator inside leaves it `undefined`.
+  is a quotient. A zero denominator inside leaves it `undefined`. `Z`, `E` and `B` stand for no complex number,
+  and have their own values, [below](#zero-z-e-and-b); a value with one of them nested inside has none.
 - **`norm`** and **`turn`**: of a value off the real line, its squared length, and its direction as a fraction
   of a whole turn, in `(−1/2, 1/2]`. Neither needs π.
 - **`lowest terms`**: each `Q` of two Integers inside a nested value reduced to its ratio's representative, where
@@ -159,7 +168,8 @@ The prompt tags each reading with its rung unless it is exact. The readings are:
 - **`cott-lean`**: the file proving this nesting's operations, or that none does. A `C`, `D`, `S`, `Q` or `P`
   of two numbers is `T/Unquotiented` and `T/PairAlgebras`; `Q` of `Q` is `Nested/Basic`, `C` of `Q`
   `Nested/Point`, `Q` of `C` `Nested/RatioPoint`, `C` of `C` `Nested/Bicomplex`, and `C` of `Q` of `C`
-  `Nested/BicomplexRatio`. A number beside a pair counts as that pair's number on its slot (`T.ratioInt`,
+  `Nested/BicomplexRatio`. `Z` of two numbers is `T/ZeroAlgebra` and `T/Residual`, `Z` of a `Q` `T/Residual`,
+  and `E` or `B` of two numbers `T/ZeroAlgebra`. A number beside a pair counts as that pair's number on its slot (`T.ratioInt`,
   `T.complexInt`). A double is not a real number cott-lean speaks of.
 - A double's **`exact`** value, **`hex`** form and **`bits`**.
 
@@ -176,6 +186,58 @@ a transform or a re-embedding.
 `ray` and `angle` both show the turn: off `0ω` two pairs have one turn exactly when one is a positive multiple
 of the other (`T.Unquotiented.turn_eq_turn_iff`). `ratio` keeps less, the direction as a line, since `Q` does
 not change when the pair is scaled by any `t ≠ 0` (`T.Unquotiented.Q_smul`).
+
+## Zero: Z, E and B
+
+`T/ZeroScale`, `T/ZeroAlgebra` and `T/Residual`. In all three `p` is the coefficient and `q` the order of zero.
+
+**`Z(p, q) = p·0^q`.** The `0` here has an inverse, so `0 = Z(1, 1)`, `ω = Z(1, −1)` and `0·ω = 1`
+(`Z.zero_mul_omega`). A product multiplies the coefficients and adds the orders, the exponent law, and a quotient
+divides and subtracts. `+` adds the coefficients at one order; sums of two orders are new elements, so
+`Z(3, 1) + Z(4, 2)` is `S(Z(3, 1), Z(4, 2))`. The sign is in the coefficient, so `−Z(1, 1)` is `Z(-1, 1)`, a `−0`
+that is not `0` (`Z.negZero_ne_zero`). Its value is written as a power of `0` or `ω`: `Z(3, 2)` is `3·0^2`, and
+`Z(1/2, -3)` is `(1/2)·ω^3`. Off a zero coefficient that loses nothing (`toLaurent_injective`).
+
+**`E(p, q) = q + log₀ p`**, `Z`'s logarithm in base `0`. With `ln 0 = −ω`, `log₀ p = −0·ln p`, so `E(3, 2)` reads
+`2 - 0·ln 3` (`E_eq`), and `Z`'s product is `E`'s `+`: `E(2, 1) + E(3, 2)` is `E(6, 3)` (`E_add`). A number adds
+to the order, a whole multiple is `Z`'s power, `3·E(2, 1) = E(8, 3)` (`E_nsmul`), and `−` is `Z`'s division. A
+product of two `E`s would multiply logarithms, which is none of `E`'s operations, so it is their `P`. `log₀ 0 = 1`,
+so `E(0, 2)` reads `3`, as `E(1, 3)` does, and against a coefficient `0` a sum keeps the other coefficient,
+`E(0, 1) + E(5, 2) = E(5, 4)` (`E_add_zero`). Every `Z` reads its `E` as `log₀`, and every `E` its `Z` as `0^E`.
+The logarithm is the real one, of `|p|`.
+
+**`B(p, q) = log_p q`.** Two `E`s of order `0` are multiples of `0`, so their ratio is a `0/0` whose `0` cancels:
+`E(8, 0) / E(2, 0)` is `B(2, 8)`, which reads `3` (`E_eq_B_mul`). Its one product composes, `B(2, 8)·B(8, 64) =
+B(2, 64)` where the middle is not `0` or `±1` (`B_mul_B`). It reads as a rational where `q` is a rational power
+of `p`, `B(4, 8)` as `3/2`, and as a double otherwise.
+
+### The residual of an exact cancellation
+
+With `Z`'s coefficient an unreduced ratio, no product makes it `0`. The one way in is an exact cancellation, and
+in the `residual` mode the rule distributes over the operands there: `x − x = (1 − 1)·x = 0·x`, with `1 − 1` the
+invertible `0`. The residual keeps `x`, the left one as written, and gains one order:
+
+```
+> Z(3, 1) - Z(3, 1)
+= Z(3, 2)
+> Z(1, 0) - Z(1, 0)
+= Z(1, 1)
+> (Z(3, 0) - Z(3, 0)) / (Z(2, 0) - Z(2, 0))
+= Z(Q(3, 2), 0)
+```
+
+The last is `0/0 = (x − x)/(y − y) = x/y` (`R.cancel_div_cancel`). The residual's value does not depend on how `x`
+is written: `Z(6/2, 0) - Z(6/2, 0)` is `Z(Q(6, 2), 1)`, which reads `3·0` as `Z(3, 1)` does
+(`R.value_cancel_congr`). `+` counts exact cancellations, so it is not associative: `(Z(1, 0) + Z(1, 0)) − Z(1, 0)`
+cancels nothing exactly and is `Z(1, 0)`, while `Z(1, 0) + (Z(1, 0) − Z(1, 0))` keeps the residual,
+`S(Z(1, 0), Z(1, 1))`. Only `Z`'s `+` leaves a residual; `1 - 1` is still `0`.
+
+In the `absorb` mode the coefficients add to `0` and absorb, `Z(3, 1) - Z(3, 1)` is `Z(0, 1)`, and a product then
+drops the other coefficient, `0·b = 0`. That is where `log₀` stops being a homomorphism
+(`Z.log_mul_coeff_zero_ne`).
+
+Not yet: `E` and `B` over complex coefficients, which cott-lean states over the reals only, and `0^E` or `log₀`
+as operations rather than readings.
 
 ## The base
 

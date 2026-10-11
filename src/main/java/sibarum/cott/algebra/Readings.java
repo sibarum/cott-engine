@@ -25,6 +25,9 @@ import java.util.Optional;
  *       direction, and its direction as a fraction of a turn, without the scale.</li>
  *   <li>{@code lowest terms}: each {@code Q} of two Integers in lowest terms, where one is not, inside a nested value;
  *       a flat {@code Q}'s is its {@code ratio}.</li>
+ *   <li>Of a {@code Z}, {@code E} or {@code B}, which stand for no complex number: {@code Z}'s {@code value}
+ *       {@code p·0^q} and its {@code log₀}, {@code E}'s {@code value} {@code q + log₀ p} and its {@code 0^E}, and
+ *       {@code B}'s {@code value} {@code log_p q}.</li>
  *   <li>{@code cott-lean}: the file that proves this nesting's operations, or that none does.</li>
  * </ul>
  */
@@ -39,7 +42,9 @@ public final class Readings {
         List<Reading> out = new ArrayList<>();
         if (!(value instanceof Pair<?> pair)) return out;
         boolean flatRatio = pair.algebra() == TractionAlgebra.Q && pair.p() instanceof BigInteger && pair.q() instanceof BigInteger;
-        if (!flatRatio) {
+        if (zeroScale(pair.algebra())) {
+            if (!holdsZeroScale(pair.p()) && !holdsZeroScale(pair.q())) out.addAll(zeroScaleReadings(pair));
+        } else if (!flatRatio && !holdsZeroScale(value)) {
             if (hasDouble(value)) {
                 approximately(value).ifPresentOrElse(
                         z -> out.add(new Reading("value", z, Rung.UP_TO_ERROR)),
@@ -128,6 +133,7 @@ public final class Readings {
             case S -> Optional.of(a.plus(b));
             case Q -> a.over(b);
             case P -> Optional.of(a.times(b));
+            case Z, E, B -> throw new IllegalStateException(x.algebra() + " has no complex value");
         };
     }
 
@@ -149,7 +155,10 @@ public final class Readings {
 
     /** The value of a pair of doubles, by complex arithmetic in doubles; empty where it is not a number. */
     private static Optional<String> approximately(Object v) {
-        double[] z = complex(v);
+        return approximately(complex(v));
+    }
+
+    private static Optional<String> approximately(double[] z) {
         if (Double.isNaN(z[0]) || Double.isNaN(z[1])) return Optional.empty();
         String re = IeeeLevel.display(z[0]);
         if (z[1] == 0) return Optional.of(re);
@@ -170,6 +179,7 @@ public final class Readings {
                     double n = b[0] * b[0] + b[1] * b[1];
                     yield new double[]{(a[0] * b[0] + a[1] * b[1]) / n, (a[1] * b[0] - a[0] * b[1]) / n};
                 }
+                case Z, E, B -> throw new IllegalStateException(x.algebra() + " has no complex value");
             };
         }
         if (v instanceof Double d) return new double[]{d, 0};
@@ -187,6 +197,167 @@ public final class Readings {
 
     private static double decimal(Rational r) {
         return new BigDecimal(r.num()).divide(new BigDecimal(r.den()), MathContext.DECIMAL64).doubleValue();
+    }
+
+    // ---- Z, E and B ----
+
+    private static boolean zeroScale(TractionAlgebra a) {
+        return a == TractionAlgebra.Z || a == TractionAlgebra.E || a == TractionAlgebra.B;
+    }
+
+    private static boolean holdsZeroScale(Object v) {
+        return v instanceof Pair<?> x && (zeroScale(x.algebra()) || holdsZeroScale(x.p()) || holdsZeroScale(x.q()));
+    }
+
+    /** A coordinate's value: exact where it holds no double, and a double's otherwise. */
+    private record Coordinate(Gaussian exact, double[] approx) {
+
+        static Optional<Coordinate> of(Object v) {
+            if (hasDouble(v)) {
+                double[] z = complex(v);
+                return Double.isNaN(z[0]) || Double.isNaN(z[1]) ? Optional.empty() : Optional.of(new Coordinate(null, z));
+            }
+            return exactly(v).map(g -> new Coordinate(g, null));
+        }
+
+        boolean real() {
+            return exact != null ? exact.im().num().signum() == 0 : approx[1] == 0;
+        }
+
+        /** The sign of a real value. */
+        int sign() {
+            return exact != null ? exact.re().num().signum() : (int) Math.signum(approx[0]);
+        }
+
+        boolean isOne() {
+            return exact != null ? exact.equals(Gaussian.real(Rational.of(1, 1))) : approx[0] == 1 && approx[1] == 0;
+        }
+
+        Coordinate plusOne() {
+            return exact != null ? new Coordinate(exact.plus(Gaussian.real(Rational.of(1, 1))), null)
+                    : new Coordinate(null, new double[]{approx[0] + 1, approx[1]});
+        }
+
+        /** The natural logarithm of a real value's magnitude. */
+        double lnAbs() {
+            if (exact == null) return Math.log(Math.abs(approx[0]));
+            return Readings.lnAbs(exact.re().num()) - Readings.lnAbs(exact.re().den());
+        }
+
+        @Override
+        public String toString() {
+            return exact != null ? exact.toString() : approximately(approx).orElseThrow();
+        }
+    }
+
+    /**
+     * {@code Z}: its value {@code p·0^q} in {@code ℤ[0, 0⁻¹]}, and its logarithm in base {@code 0}, {@code E} with the
+     * same coordinates. {@code E}: its value {@code q + log₀ p} and its power of zero, {@code Z} with the same
+     * coordinates. {@code B}: {@code log_p q}. A coordinate with no value gives no reading.
+     */
+    private static List<Reading> zeroScaleReadings(Pair<?> x) {
+        Optional<Coordinate> p = Coordinate.of(x.p()), q = Coordinate.of(x.q());
+        if (p.isEmpty() || q.isEmpty()) return List.of();
+        boolean approximate = hasDouble(x);
+        Rung monomial = approximate ? Rung.UP_TO_ERROR : faithful(x) ? Rung.EXACT : Rung.QUOTIENT;
+        Rung logarithm = approximate ? Rung.UP_TO_ERROR : keptByLog(x) ? Rung.EXACT : Rung.QUOTIENT;
+        List<Reading> out = new ArrayList<>();
+        switch (x.algebra()) {
+            case Z -> {
+                out.add(new Reading("value", monomial(p.get(), q.get()), monomial));
+                logZero(p.get(), q.get()).ifPresent(e -> out.add(new Reading("log₀", e, logarithm)));
+            }
+            case E -> {
+                logZero(p.get(), q.get()).ifPresent(e -> out.add(new Reading("value", e, logarithm)));
+                out.add(new Reading("0^E", monomial(p.get(), q.get()), monomial));
+            }
+            case B -> logarithm(p.get(), q.get()).ifPresent(out::add);
+            default -> throw new IllegalStateException(x.algebra() + " is not read here");
+        }
+        return out;
+    }
+
+    /** {@code Z} of a non-zero number at a whole order is held faithfully by its monomial. */
+    @Lean("T.ZeroScale.toLaurent_injective")
+    private static boolean faithful(Pair<?> x) {
+        return !isPair(x.p()) && !isPair(x.q()) && Coordinate.of(x.p()).filter(c -> c.real() && c.sign() != 0).isPresent();
+    }
+
+    /** {@code E} keeps both the coefficient and the order where the coefficient is a positive number. */
+    @Lean("T.ZeroScale.E_injective")
+    private static boolean keptByLog(Pair<?> x) {
+        return !isPair(x.p()) && !isPair(x.q()) && Coordinate.of(x.p()).filter(c -> c.real() && c.sign() > 0).isPresent();
+    }
+
+    /** {@code 3·0^2}, {@code 0}, {@code -0}, {@code ω}, {@code (1/2)·ω^3}: {@code 0 = Z(1, 1)} and {@code ω = Z(1, −1)}. */
+    @Lean({"T.ZeroScale.toLaurent", "T.ZeroScale.Z.zero_pow", "T.ZeroScale.Z.omega_pow", "T.ZeroScale.Z.negZero"})
+    static String monomial(Coordinate coefficient, Coordinate order) {
+        String c = coefficient.toString(), n = order.toString();
+        if (n.equals("0")) return c;
+        String power = n.equals("1") ? "0" : n.equals("-1") ? "ω"
+                : order.real() && order.sign() < 0 ? "ω^" + group(n.substring(1)) : "0^" + group(n);
+        if (c.equals("1")) return power;
+        if (c.equals("-1")) return "-" + power;
+        return group(c) + "·" + power;
+    }
+
+    /**
+     * {@code q + log₀ p} as {@code q - 0·ln p}, since {@code log₀ p = −0·ln p}; {@code log₀ 1 = 0}, and
+     * {@code log₀ 0 = 1}. The logarithm is the real one, of {@code |p|}. A coefficient off the real line has none.
+     */
+    @Lean({"T.ZeroScale.E_eq", "T.ZeroScale.logZero_zero", "T.ZeroScale.E_zero"})
+    private static Optional<String> logZero(Coordinate p, Coordinate q) {
+        if (!p.real()) return Optional.empty();
+        if (p.sign() == 0) return Optional.of(q.plusOne().toString());
+        if (p.isOne()) return Optional.of(q.toString());
+        String argument = p.sign() < 0 ? "|" + p + "|" : group(p.toString());
+        String ln = "0·ln" + (argument.startsWith("(") || argument.startsWith("|") ? argument : " " + argument);
+        String n = q.toString();
+        return Optional.of(n.equals("0") ? "-" + ln : n + " - " + ln);
+    }
+
+    /**
+     * {@code log_p q} for real {@code p} and {@code q} above {@code 0}, {@code p ≠ 1}: a rational where {@code q} is a
+     * rational power of {@code p}, and a double otherwise. Many pairs give one value, as {@code B(2, 8)} and
+     * {@code B(4, 64)} give {@code 3}.
+     */
+    @Lean({"T.ZeroScale.B", "T.ZeroScale.E_eq_B_mul"})
+    private static Optional<Reading> logarithm(Coordinate p, Coordinate q) {
+        if (!p.real() || !q.real() || p.sign() <= 0 || q.sign() <= 0 || p.isOne()) return Optional.empty();
+        if (p.exact() != null && q.exact() != null) {
+            Optional<Rational> r = rationalPower(p.exact().re(), q.exact().re());
+            if (r.isPresent()) return Optional.of(new Reading("value", r.get().toString(), Rung.QUOTIENT));
+        }
+        return Optional.of(new Reading("value", IeeeLevel.display(q.lnAbs() / p.lnAbs()), Rung.UP_TO_ERROR));
+    }
+
+    /** The {@code a/b} with {@code p^a = q^b}, for {@code b} up to 64 and powers of moderate size, or empty. */
+    private static Optional<Rational> rationalPower(Rational p, Rational q) {
+        double estimate = (lnAbs(q.num()) - lnAbs(q.den())) / (lnAbs(p.num()) - lnAbs(p.den()));
+        long bits = Math.max(p.num().bitLength(), p.den().bitLength()) + Math.max(q.num().bitLength(), q.den().bitLength());
+        for (int b = 1; b <= 64; b++) {
+            long a = Math.round(estimate * b);
+            if (Math.abs(a) * bits > 1 << 16 || (long) b * bits > 1 << 16) break;
+            if (power(p, a).equals(power(q, b))) return Optional.of(Rational.of(a, b));
+        }
+        return Optional.empty();
+    }
+
+    private static Rational power(Rational r, long n) {
+        Rational base = n < 0 ? r.inverse() : r;
+        int k = (int) Math.abs(n);
+        return new Rational(base.num().pow(k), base.den().pow(k));
+    }
+
+    /** {@code ln |n|} for an integer of any size. */
+    private static double lnAbs(BigInteger n) {
+        int shift = Math.max(0, n.abs().bitLength() - 1000);
+        return Math.log(n.abs().shiftRight(shift).doubleValue()) + shift * Math.log(2);
+    }
+
+    /** A number as it stands, or in parentheses where it is more than one. */
+    private static String group(String s) {
+        return s.matches("-?[0-9]+(\\.[0-9]+)?") ? s : "(" + s + ")";
     }
 
     // ---- lowest terms ----
@@ -217,11 +388,16 @@ public final class Readings {
      * number cott-lean speaks of.
      */
     @Lean({"T.Unquotiented.pairPlus", "T2.plus", "T2.otimes", "TOver.instAdd", "CC.otimes", "CTC.otimes",
-            "T.ratioInt", "T.complexInt"})
+            "T.ratioInt", "T.complexInt", "T.ZeroScale.Z", "T.ZeroScale.E", "T.ZeroScale.B", "T.ZeroScale.Residual.R"})
     static Optional<String> covered(Object v) {
         if (hasDouble(v)) return Optional.empty();
         if (!(v instanceof Pair<?> x)) return Optional.of("a number");
         Object p = x.p(), q = x.q();
+        if (x.algebra() == TractionAlgebra.Z && !isPair(q) && flatOrNumber(p, TractionAlgebra.Q))
+            return Optional.of(isPair(p) ? "T/Residual: Z of Q" : "T/ZeroAlgebra and T/Residual: Z of two numbers");
+        if ((x.algebra() == TractionAlgebra.E || x.algebra() == TractionAlgebra.B) && !isPair(p) && !isPair(q))
+            return Optional.of("T/ZeroAlgebra: " + x.algebra() + " of two numbers");
+        if (zeroScale(x.algebra())) return Optional.empty();
         if (!isPair(p) && !isPair(q)) return Optional.of("T/Unquotiented and T/PairAlgebras: " + x.algebra() + " of two numbers");
         if (x.algebra() == TractionAlgebra.Q && both(p, q, TractionAlgebra.Q)) return Optional.of("Nested/Basic: Q of Q, T2");
         if (x.algebra() == TractionAlgebra.C && both(p, q, TractionAlgebra.Q)) return Optional.of("Nested/Point: C of Q");

@@ -24,7 +24,8 @@ import static sibarum.cott.algebra.TractionAlgebra.S;
  */
 class EquivalenceTest {
 
-    private static final Evaluator EV = new Evaluator(NumberType.INTEGER, SizeLimit.MEDIUM, Form.SUM_OF_PRODUCTS, null);
+    private static final Evaluator EV = new Evaluator(NumberType.INTEGER, SizeLimit.MEDIUM, Form.SUM_OF_PRODUCTS,
+            Cancellation.RESIDUAL, null);
     private static final Random RANDOM = new Random(20261009);
 
     private static T t() {

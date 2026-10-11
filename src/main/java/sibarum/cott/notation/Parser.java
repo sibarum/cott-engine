@@ -21,7 +21,7 @@ import java.util.Set;
  *   <li>A name followed by {@code (} is a call only when it names a function; otherwise it is
  *       multiplication, as in {@code ω(2x)} or {@code x(x+1)}.</li>
  *   <li>{@code ω} is always the constant, never part of a name.</li>
- *   <li>{@code C}, {@code D}, {@code S}, {@code Q} and {@code P} are constructors, always followed by
+ *   <li>{@code C}, {@code D}, {@code S}, {@code Q}, {@code P}, {@code Z}, {@code E} and {@code B} are constructors, always followed by
  *       {@code (p, q)}: {@code Q(1, 2)}, {@code C(Q(0, 1), Q(1, 2))}. They cannot be defined.</li>
  *   <li>{@code _0}, {@code _1}, {@code i} and {@code e} are named values, as {@code ω} is. In a run of letters each
  *       is a name of its own, as any letter is: {@code 3i}, {@code xi}. {@code i} cannot be defined, and {@code e}
@@ -33,7 +33,7 @@ import java.util.Set;
 public final class Parser {
 
     /** The traction algebras, by the letter that constructs a pair of each. */
-    public static final Set<String> CONSTRUCTORS = Set.of("C", "D", "S", "Q", "P");
+    public static final Set<String> CONSTRUCTORS = Set.of("C", "D", "S", "Q", "P", "Z", "E", "B");
 
     /** The named values written with an underscore. */
     public static final Set<String> NAMED = Set.of("_0", "_1");

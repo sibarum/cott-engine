@@ -1,5 +1,6 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.algebra.Cancellation;
 import sibarum.cott.algebra.Form;
 import sibarum.cott.algebra.NumberType;
 import sibarum.cott.algebra.SizeLimit;
@@ -20,6 +21,8 @@ public enum Modeset {
     SIZE_LIMIT("Size limit"),
     /** How a sum and a product nest when they meet. */
     FORM("Form"),
+    /** What an exact cancellation in {@code Z}'s {@code +} leaves. */
+    CANCELLATION("Cancellation"),
     /** How far a recursion may go before it is stopped. */
     LIMITS("Recursion limits");
 
@@ -39,6 +42,7 @@ public enum Modeset {
             case NUMBER_TYPE -> List.of(NumberType.values());
             case SIZE_LIMIT -> List.of(SizeLimit.values());
             case FORM -> List.of(Form.values());
+            case CANCELLATION -> List.of(Cancellation.values());
             case LIMITS -> List.of(Limits.values());
         };
     }
@@ -49,6 +53,7 @@ public enum Modeset {
             case NUMBER_TYPE -> NumberType.INTEGER;
             case SIZE_LIMIT -> SizeLimit.MEDIUM;
             case FORM -> Form.SUM_OF_PRODUCTS;
+            case CANCELLATION -> Cancellation.RESIDUAL;
             case LIMITS -> Limits.STANDARD;
         };
     }

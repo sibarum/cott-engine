@@ -66,6 +66,7 @@ public final class Repl {
     private static void help(Calculator calc, PrintStream out) {
         out.println("Type an expression, or a definition: x = 2, f(x, y) = x^2 + y.");
         out.println("A pair is written by its algebra: Q(1, 2) is 1/2, C(3, 4) is 4 + 3i, and D, S and P read q − p, p + q and p·q.");
+        out.println("Z(p, q) is p·0^q, with 0 = Z(1, 1) and ω = Z(1, -1); E(p, q) is its logarithm q + log₀ p, and B(p, q) is log_p q.");
         out.println("Pairs nest and mix: C(0, Q(1, 2)). A bare number takes the algebra of the pair it meets.");
         out.println("e is the base, now " + calc.base().written() + ", counting in " + calc.base().unit()
                 + ": e^x is the rotation by x units, and cos(x) and sin(x) count in them too.");
@@ -89,7 +90,7 @@ public final class Repl {
         PLAIN.put("( )", "grouping");
         PLAIN.put("=", "defines a variable or a function, as in f(x) = x^2");
         PLAIN.put(",", "separates a function's parameters and arguments, and a pair's coordinates");
-        PLAIN.put("C D S Q P", "construct a pair, as in Q(1, 2)");
+        PLAIN.put("C D S Q P Z E B", "construct a pair, as in Q(1, 2)");
         PLAIN.put("i", "C(1, 0), the imaginary unit");
         PLAIN.put("e", "the base, set by e = b; e^x is the rotation by x of its units");
         PLAIN.put("_0 _1", "Q(0, -1) and Q(1, -1)");

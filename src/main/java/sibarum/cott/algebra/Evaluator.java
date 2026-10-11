@@ -43,23 +43,30 @@ public final class Evaluator {
 
     private final Level<Object> numbers;
     private final Form form;
+    private final Cancellation cancellation;
     private final Calls calls;
 
     @SuppressWarnings("unchecked")
-    Evaluator(NumberType type, SizeLimit limit, Form form, Calls calls) {
+    Evaluator(NumberType type, SizeLimit limit, Form form, Cancellation cancellation, Calls calls) {
         this.numbers = (Level<Object>) type.level(limit);
         this.form = form;
+        this.cancellation = cancellation;
         this.calls = calls;
     }
 
     public static Result evaluate(Expr closed, NumberType type, SizeLimit limit, Form form) {
-        return evaluate(closed, type, limit, form, (c, args) -> {
+        return evaluate(closed, type, limit, form, Cancellation.RESIDUAL);
+    }
+
+    public static Result evaluate(Expr closed, NumberType type, SizeLimit limit, Form form, Cancellation cancellation) {
+        return evaluate(closed, type, limit, form, cancellation, (c, args) -> {
             throw new CalculatorException(c.name() + " is not in the traction algebras yet");
         });
     }
 
-    public static Result evaluate(Expr closed, NumberType type, SizeLimit limit, Form form, Calls calls) {
-        Evaluator ev = new Evaluator(type, limit, form, calls);
+    public static Result evaluate(Expr closed, NumberType type, SizeLimit limit, Form form, Cancellation cancellation,
+                                  Calls calls) {
+        Evaluator ev = new Evaluator(type, limit, form, cancellation, calls);
         Object v = ev.eval(closed);
         boolean rounded = (Object) ev.numbers instanceof DecimalLevel d && d.rounded();
         return new Result(v, ev.write(v), rounded);
@@ -110,14 +117,17 @@ public final class Evaluator {
 
     /**
      * {@code v} entered whole into {@code a} on its slot: {@code q} with {@code 0} on {@code p}, or for {@code Q}
-     * {@code p} over {@code 1}, and for {@code P} {@code q} times {@code 1}. The identity is a typeless number.
+     * {@code p} over {@code 1}, for {@code P} {@code q} times {@code 1}, for {@code Z} {@code p} at order {@code 0},
+     * and for {@code E} {@code q} plus {@code log₀ 1}. The identity is a typeless number. {@code B} has no slot.
      */
-    @Lean({"T.ratioInt", "T.complexInt"})
+    @Lean({"T.ratioInt", "T.complexInt", "T.ZeroScale.Z.ofInt", "T.ZeroScale.E_add_C"})
     Pair<Object> slot(TractionAlgebra a, Object v) {
         return switch (a) {
             case Q -> new Pair<>(a, v, numbers.one());
-            case P -> new Pair<>(a, numbers.one(), v);
+            case P, E -> new Pair<>(a, numbers.one(), v);
+            case Z -> new Pair<>(a, v, numbers.zero());
             case C, D, S -> new Pair<>(a, numbers.zero(), v);
+            case B -> throw new IllegalStateException("B has no slot");
         };
     }
 
@@ -141,43 +151,107 @@ public final class Evaluator {
 
     // ---- the operations ----
 
-    @Lean({"TOver.instNeg", "T2.neg_def", "T.oplusInverse"})
+    /**
+     * {@code Q}, {@code P}, {@code Z}: the sign on {@code p}, so {@code Z}'s {@code −0 = Z(−1, 1)} is not {@code 0}.
+     * {@code C}, {@code D}, {@code S}: both coordinates. {@code E}: {@code Z}'s division, {@code E(1/p, −q)}, since its
+     * {@code +} is {@code Z}'s {@code ·}. {@code B}: {@code D(x, 0)}, {@code 0 − x}.
+     */
+    @Lean({"TOver.instNeg", "T2.neg_def", "T.oplusInverse", "T.ZeroScale.Z.negZero_eq", "T.ZeroScale.Residual.R.neg",
+            "T.ZeroScale.E_add"})
     Object neg(Object x) {
         if (!isPair(x)) return numbers.neg(x);
         Pair<Object> v = pair(x);
         return switch (v.algebra()) {
-            case Q, P -> new Pair<>(v.algebra(), neg(v.p()), v.q());
+            case Q, P, Z -> new Pair<>(v.algebra(), neg(v.p()), v.q());
             case C, D, S -> new Pair<>(v.algebra(), neg(v.p()), neg(v.q()));
+            case E -> new Pair<>(v.algebra(), div(numbers.one(), v.p()), neg(v.q()));
+            case B -> new Pair<>(TractionAlgebra.D, x, numbers.zero());
         };
     }
 
-    /** {@code Q}: the sum of fractions, {@code (ps + rq, qs)}. {@code C}, {@code D}, {@code S}: the sum of the points. {@code P}: {@code S(x, y)}. */
+    /**
+     * {@code Q}: the sum of fractions, {@code (ps + rq, qs)}. {@code C}, {@code D}, {@code S}: the sum of the points.
+     * {@code Z}: the coefficients added at one order, and two orders are {@code S(x, y)}. {@code E}: {@code Z}'s product,
+     * {@code (pr, q + s)}. {@code P}, {@code B}: {@code S(x, y)}.
+     */
     @Lean({"T.Unquotiented.pairPlus", "TOver.instAdd", "T2.plus", "T2.oplus", "CC.oplus", "CTC.oplus",
             "T.Unquotiented.D_add", "T.Unquotiented.S_add"})
     Object add(Object x, Object y) {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.add(x, y);
         TractionAlgebra a = at.get();
-        if (a == TractionAlgebra.P) return new Pair<>(TractionAlgebra.S, x, y);
+        if (a == TractionAlgebra.P || a == TractionAlgebra.B) return new Pair<>(TractionAlgebra.S, x, y);
         Pair<Object> u = in(a, x), v = in(a, y);
         return switch (a) {
             case Q -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), mul(u.q(), v.q()));
             case C, D, S -> new Pair<>(a, add(u.p(), v.p()), add(u.q(), v.q()));
-            case P -> throw new AssertionError();
+            case Z -> zeroSum(u, v, x, y);
+            case E -> logSum(u, v);
+            case P, B -> throw new AssertionError();
         };
     }
 
-    /** {@code x + (−y)}, with a number type's own subtraction. {@code P}: {@code D(y, x)}. */
+    /**
+     * {@code Z(a, n) + Z(b, n) = Z(a + b, n)}, at the left one's order as written. Where {@code a + b} cancels exactly,
+     * the residual is {@code 0·x}, {@code Z(a, n + 1)}, unless the coefficients absorb. Sums of two orders are new
+     * elements, {@code S(x, y)}.
+     */
+    @Lean({"T.ZeroScale.toLaurent_add_same", "T.ZeroScale.Residual.R.add", "T.ZeroScale.Residual.R.cancel",
+            "T.ZeroScale.Residual.R.add_neg_self"})
+    private Object zeroSum(Pair<Object> u, Pair<Object> v, Object x, Object y) {
+        if (!vanishes(sub(u.q(), v.q()))) return new Pair<>(TractionAlgebra.S, x, y);
+        Object sum = add(u.p(), v.p());
+        if (cancellation == Cancellation.RESIDUAL && vanishes(sum))
+            return new Pair<>(TractionAlgebra.Z, u.p(), add(u.q(), numbers.one()));
+        return new Pair<>(TractionAlgebra.Z, sum, u.q());
+    }
+
+    /**
+     * {@code E(a, m) + E(b, n) = E(ab, m + n)}. A coefficient {@code 0} is {@code log₀ 0 = 1}, so against it the sum
+     * keeps the other coefficient and gains an order: {@code E(0, m) + E(b, n) = E(b, m + n + 1)}.
+     */
+    @Lean({"T.ZeroScale.E_add", "T.ZeroScale.E_add_zero"})
+    private Object logSum(Pair<Object> u, Pair<Object> v) {
+        Object order = add(u.q(), v.q());
+        if (vanishes(u.p())) return new Pair<>(TractionAlgebra.E, v.p(), add(order, numbers.one()));
+        if (vanishes(v.p())) return new Pair<>(TractionAlgebra.E, u.p(), add(order, numbers.one()));
+        return new Pair<>(TractionAlgebra.E, mul(u.p(), v.p()), order);
+    }
+
+    /** {@code x + (−y)}, with a number type's own subtraction. {@code P}, {@code B}: {@code D(y, x)}. */
     Object sub(Object x, Object y) {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.sub(x, y);
-        if (at.get() == TractionAlgebra.P) return new Pair<>(TractionAlgebra.D, y, x);
+        if (at.get() == TractionAlgebra.P || at.get() == TractionAlgebra.B) return new Pair<>(TractionAlgebra.D, y, x);
         return add(x, neg(y));
     }
 
     /**
+     * Whether a value is exactly {@code 0}: a number that is, a {@code Q}, {@code Z} or {@code P} with a vanishing
+     * factor, a {@code C} with both coordinates, a {@code D} or {@code S} whose difference or sum is. An {@code E} or a
+     * {@code B} is never taken for one.
+     */
+    private boolean vanishes(Object v) {
+        return switch (v) {
+            case BigInteger n -> n.signum() == 0;
+            case BigDecimal d -> d.signum() == 0;
+            case Double d -> d == 0;
+            case Pair<?> x -> switch (x.algebra()) {
+                case Q, Z -> vanishes(x.p());
+                case P -> vanishes(x.p()) || vanishes(x.q());
+                case C -> vanishes(x.p()) && vanishes(x.q());
+                case D -> vanishes(sub(x.q(), x.p()));
+                case S -> vanishes(add(x.p(), x.q()));
+                case E, B -> false;
+            };
+            default -> throw new IllegalStateException("not a value: " + v);
+        };
+    }
+
+    /**
      * {@code Q}, {@code P}: coordinate by coordinate, {@code (pr, qs)}. {@code C}: {@code ⊗}, {@code (ps + rq, qs − pr)}.
-     * {@code D}, {@code S}: {@code ⊚}, {@code (ps + rq, qs + pr)}.
+     * {@code D}, {@code S}: {@code ⊚}, {@code (ps + rq, qs + pr)}. {@code Z}: {@code (pr, q + s)}. {@code E}: a whole
+     * multiple only. {@code B}: composition only.
      */
     @Lean({"T.Unquotiented.pairTimes", "T.Unquotiented.pairOtimes", "T.Unquotiented.pairSplit", "TOver.instMul",
             "T2.times", "T2.otimes", "CC.otimes", "CTC.otimes"})
@@ -185,34 +259,90 @@ public final class Evaluator {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.mul(x, y);
         TractionAlgebra a = at.get();
+        if (a == TractionAlgebra.E) return logProduct(x, y);
+        if (a == TractionAlgebra.B) return composition(x, y);
         Pair<Object> u = in(a, x), v = in(a, y);
         return switch (a) {
             case Q, P -> new Pair<>(a, mul(u.p(), v.p()), mul(u.q(), v.q()));
             case C -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), sub(mul(u.q(), v.q()), mul(u.p(), v.p())));
             case D, S -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), add(mul(u.q(), v.q()), mul(u.p(), v.p())));
+            case Z -> zeroProduct(u, v);
+            case E, B -> throw new AssertionError();
         };
+    }
+
+    /** {@code Z(a, m)·Z(b, n) = Z(ab, m + n)}: the exponent law. */
+    @Lean({"T.ZeroScale.Z.mul_def", "T.ZeroScale.toLaurent_mul", "T.ZeroScale.Residual.R.mul"})
+    private Pair<Object> zeroProduct(Pair<Object> u, Pair<Object> v) {
+        return new Pair<>(TractionAlgebra.Z, mul(u.p(), v.p()), add(u.q(), v.q()));
+    }
+
+    /**
+     * A whole number {@code k} times {@code E(p, q)} is its multiple, {@code E(pᵏ, kq)}, {@code Z}'s power; a negative
+     * one is the multiple's {@code −}. A product of two {@code E}s would multiply logarithms, which no operation of
+     * theirs does, so any other product is {@code P(x, y)}.
+     */
+    @Lean({"T.ZeroScale.E_nsmul", "T.ZeroScale.Z.pow_def"})
+    private Object logProduct(Object x, Object y) {
+        Optional<BigInteger> k = !isPair(x) ? whole(x) : !isPair(y) ? whole(y) : Optional.empty();
+        if (k.isEmpty()) return new Pair<>(TractionAlgebra.P, x, y);
+        Pair<Object> v = pair(isPair(x) ? x : y);
+        Pair<Object> multiple = new Pair<>(TractionAlgebra.E, power(v.p(), k.get().abs()),
+                mul(numbers.ofInteger(k.get().abs()), v.q()));
+        return k.get().signum() >= 0 ? multiple : neg(multiple);
+    }
+
+    /**
+     * {@code B(p, q)·B(q, r) = B(p, r)}, where the inner {@code q} is not {@code 0}, {@code 1} or {@code −1}. Any other
+     * product is {@code P(x, y)}.
+     */
+    @Lean("T.ZeroScale.B_mul_B")
+    private Object composition(Object x, Object y) {
+        if (isPair(x) && isPair(y) && pair(x).algebra() == TractionAlgebra.B && pair(y).algebra() == TractionAlgebra.B) {
+            Object q = pair(x).q();
+            if (vanishes(sub(q, pair(y).p())) && !vanishes(q) && !vanishes(sub(q, numbers.one()))
+                    && !vanishes(add(q, numbers.one())))
+                return new Pair<>(TractionAlgebra.B, pair(x).p(), pair(y).q());
+        }
+        return new Pair<>(TractionAlgebra.P, x, y);
     }
 
     /**
      * {@code Q}: {@code x} times the swap of {@code y}. {@code C}: {@code x} times {@code (−r, s)/(r² + s²)}.
      * {@code D}, {@code S}: {@code x} times {@code (−r, s)/(s² − r²)}, the {@code ⊚} inverse. {@code P}:
-     * {@code (p/r, q/s)}. The divisions inside are this evaluator's, so over the integers they are {@code Q} pairs.
-     * In the product-of-sums form a sum divided by a sum is {@code Q(x, y)} instead. Two numbers the number type
-     * cannot divide are {@code Q(x, y)}.
+     * {@code (p/r, q/s)}. {@code Z}: {@code (p/r, q − s)}. The divisions inside are this evaluator's, so over the
+     * integers they are {@code Q} pairs. In the product-of-sums form a sum divided by a sum is {@code Q(x, y)} instead.
+     * Two numbers the number type cannot divide are {@code Q(x, y)}, and so is a quotient of {@code B}s, or of
+     * {@code E}s other than two of order {@code 0}, which is a {@code B}.
      */
-    @Lean({"TOver.reciprocal", "T2.reciprocal", "T2.pointInv", "CTC.inv"})
+    @Lean({"TOver.reciprocal", "T2.reciprocal", "T2.pointInv", "CTC.inv", "T.ZeroScale.Residual.R.inv"})
     Object div(Object x, Object y) {
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.divide(x, y).orElseGet(() -> new Pair<>(TractionAlgebra.Q, x, y));
         TractionAlgebra a = at.get();
-        if (a.isSum() && form == Form.PRODUCT_OF_SUMS) return new Pair<>(TractionAlgebra.Q, x, y);
+        if (a == TractionAlgebra.E) return logRatio(x, y);
+        if (a == TractionAlgebra.B || a.isSum() && form == Form.PRODUCT_OF_SUMS) return new Pair<>(TractionAlgebra.Q, x, y);
         Pair<Object> u = in(a, x), v = in(a, y);
         return switch (a) {
             case Q -> mul(u, new Pair<>(a, v.q(), v.p()));
             case C -> mul(u, inverse(a, v, add(mul(v.p(), v.p()), mul(v.q(), v.q()))));
             case D, S -> mul(u, inverse(a, v, sub(mul(v.q(), v.q()), mul(v.p(), v.p()))));
             case P -> new Pair<>(a, div(u.p(), v.p()), div(u.q(), v.q()));
+            case Z -> zeroProduct(u, new Pair<>(a, div(numbers.one(), v.p()), neg(v.q())));
+            case E, B -> throw new AssertionError();
         };
+    }
+
+    /**
+     * {@code E(q, 0) / E(p, 0) = B(p, q)}: both are multiples of {@code 0}, and the {@code 0} of the {@code 0/0}
+     * cancels. Any other quotient with an {@code E} is {@code Q(x, y)}.
+     */
+    @Lean({"T.ZeroScale.E_eq_B_mul", "T.ZeroScale.E_eq"})
+    private Object logRatio(Object x, Object y) {
+        if (isPair(x) && isPair(y) && pair(x).algebra() == TractionAlgebra.E && pair(y).algebra() == TractionAlgebra.E
+                && vanishes(pair(x).q()) && vanishes(pair(y).q()))
+            return new Pair<>(TractionAlgebra.B, pair(y).p(), pair(x).p());
+        return new Pair<>(TractionAlgebra.Q, x, y);
     }
 
     /** {@code (−r/N, s/N)}: the conjugate over the norm. */
@@ -223,8 +353,8 @@ public final class Evaluator {
     /**
      * A power. The exponent is a number. A number raised to a number is the number type's own power where it has
      * one, as a double's {@code 2^0.5}. Otherwise the exponent is whole: {@code Q} and {@code P} raise each
-     * coordinate, the others multiply the base by itself, and a negative power is {@code 1} divided by the positive
-     * one.
+     * coordinate, {@code Z} raises its coefficient and multiplies its order, the others multiply the base by itself,
+     * and a negative power is {@code 1} divided by the positive one.
      */
     Object pow(Object base, Object exponent, Expr.Pow written) {
         if (isPair(exponent))
@@ -239,16 +369,18 @@ public final class Evaluator {
         return n.signum() >= 0 ? positive : div(numbers.one(), positive);
     }
 
-    @Lean({"T2.power", "T.power"})
+    @Lean({"T2.power", "T.power", "T.ZeroScale.Z.pow_def"})
     private Object power(Object base, BigInteger n) {
         if (!isPair(base))
             return numbers.power(base, n).orElseThrow(() -> new IllegalStateException("no power " + n + " of a number"));
         Pair<Object> b = pair(base);
         if (b.algebra() == TractionAlgebra.Q || b.algebra() == TractionAlgebra.P)
             return new Pair<>(b.algebra(), power(b.p(), n), power(b.q(), n));
+        if (b.algebra() == TractionAlgebra.Z)
+            return new Pair<>(b.algebra(), power(b.p(), n), mul(numbers.ofInteger(n), b.q()));
         if (n.compareTo(BigInteger.valueOf(MAX_FACTORS)) > 0)
             throw new CalculatorException("an exponent of more than " + MAX_FACTORS + " is not multiplied out");
-        if (n.signum() == 0) return slot(b.algebra(), numbers.one());
+        if (n.signum() == 0) return b.algebra() == TractionAlgebra.B ? numbers.one() : slot(b.algebra(), numbers.one());
         Object out = base;
         for (int i = 1; i < n.intValue(); i++) out = mul(out, base);
         return out;

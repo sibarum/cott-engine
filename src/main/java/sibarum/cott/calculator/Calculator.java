@@ -1,6 +1,7 @@
 package sibarum.cott.calculator;
 
 import sibarum.cott.algebra.Base;
+import sibarum.cott.algebra.Cancellation;
 import sibarum.cott.algebra.Evaluator;
 import sibarum.cott.algebra.Form;
 import sibarum.cott.algebra.IeeeLevel;
@@ -78,6 +79,10 @@ public final class Calculator {
         return (SizeLimit) modes.get(Modeset.SIZE_LIMIT);
     }
 
+    public Cancellation cancellation() {
+        return (Cancellation) modes.get(Modeset.CANCELLATION);
+    }
+
     public Form form() {
         return (Form) modes.get(Modeset.FORM);
     }
@@ -121,7 +126,7 @@ public final class Calculator {
         Expr substituted = substitute(expr, List.of());
         if (!free(substituted).isEmpty()) return new Result.Unevaluated(substituted, Printer.print(substituted));
         Map<String, String> certificates = new LinkedHashMap<>();
-        Evaluator.Result r = Evaluator.evaluate(substituted, numberType(), sizeLimit(), form(),
+        Evaluator.Result r = Evaluator.evaluate(substituted, numberType(), sizeLimit(), form(), cancellation(),
                 (call, args) -> builtIn(call, args, certificates));
         Map<String, String> readings = new LinkedHashMap<>();
         Map<String, Rung> rungs = new LinkedHashMap<>();

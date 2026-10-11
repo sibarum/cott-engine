@@ -1,6 +1,7 @@
 package sibarum.cott.calculator;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.algebra.Cancellation;
 import sibarum.cott.algebra.Form;
 import sibarum.cott.algebra.NumberType;
 import sibarum.cott.algebra.SizeLimit;
@@ -23,7 +24,10 @@ class ModeTest {
 
     @Test
     void theModesets() {
-        assertEquals(List.of(Modeset.NUMBER_TYPE, Modeset.SIZE_LIMIT, Modeset.FORM, Modeset.LIMITS), List.of(Modeset.values()));
+        assertEquals(List.of(Modeset.NUMBER_TYPE, Modeset.SIZE_LIMIT, Modeset.FORM, Modeset.CANCELLATION, Modeset.LIMITS),
+                List.of(Modeset.values()));
+        assertEquals(List.of(Cancellation.RESIDUAL, Cancellation.ABSORB), Modeset.CANCELLATION.modes());
+        assertEquals(Cancellation.RESIDUAL, Modeset.CANCELLATION.initial());
         assertEquals(List.of(NumberType.INTEGER, NumberType.DECIMAL, NumberType.IEEE), Modeset.NUMBER_TYPE.modes());
         assertEquals(List.of(SizeLimit.SMALL, SizeLimit.MEDIUM, SizeLimit.LARGE), Modeset.SIZE_LIMIT.modes());
         assertEquals(List.of(Form.SUM_OF_PRODUCTS, Form.PRODUCT_OF_SUMS), Modeset.FORM.modes());
