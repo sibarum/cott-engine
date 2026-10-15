@@ -27,10 +27,13 @@ public sealed interface Result {
     /**
      * A value: a number of the number type, or a {@link Pair} of a traction algebra whose coordinates are values.
      * {@link #text} writes it as it was computed, by its constructors, and reads back as the same value.
+     * {@link #shown} writes it in the notation the line was written in: by its constructors when the line wrote a
+     * pair that way, as {@code Q(2, 3)}, and otherwise in the ordinary notation, as {@code 2/3} or {@code 3 + 2i}.
      * {@link #readings} gives the other ways of reading it, by name, written, and {@link #rungs} the {@link Rung} of
      * each that is a reading of it: {@code rung} is the answer's own.
      */
-    record Value(Object value, String text, Map<String, String> readings, Map<String, Rung> rungs) implements Result {
+    record Value(Object value, String text, String shown, Map<String, String> readings, Map<String, Rung> rungs)
+            implements Result {
 
         public Value {
             readings = Collections.unmodifiableMap(new LinkedHashMap<>(readings));

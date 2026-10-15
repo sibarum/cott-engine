@@ -46,7 +46,7 @@ public final class Repl {
             try {
                 Result r = calc.enter(Escapes.expand(line));
                 if (r instanceof Result.Value v) {
-                    out.println("= " + v.text());
+                    out.println("= " + v.shown());
                     int width = v.readings().keySet().stream().mapToInt(String::length).max().orElse(0);
                     for (Map.Entry<String, String> e : v.readings().entrySet()) {
                         Rung rung = v.rungs().get(e.getKey());

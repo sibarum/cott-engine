@@ -35,8 +35,11 @@ public final class Evaluator {
         Object call(Expr.Call call, List<Object> args);
     }
 
-    /** What an evaluation answers: the value, how it is written, and whether a Decimal was rounded. */
-    public record Result(Object value, String text, boolean rounded) {}
+    /**
+     * What an evaluation answers: the value, how it is written by its constructors, how it is written in the ordinary
+     * notation ({@link #writeOrdinary}), and whether a Decimal was rounded.
+     */
+    public record Result(Object value, String text, String ordinary, boolean rounded) {}
 
     /** The most factors a power of a pair is multiplied out of, one at a time. */
     static final int MAX_FACTORS = 1 << 16;
@@ -69,7 +72,7 @@ public final class Evaluator {
         Evaluator ev = new Evaluator(type, limit, form, cancellation, calls);
         Object v = ev.eval(closed);
         boolean rounded = (Object) ev.numbers instanceof DecimalLevel d && d.rounded();
-        return new Result(v, ev.write(v), rounded);
+        return new Result(v, ev.write(v), ev.writeOrdinary(v), rounded);
     }
 
     // ---- the expression ----
@@ -406,5 +409,85 @@ public final class Evaluator {
         if (!isPair(v)) return numbers.write(v);
         Pair<Object> x = pair(v);
         return x.algebra() + "(" + write(x.p()) + ", " + write(x.q()) + ")";
+    }
+
+    /**
+     * {@code 9/2 + 3i}: the value in the ordinary notation, as a line written without constructors is. A {@code Q} is
+     * the quotient {@code p/q}, unreduced, and a {@code C} is {@code q + pi}, leaving out a coordinate that is the
+     * number {@code 0}. Each reads back as the same value, though not always as the same pair: {@code 3} is the value
+     * of {@code C(0, 3)}, and a {@code Q} of {@code Q}s reads back multiplied out. The other algebras have no such
+     * writing and keep their constructors, with their coordinates written this way.
+     */
+    String writeOrdinary(Object v) {
+        return Printer.print(ordinary(v));
+    }
+
+    private Expr ordinary(Object v) {
+        if (!isPair(v)) return negative(v) ? new Expr.Neg(number(numbers.neg(v))) : number(v);
+        Pair<Object> x = pair(v);
+        return switch (x.algebra()) {
+            case Q -> new Expr.Div(ordinary(x.p()), ordinary(x.q()));
+            case C -> complex(x.q(), x.p());
+            default -> new Expr.Construct(x.algebra().name(), ordinary(x.p()), ordinary(x.q()));
+        };
+    }
+
+    /** {@code re + im·i}, as {@code 3 - 2i}, {@code -i} or {@code 1/2·i}. */
+    private Expr complex(Object re, Object im) {
+        if (isZero(im)) return ordinary(re);
+        boolean subtract = !isZero(re) && negative(im);
+        Object coefficient = subtract ? neg(im) : im;
+        Expr i = new Expr.Named("i");
+        Expr imaginary;
+        if (isOne(coefficient)) imaginary = i;
+        else if (isOne(neg(coefficient))) imaginary = new Expr.Neg(i);
+        else imaginary = new Expr.Mul(ordinary(coefficient), i, !isPair(coefficient) && plain(coefficient));
+        if (isZero(re)) return imaginary;
+        return subtract ? new Expr.Sub(ordinary(re), imaginary) : new Expr.Add(ordinary(re), imaginary);
+    }
+
+    /**
+     * A number that is not negative, as its number type writes it. A Decimal or a double goes to the printer as an
+     * atom of that text, so {@code 1.5·10^-7} and {@code ∞} are written as they always are.
+     */
+    private Expr number(Object v) {
+        return v instanceof BigInteger n ? new Expr.Num(n) : new Expr.Var(numbers.write(v));
+    }
+
+    /** Whether a number is written in plain digits, so that {@code 2i} can be written by juxtaposition. */
+    private boolean plain(Object v) {
+        return numbers.write(v).matches("-?[0-9]+(\\.[0-9]+)?");
+    }
+
+    /** A negative number, or a {@code Q}, {@code P} or {@code Z} whose sign, on {@code p}, is. */
+    private static boolean negative(Object v) {
+        return switch (v) {
+            case BigInteger n -> n.signum() < 0;
+            case BigDecimal d -> d.signum() < 0;
+            case Double d -> d < 0;
+            case Pair<?> x -> switch (x.algebra()) {
+                case Q, P, Z -> negative(x.p());
+                default -> false;
+            };
+            default -> false;
+        };
+    }
+
+    /**
+     * A term worth leaving out of a sum: the number {@code 0}, or a {@code Q} of it over a number that is not, as
+     * {@code Q(0, 2)}. {@code Q(0, 0)} is not {@code 0}, and no other pair is taken for it.
+     */
+    private static boolean isZero(Object v) {
+        if (v instanceof Pair<?>(TractionAlgebra a, Object p, Object q))
+            return a == TractionAlgebra.Q && !isPair(p) && !isPair(q) && isZero(p) && !isZero(q);
+        return v instanceof BigInteger n ? n.signum() == 0
+                : v instanceof BigDecimal d ? d.signum() == 0
+                : v instanceof Double x && x == 0;
+    }
+
+    private static boolean isOne(Object v) {
+        return v instanceof BigInteger n ? n.equals(BigInteger.ONE)
+                : v instanceof BigDecimal d ? d.compareTo(BigDecimal.ONE) == 0
+                : v instanceof Double x && x == 1;
     }
 }

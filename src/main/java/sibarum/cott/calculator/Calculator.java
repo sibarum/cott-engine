@@ -156,7 +156,7 @@ public final class Calculator {
             readings.put(call, certificate);
             rungs.put(call, Rung.UP_TO_ERROR);
         });
-        return new Result.Value(r.value(), r.text(), readings, rungs);
+        return new Result.Value(r.value(), r.text(), constructed(substituted) ? r.text() : r.ordinary(), readings, rungs);
     }
 
     /** The rungs of the flat ratio's projections: three quotients, and an angle that is a direction in a double. */
@@ -325,6 +325,25 @@ public final class Calculator {
             case Expr.Mul m -> new Expr.Mul(bind(m.left(), actual), bind(m.right(), actual), m.implicit());
             case Expr.Div d -> new Expr.Div(bind(d.left(), actual), bind(d.right(), actual));
             case Expr.Pow p -> new Expr.Pow(bind(p.base(), actual), bind(p.exponent(), actual));
+        };
+    }
+
+    /** Whether a pair is written by its constructor anywhere in a line, as in {@code Q(2, 3)}. */
+    private static boolean constructed(Expr e) {
+        return switch (e) {
+            case Expr.Num n -> false;
+            case Expr.Decimal d -> false;
+            case Expr.Omega o -> false;
+            case Expr.Named n -> false;
+            case Expr.Var v -> false;
+            case Expr.Construct c -> true;
+            case Expr.Call c -> c.args().stream().anyMatch(Calculator::constructed);
+            case Expr.Neg n -> constructed(n.operand());
+            case Expr.Add a -> constructed(a.left()) || constructed(a.right());
+            case Expr.Sub s -> constructed(s.left()) || constructed(s.right());
+            case Expr.Mul m -> constructed(m.left()) || constructed(m.right());
+            case Expr.Div d -> constructed(d.left()) || constructed(d.right());
+            case Expr.Pow p -> constructed(p.base()) || constructed(p.exponent());
         };
     }
 

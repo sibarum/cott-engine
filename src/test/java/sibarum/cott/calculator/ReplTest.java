@@ -37,21 +37,21 @@ class ReplTest {
     @Test
     void anEscapeIsTypedAndTheSymbolIsPrinted() throws IOException {
         String out = session("1/0\n\\o + 1\nw = \\o\n:quit\n");
-        assertTrue(out.contains("= Q(1, 0)"), out);
+        assertTrue(out.contains("= 1/0"), out);
         assertTrue(out.contains("w = ω"), out);
         assertTrue(!out.contains("\\"), out);
     }
 
     @Test
     void aTypedSymbolStillWorks() throws IOException {
-        assertTrue(session("ω + 1\n").contains("= Q(1, 0)"));
+        assertTrue(session("ω + 1\n").contains("= 1/0"));
     }
 
     @Test
     void aBadEscapeIsReportedAndTheSessionGoesOn() throws IOException {
         String out = session("\\q\n1/0\n");
         assertTrue(out.contains("! unknown escape '\\q'"), out);
-        assertTrue(out.contains("= Q(1, 0)"), out);
+        assertTrue(out.contains("= 1/0"), out);
     }
 
     @Test

@@ -85,6 +85,41 @@ class CalculatorTest {
     }
 
     @Test
+    void anAnswerIsShownInTheNotationOfItsLine() {
+        Calculator c = new Calculator();
+        assertEquals("1/0", value(c, "1/0").shown());
+        assertEquals("6/3", value(c, "6/3").shown());
+        assertEquals("2/(-4)", value(c, "2/(-4)").shown());
+        assertEquals("-3/0", value(c, "-3/0").shown());
+        assertEquals("4 + 3i", value(c, "4 + 3i").shown());
+        assertEquals("4 - 3i", value(c, "4 - 3i").shown());
+        assertEquals("9/2 + 3i", value(c, "1/2 + (4 + 3i)").shown());
+        assertEquals("-1", value(c, "i·i").shown());
+        assertEquals("i", value(c, "i").shown());
+        assertEquals("-2i", value(c, "-2i").shown());
+        assertEquals("2/4 - 2/4·i", value(c, "1/(1 + i)").shown());
+        assertEquals("7", value(c, "3 + 4").shown());
+        assertEquals("Q(2, 3)", value(c, "Q(2, 3)").shown());
+        assertEquals("Q(7, 2)", value(c, "3 + Q(1, 2)").shown());
+        assertEquals("C(3, 4)", value(c, "C(3, 4)").shown());
+        c.enter("h = Q(1, 2)");
+        assertEquals("Q(4, 4)", value(c, "h + h").shown(), "a variable is written as it was defined");
+        c.enter("x = 3");
+        assertEquals("19/1", value(c, "2x^2 + 1/1").shown());
+        c.set(Form.PRODUCT_OF_SUMS);
+        assertEquals("(9 + 6i)/2", value(c, "1/2 + (4 + 3i)").shown());
+    }
+
+    @Test
+    void whatIsShownReadsBackAsTheSameValue() {
+        Calculator c = new Calculator();
+        for (String line : List.of("1/0", "6/3", "4 - 3i", "1/2 + (4 + 3i)", "(2 + i)^3")) {
+            Result.Value once = value(c, line);
+            assertEquals(once.shown(), value(c, once.shown()).shown(), line);
+        }
+    }
+
+    @Test
     void aNumberIsTypelessUntilItMeetsAPair() {
         Calculator c = new Calculator();
         Result.Value seven = value(c, "3 + 4");
