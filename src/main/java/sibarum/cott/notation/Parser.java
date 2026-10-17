@@ -33,7 +33,7 @@ import java.util.Set;
 public final class Parser {
 
     /** The traction algebras, by the letter that constructs a pair of each. */
-    public static final Set<String> CONSTRUCTORS = Set.of("C", "D", "S", "Q", "P", "Z", "E", "B");
+    public static final Set<String> CONSTRUCTORS = Set.of("C", "D", "S", "Q", "P", "Z", "E", "B", "L");
 
     /** The named values written with an underscore. */
     public static final Set<String> NAMED = Set.of("_0", "_1");

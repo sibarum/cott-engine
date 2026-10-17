@@ -114,7 +114,7 @@ public final class Simplifier {
                 if (!plainSum(terms(pair.p())).isEmpty()) throw new Unread();
                 out.addAll(terms(pair.q()));
             }
-            case E, B -> throw new Unread();
+            case E, B, L -> throw new Unread();
         }
         return out;
     }

@@ -55,7 +55,9 @@ public final class Readings {
                 out.add(new Reading("simplified", Simplifier.written(value, cancellation).orElseThrow(), Rung.QUOTIENT)));
         if (!flatRatio) Chebyshev.of(value, cancellation).ifPresent(e ->
                 out.add(new Reading("chebyshev", Chebyshev.written(e), Rung.QUOTIENT)));
-        if (zeroScale(pair.algebra())) {
+        if (pair.algebra() == TractionAlgebra.L) {
+            out.addAll(logPairReadings(pair));
+        } else if (zeroScale(pair.algebra())) {
             if (!holdsZeroScale(pair.p()) && !holdsZeroScale(pair.q())) out.addAll(zeroScaleReadings(pair));
         } else if (!flatRatio && !holdsZeroScale(value)) {
             if (hasDouble(value)) {
@@ -73,7 +75,7 @@ public final class Readings {
             }
         }
         String lowest = lowestTerms(value);
-        if (!flatRatio && !lowest.equals(write(value))) out.add(new Reading("lowest terms", lowest, Rung.QUOTIENT));
+        if (!flatRatio && pair.algebra() != TractionAlgebra.L && !lowest.equals(write(value))) out.add(new Reading("lowest terms", lowest, Rung.QUOTIENT));
         out.add(new Reading("cott-lean", covered(value).orElse("no file covers this nesting; computed by the engine's rules"), null));
         return out;
     }
@@ -146,7 +148,7 @@ public final class Readings {
             case S -> Optional.of(a.plus(b));
             case Q -> a.over(b);
             case P -> Optional.of(a.times(b));
-            case Z, E, B -> throw new IllegalStateException(x.algebra() + " has no complex value");
+            case Z, E, B, L -> throw new IllegalStateException(x.algebra() + " has no complex value");
         };
     }
 
@@ -192,7 +194,7 @@ public final class Readings {
                     double n = b[0] * b[0] + b[1] * b[1];
                     yield new double[]{(a[0] * b[0] + a[1] * b[1]) / n, (a[1] * b[0] - a[0] * b[1]) / n};
                 }
-                case Z, E, B -> throw new IllegalStateException(x.algebra() + " has no complex value");
+                case Z, E, B, L -> throw new IllegalStateException(x.algebra() + " has no complex value");
             };
         }
         if (v instanceof Double d) return new double[]{d, 0};
@@ -212,6 +214,50 @@ public final class Readings {
         return new BigDecimal(r.num()).divide(new BigDecimal(r.den()), MathContext.DECIMAL64).doubleValue();
     }
 
+    // ---- L ----
+
+    /**
+     * {@code L(s, t)}: the {@code magnitude} {@code √N = e^(s/2)}, its {@code turn}, the {@code value} it is the
+     * logarithm of, {@code e^(s/2)} turned {@code t}, and {@code log_b} in each base held by its units. A value at a
+     * whole number of quarter turns with magnitude {@code 1} is exact; a zero magnitude, scale {@code −1 : 0}, is
+     * {@code 0} turned, which no complex number holds.
+     */
+    @Lean({"T.Unquotiented.L", "T.Unquotiented.logBase"})
+    private static List<Reading> logPairReadings(Pair<?> x) {
+        List<Reading> out = new ArrayList<>();
+        Optional<Logs.Ratio> scale = Logs.ratio(x.p()), turn = Logs.ratio(x.q());
+        if (scale.isEmpty() || turn.isEmpty()) return out;
+        Logs.Ratio s = scale.get(), t = turn.get();
+        Optional<Rational> sv = s.value(), tv = t.value();
+        int infinite = sv.isPresent() ? 0 : s.a().num().signum();
+        String magnitude = infinite < 0 ? "0" : infinite > 0 ? "ω" : sv.isEmpty() ? "undefined"
+                : sv.get().num().signum() == 0 ? "1" : IeeeLevel.display(Math.exp(decimal(sv.get()) / 2));
+        out.add(new Reading("magnitude", magnitude, sv.isEmpty() && infinite == 0 ? Rung.ERROR
+                : sv.isPresent() && sv.get().num().signum() != 0 ? Rung.UP_TO_ERROR : Rung.QUOTIENT));
+        String turnText = tv.map(Rational::toString).orElse(t.toString());
+        out.add(new Reading("turn", turnText, Rung.QUOTIENT));
+        if (tv.isEmpty() || sv.isEmpty() && infinite == 0) {
+            out.add(new Reading("value", "undefined", Rung.ERROR));
+        } else if (infinite != 0) {
+            out.add(new Reading("value", magnitude + ", turned " + turnText, Rung.QUOTIENT));
+        } else {
+            Rational quarters = tv.get().times(Rational.of(4, 1));
+            if (sv.get().num().signum() == 0 && quarters.den().equals(BigInteger.ONE)) {
+                String[] corners = {"1", "i", "-1", "-i"};
+                out.add(new Reading("value", corners[quarters.num().mod(BigInteger.valueOf(4)).intValue()], Rung.QUOTIENT));
+            } else {
+                double r = Math.exp(decimal(sv.get()) / 2), a = 2 * Math.PI * decimal(tv.get());
+                approximately(new double[]{r * Math.cos(a), r * Math.sin(a)})
+                        .ifPresent(z -> out.add(new Reading("value", z, Rung.UP_TO_ERROR)));
+            }
+        }
+        for (Base b : List.of(Base.ONE, Base.NEG_ONE, Base.I, Base.ZERO)) {
+            Logs.Units in = Logs.logBase(Logs.units(b).orElseThrow(), s, t);
+            out.add(new Reading("log_" + b.written(), "scale " + in.scale() + ", turn " + in.turn(), Rung.QUOTIENT));
+        }
+        return out;
+    }
+
     // ---- Z, E and B ----
 
     private static boolean zeroScale(TractionAlgebra a) {
@@ -219,7 +265,8 @@ public final class Readings {
     }
 
     private static boolean holdsZeroScale(Object v) {
-        return v instanceof Pair<?> x && (zeroScale(x.algebra()) || holdsZeroScale(x.p()) || holdsZeroScale(x.q()));
+        return v instanceof Pair<?> x && (zeroScale(x.algebra()) || x.algebra() == TractionAlgebra.L
+                || holdsZeroScale(x.p()) || holdsZeroScale(x.q()));
     }
 
     /** A coordinate's value: exact where it holds no double, and a double's otherwise. */
@@ -410,6 +457,9 @@ public final class Readings {
             return Optional.of(isPair(p) ? "T/Residual: Z of Q" : "T/ZeroAlgebra and T/Residual: Z of two numbers");
         if ((x.algebra() == TractionAlgebra.E || x.algebra() == TractionAlgebra.B) && !isPair(p) && !isPair(q))
             return Optional.of("T/ZeroAlgebra: " + x.algebra() + " of two numbers");
+        if (x.algebra() == TractionAlgebra.L)
+            return Logs.ratio(p).isPresent() && Logs.ratio(q).isPresent()
+                    ? Optional.of("T/LogPair and T/Bases: L of two ratios") : Optional.empty();
         if (zeroScale(x.algebra())) return Optional.empty();
         if (!isPair(p) && !isPair(q)) return Optional.of("T/Unquotiented and T/PairAlgebras: " + x.algebra() + " of two numbers");
         if (x.algebra() == TractionAlgebra.Q && both(p, q, TractionAlgebra.Q)) return Optional.of("Nested/Basic: Q of Q, T2");

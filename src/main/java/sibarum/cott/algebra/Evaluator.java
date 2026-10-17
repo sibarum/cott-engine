@@ -3,6 +3,7 @@ package sibarum.cott.algebra;
 import sibarum.cott.calculator.CalculatorException;
 import sibarum.cott.notation.Expr;
 import sibarum.cott.notation.Printer;
+import sibarum.cott.projection.Rational;
 import sibarum.cott.traction.Lean;
 
 import java.math.BigDecimal;
@@ -175,7 +176,7 @@ public final class Evaluator {
             case P, E -> new Pair<>(a, numbers.one(), v);
             case Z -> new Pair<>(a, v, numbers.zero());
             case C, D, S -> new Pair<>(a, numbers.zero(), v);
-            case B -> throw new IllegalStateException("B has no slot");
+            case B, L -> throw new IllegalStateException(a + " has no slot");
         };
     }
 
@@ -214,6 +215,7 @@ public final class Evaluator {
             case C, D, S -> new Pair<>(v.algebra(), neg(v.p()), neg(v.q()));
             case E -> new Pair<>(v.algebra(), div(numbers.one(), v.p()), neg(v.q()));
             case B -> new Pair<>(TractionAlgebra.D, x, numbers.zero());
+            case L -> new Pair<>(v.algebra(), neg(v.p()), neg(v.q()));
         };
     }
 
@@ -225,6 +227,7 @@ public final class Evaluator {
     @Lean({"T.Unquotiented.pairPlus", "TOver.instAdd", "T2.plus", "T2.oplus", "CC.oplus", "CTC.oplus",
             "T.Unquotiented.D_add", "T.Unquotiented.S_add"})
     Object add(Object x, Object y) {
+        if (isLog(x) || isLog(y)) return logPairSum(x, y);
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.add(x, y);
         TractionAlgebra a = at.get();
@@ -235,8 +238,22 @@ public final class Evaluator {
             case C, D, S -> new Pair<>(a, add(u.p(), v.p()), add(u.q(), v.q()));
             case Z -> zeroSum(u, v, x, y);
             case E -> logSum(u, v);
-            case P, B -> throw new AssertionError();
+            case P, B, L -> throw new AssertionError();
         };
+    }
+
+    private static boolean isLog(Object x) {
+        return x instanceof Pair<?> p && p.algebra() == TractionAlgebra.L;
+    }
+
+    /**
+     * {@code L(s, t) + L(u, v) = L(s + u, t + v)}, each coordinate a fraction {@code +}: the logarithm of the product.
+     * An {@code L} and anything else is {@code S(x, y)}.
+     */
+    @Lean("T.Unquotiented.Lmul")
+    private Object logPairSum(Object x, Object y) {
+        if (!isLog(x) || !isLog(y)) return new Pair<>(TractionAlgebra.S, x, y);
+        return new Pair<>(TractionAlgebra.L, add(pair(x).p(), pair(y).p()), add(pair(x).q(), pair(y).q()));
     }
 
     /**
@@ -271,6 +288,7 @@ public final class Evaluator {
 
     /** {@code x + (−y)}, with a number type's own subtraction. {@code P}, {@code B}: {@code D(y, x)}. */
     Object sub(Object x, Object y) {
+        if (isLog(x) != isLog(y)) return new Pair<>(TractionAlgebra.D, y, x);
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.sub(x, y);
         if (at.get() == TractionAlgebra.P || at.get() == TractionAlgebra.B) return new Pair<>(TractionAlgebra.D, y, x);
@@ -293,7 +311,7 @@ public final class Evaluator {
                 case C -> vanishes(x.p()) && vanishes(x.q());
                 case D -> vanishes(sub(x.q(), x.p()));
                 case S -> vanishes(add(x.p(), x.q()));
-                case E, B -> false;
+                case E, B, L -> false;
             };
             default -> throw new IllegalStateException("not a value: " + v);
         };
@@ -307,6 +325,7 @@ public final class Evaluator {
     @Lean({"T.Unquotiented.pairTimes", "T.Unquotiented.pairOtimes", "T.Unquotiented.pairSplit", "TOver.instMul",
             "T2.times", "T2.otimes", "CC.otimes", "CTC.otimes"})
     Object mul(Object x, Object y) {
+        if (isLog(x) || isLog(y)) return logPairMultiple(x, y);
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.mul(x, y);
         TractionAlgebra a = at.get();
@@ -318,8 +337,19 @@ public final class Evaluator {
             case C -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), sub(mul(u.q(), v.q()), mul(u.p(), v.p())));
             case D, S -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), add(mul(u.q(), v.q()), mul(u.p(), v.p())));
             case Z -> absorbs(x) || absorbs(y) ? numbers.zero() : zeroProduct(u, v);
-            case E, B -> throw new AssertionError();
+            case E, B, L -> throw new AssertionError();
         };
+    }
+
+    /**
+     * A rational {@code k} times {@code L(s, t)} is {@code L(k·s, k·t)}, the logarithm of the value's {@code k}-th power:
+     * {@code (1/2)·L(0, 1/2) = L(0/2, 1/4)}, {@code (−1)^(1/2) = i}. Each coordinate is multiplied as a fraction, so
+     * nothing is reduced. Any other product with an {@code L} is {@code P(x, y)}.
+     */
+    private Object logPairMultiple(Object x, Object y) {
+        Object k = isLog(x) ? y : x, l = isLog(x) ? x : y;
+        if (isLog(k) || Logs.ratio(k).isEmpty()) return new Pair<>(TractionAlgebra.P, x, y);
+        return new Pair<>(TractionAlgebra.L, mul(k, pair(l).p()), mul(k, pair(l).q()));
     }
 
     /**
@@ -378,6 +408,8 @@ public final class Evaluator {
      */
     @Lean({"TOver.reciprocal", "T2.reciprocal", "T2.pointInv", "CTC.inv", "T.ZeroScale.Residual.R.inv"})
     Object div(Object x, Object y) {
+        if (isLog(x) && !isLog(y) && Logs.ratio(y).isPresent()) return logPairMultiple(div(numbers.one(), y), x);
+        if (isLog(x) || isLog(y)) return new Pair<>(TractionAlgebra.Q, x, y);
         Optional<TractionAlgebra> at = meeting(x, y);
         if (at.isEmpty()) return numbers.divide(x, y).orElseGet(() -> new Pair<>(TractionAlgebra.Q, x, y));
         TractionAlgebra a = at.get();
@@ -390,7 +422,7 @@ public final class Evaluator {
             case D, S -> byNorm(x, y, u, v, sub(mul(v.q(), v.q()), mul(v.p(), v.p())));
             case P -> new Pair<>(a, div(u.p(), v.p()), div(u.q(), v.q()));
             case Z -> absorbs(x) ? numbers.zero() : zeroProduct(u, new Pair<>(a, div(numbers.one(), v.p()), neg(v.q())));
-            case E, B -> throw new AssertionError();
+            case E, B, L -> throw new AssertionError();
         };
     }
 
@@ -424,6 +456,10 @@ public final class Evaluator {
      * and a negative power is {@code 1} divided by the positive one.
      */
     Object pow(Object base, Object exponent, Expr.Pow written) {
+        if (isPair(exponent) || whole(exponent).isEmpty()) {
+            Optional<Object> angle = fractionalPower(base, exponent, written == null ? null : written.exponent());
+            if (angle.isPresent()) return angle.get();
+        }
         if (isPair(exponent))
             throw new CalculatorException("an exponent is a number, and " + Printer.print(written.exponent()) + " is a pair");
         if (!isPair(base)) {
@@ -434,6 +470,119 @@ public final class Evaluator {
                 "an exponent must be a whole number here, not " + Printer.print(written.exponent())));
         Object positive = power(base, n.abs());
         return n.signum() >= 0 ? positive : div(numbers.one(), positive);
+    }
+
+    /**
+     * A power that is not whole, in angles: the {@link TractionAlgebra#L L} of the answer, where the base has one
+     * exactly. The exponent is the ratio {@code p : q} it is written as, unreduced: {@code Q(p, q)}, a number
+     * {@code v : 1}, or {@code c·ω} as {@code c : 0}.
+     *
+     * <ul>
+     *   <li>A written {@code 0} follows {@code zeroPow}: {@code 0^(1/2)} is {@code L(Q(−1, 0), Q(1, 2))}, a zero
+     *       magnitude turned half a turn, {@code 0^(1/0) = −1} and {@code 0^(0/1) = 1}. {@code 0^(0/0)} has no rule.</li>
+     *   <li>{@code 1}, {@code i}, {@code −1} and {@code −i}, as numbers or points, have {@code L(0, t)} with {@code t}
+     *       their turn, and the power is {@code (p/q)·L(0, t)}: {@code (−1)^(1/2) = L(0/2, 1/4)}, which is {@code i}.</li>
+     * </ul>
+     *
+     * Empty for any other base, a double, or an exponent that is no ratio, which keep the refusals they had.
+     */
+    @Lean({"T.Unquotiented.zeroPow", "T.Unquotiented.Lr", "T.Unquotiented.Lr_zero_one", "T.Unquotiented.Lr_zero_negOne",
+            "T.Unquotiented.turn_one_zero", "T.Unquotiented.turn_zero_negOne", "T.Unquotiented.turn_zero_one"})
+    private Optional<Object> fractionalPower(Object base, Object exponent, Expr written) {
+        if ((Object) numbers instanceof IeeeLevel) return Optional.empty();
+        Optional<Logs.Ratio> ratio = writtenRatio(written).or(() -> exponentRatio(exponent));
+        if (ratio.isEmpty()) return Optional.empty();
+        if (writtenZero(base)) {
+            Logs.ZeroPower power = Logs.zeroPow(ratio.get().a(), ratio.get().b()).orElseThrow(() ->
+                    new CalculatorException("0^(0/0) has no rule: the exponent's ratio is 0 : 0"));
+            return Optional.of(switch (power) {
+                case Logs.ZeroPower.One one -> new Pair<>(TractionAlgebra.L, numbers.zero(), numbers.zero());
+                case Logs.ZeroPower.NegOne negOne -> new Pair<>(TractionAlgebra.L, numbers.zero(), half(1));
+                case Logs.ZeroPower.Rotation r -> new Pair<>(TractionAlgebra.L,
+                        new Pair<>(TractionAlgebra.Q, numbers.ofInteger(BigInteger.ONE.negate()), numbers.zero()),
+                        new Pair<>(TractionAlgebra.Q, value(r.p()), value(r.q())));
+            });
+        }
+        Logs.Ratio r = ratio.get();
+        if (r.b().num().signum() == 0) return Optional.empty();
+        Object k = r.b().equals(Rational.of(1, 1)) ? value(r.a()) : new Pair<>(TractionAlgebra.Q, value(r.a()), value(r.b()));
+        return unitTurn(base).map(turn -> mul(k, new Pair<>(TractionAlgebra.L, numbers.zero(), turn)));
+    }
+
+    /**
+     * The ratio an exponent is written as, where it is written with literals: {@code 0/1} is {@code 0 : 1} and
+     * {@code ω} is {@code 1 : 0}, the numbers themselves, though a written {@code 0} evaluates to {@code Z(1, 1)}.
+     */
+    private static Optional<Logs.Ratio> writtenRatio(Expr e) {
+        return switch (e) {
+            case Expr.Div(Expr p, Expr q) -> literal(p).flatMap(a -> literal(q).map(b -> new Logs.Ratio(a, b)));
+            case Expr.Construct(String a, Expr p, Expr q) when a.equals("Q") ->
+                    literal(p).flatMap(x -> literal(q).map(y -> new Logs.Ratio(x, y)));
+            case Expr.Omega o -> Optional.of(new Logs.Ratio(Rational.of(1, 1), Rational.ZERO));
+            case null, default -> Optional.empty();
+        };
+    }
+
+    private static Optional<Rational> literal(Expr e) {
+        return switch (e) {
+            case Expr.Num n -> Logs.rational(n.value());
+            case Expr.Decimal d -> Logs.rational(d.value());
+            case Expr.Neg(Expr operand) -> literal(operand).map(Rational::neg);
+            default -> Optional.empty();
+        };
+    }
+
+    /** The exponent as the ratio it is written as: {@code Q(p, q)} of numbers, {@code v : 1}, or {@code c·ω} as {@code c : 0}. */
+    private static Optional<Logs.Ratio> exponentRatio(Object exponent) {
+        if (exponent instanceof Pair<?>(TractionAlgebra a, Object c, Object order) && a == TractionAlgebra.Z
+                && order instanceof BigInteger n && n.equals(BigInteger.ONE.negate()))
+            return Logs.rational(c).map(r -> new Logs.Ratio(r, Rational.ZERO));
+        return Logs.ratio(exponent);
+    }
+
+    /** A written {@code 0}, {@code Z(1, 1)}, or the number {@code 0} where a written {@code 0} is the number. */
+    private boolean writtenZero(Object base) {
+        if (!isPair(base)) return vanishes(base);
+        Pair<Object> b = pair(base);
+        return b.algebra() == TractionAlgebra.Z && !isPair(b.p()) && !isPair(b.q())
+                && whole(b.p()).filter(BigInteger.ONE::equals).isPresent()
+                && whole(b.q()).filter(BigInteger.ONE::equals).isPresent();
+    }
+
+    /**
+     * The turn of {@code 1}, {@code i}, {@code −1} or {@code −i}, as a number or as a point {@code C(p, q)} of two
+     * numbers: {@code 0}, {@code 1/4}, {@code 1/2} and {@code −1/4}, in {@code (−1/2, 1/2]} as cott-lean's turn is.
+     */
+    private Optional<Object> unitTurn(Object base) {
+        Optional<Rational> re, im;
+        if (!isPair(base)) {
+            re = Logs.rational(base);
+            im = Optional.of(Rational.ZERO);
+        } else if (pair(base).algebra() == TractionAlgebra.C && !isPair(pair(base).p()) && !isPair(pair(base).q())) {
+            re = Logs.rational(pair(base).q());
+            im = Logs.rational(pair(base).p());
+        } else {
+            return Optional.empty();
+        }
+        if (re.isEmpty() || im.isEmpty()) return Optional.empty();
+        Rational one = Rational.of(1, 1), x = re.get(), y = im.get();
+        if (y.equals(Rational.ZERO) && x.equals(one)) return Optional.of(numbers.zero());
+        if (y.equals(Rational.ZERO) && x.equals(one.neg())) return Optional.of(half(1));
+        if (x.equals(Rational.ZERO) && y.equals(one)) return Optional.of(div(numbers.one(), numbers.ofInteger(BigInteger.valueOf(4))));
+        if (x.equals(Rational.ZERO) && y.equals(one.neg()))
+            return Optional.of(div(numbers.ofInteger(BigInteger.ONE.negate()), numbers.ofInteger(BigInteger.valueOf(4))));
+        return Optional.empty();
+    }
+
+    /** {@code n/2}, as the number type divides it. */
+    private Object half(long n) {
+        return div(numbers.ofInteger(BigInteger.valueOf(n)), numbers.ofInteger(BigInteger.TWO));
+    }
+
+    /** A rational as a value of the number type: its numerator over its denominator, where that is not {@code 1}. */
+    private Object value(Rational r) {
+        Object num = numbers.ofInteger(r.num());
+        return r.den().equals(BigInteger.ONE) ? num : div(num, numbers.ofInteger(r.den()));
     }
 
     @Lean({"T2.power", "T.power", "T.ZeroScale.Z.pow_def"})

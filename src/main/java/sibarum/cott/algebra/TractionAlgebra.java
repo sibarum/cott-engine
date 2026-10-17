@@ -44,7 +44,17 @@ public enum TractionAlgebra {
     E("q + log₀ p"),
     /** {@code log_p q}, the ratio of two {@code E}s of order {@code 0}. Its one product composes, {@code B(p, q)·B(q, r) = B(p, r)}. */
     @Lean({"T.ZeroScale.B", "T.ZeroScale.E_eq_B_mul", "T.ZeroScale.B_mul_B"})
-    B("log_p q");
+    B("log_p q"),
+    /**
+     * The logarithm of a value as a pair: its scale {@code p = log N}, {@code N} the squared norm, and its turn
+     * {@code q}, the direction as a fraction of a whole turn, each a ratio kept unreduced. Its {@code +} is the product
+     * of the values it is the logarithm of, both coordinates added as fractions ({@code Lmul}), and a rational times it
+     * is the value's power: {@code (1/2)·L(0, 1/2)} is {@code L(0, 1/4)}, {@code (−1)^(1/2) = i}. A {@code 0^(p/q)}
+     * that is not a whole power is one ({@code zeroPow}): a zero magnitude, scale {@code −1 : 0}, turned {@code p : q}.
+     * No number enters it.
+     */
+    @Lean({"T.Unquotiented.L", "T.Unquotiented.Lr", "T.Unquotiented.Lmul"})
+    L("log N = p, turn q");
 
     private final String meaning;
 

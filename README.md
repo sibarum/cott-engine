@@ -29,6 +29,7 @@ reading turns into `+` and `×` (`T.Unquotiented`, `T/PairAlgebras`):
 | `Z(p, q)` | `p · 0^q` | `(p + r, q)` at one order | `(pr, q + s)` | `Z(v, 0)` |
 | `E(p, q)` | `q + log₀ p` | `(pr, q + s)` | a whole multiple only | `E(1, v)` |
 | `B(p, q)` | `log_p q` | none | composition only | none |
+| `L(p, q)` | the logarithm pair: scale `p = log N`, turn `q` | `(p + r, q + s)`, the values' product | a rational multiple only, the value's power | none |
 
 `C`, `D`, `S` and `E` are sums, and `Q`, `P` and `Z` products. A number enters an algebra on one coordinate, its
 slot, with the identity on the other. The slot is `q`, except in `Q`, where `q` is the denominator, and in `Z`,
@@ -101,6 +102,21 @@ divided by a sum is `Q(x, y)` instead.
 **A power** has a number for its exponent. `Q` and `P` raise each coordinate (`T2.power`), the others multiply
 the base by itself, and a negative power is `1` divided by the positive one: `2^-3` is `Q(1, 8)`. In IEEE 64-bit,
 a number raised to a number is `StrictMath.pow`.
+
+**A power that is not whole** is written in angles, as an `L`, where its base has one exactly. The exponent is
+the ratio it is written as, unreduced: `1/2` is `1 : 2`, `2/4` is `2 : 4`, and `ω` is `1 : 0`. A written `0`
+follows cott-lean's `zeroPow` (`T/Bases`): `0^(1/2)` is `L(Q(-1, 0), Q(1, 2))`, a zero magnitude turned half a
+turn; `0^(1/0) = 0^ω = −1` and `0^(0/1) = 1`; and `0^(0/0)` has no rule. `1`, `i`, `−1` and `−i` have the turns
+`0`, `1/4`, `1/2` and `−1/4`, and their power is that fraction of it: `(−1)^(1/2)` is `L(Q(0, 2), Q(1, 4))`, which
+reads `i`, and `i^(1/2)` is the eighth turn. A whole power is as before, so `0^2` is still `Z(1, 2)`; any other
+base, and IEEE 64-bit, keep the refusal.
+
+An `L` is a logarithm, so its arithmetic is the logarithms': `+` multiplies the values, each coordinate a fraction
+`+` (`Lmul`), so `(−1)^(1/2) + (−1)^(1/2)` reads `−1`; and a rational times it is the value's power, so
+`(1/2)·(−1)^(1/2)` is the square root of `i`. Two zero magnitudes added have the scale `0 : 0`, as `pairPlus` gives:
+the product of two zero-magnitude rotations has no rule for its size. No product multiplies two `L`s, and an `L`
+added to anything else is their `S`. A rational multiple is the engine's own rule; cott-lean states `Lmul` but no
+multiple.
 
 **Named values** are exact pairs: `ω = Z(1, -1)`, `_0 = Q(0, -1)`, `_1 = Q(1, -1)` and `i = C(1, 0)`, so
 `4 + 3i` is `C(3, 4)` and `0ω` is `Z(1, 0)`. `ω` is `Z`'s as a written `0` is,
@@ -188,6 +204,11 @@ The prompt tags each reading with its rung unless it is exact. The readings are:
   and `E` or `B` of two numbers `T/ZeroAlgebra`. A number beside a pair counts as that pair's number on its slot (`T.ratioInt`,
   `T.complexInt`). A double is not a real number cott-lean speaks of.
 - A double's **`exact`** value, **`hex`** form and **`bits`**.
+- Of an `L(s, t)`: its **`magnitude`** `e^(s/2)`, `0` for a scale `−1 : 0` and `ω` for `1 : 0`; its **`turn`**; the
+  **`value`** it is the logarithm of, exact at a whole number of quarter turns with magnitude `1`, `0, turned 1/2`
+  for a zero magnitude, and a double otherwise; and **`log_1`**, **`log_-1`**, **`log_i`** and **`log_0`**, the scale
+  and turn each divided by that base's units (`logBase`, `T/Bases`): an eighth turn is `1 : 2` in quarter turns,
+  and in base `0`, whose turn unit is `0 : 0`, every turn is `0 : 0`.
 
 A `Q` of two Integers also has the projections of the flat pair. A `Q` is not read as a point: that would take
 a transform or a re-embedding.
@@ -299,8 +320,9 @@ whose value is `i`, and after `e = -1`, `e^1` is `-1`. In IEEE 64-bit they are a
 base's value, `exp(x)` is `e^x`, and the base in force where a line is used is the one that counts, as with
 definitions. `e` can only be set by `e = b`.
 
-`0^x` follows the `zeroPow` rules (`T/Bases.lean`), whose results are logarithm pairs, a zero-magnitude rotation among them,
-which no `C` value holds; it waits for `L` as a pair type. `ln` waits for an exact turn of a general point.
+`0^x` follows the `zeroPow` rules (`T/Bases.lean`), whose results are logarithm pairs, `L`, a zero-magnitude
+rotation among them, which no `C` value holds: [above](#evaluating). `e^x` with `e = 0` and `ln` still wait, the
+second for an exact turn of a general point.
 
 ## Trigonometry in turns
 
