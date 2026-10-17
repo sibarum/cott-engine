@@ -58,6 +58,52 @@ class ZeroScaleTest {
         assertNotEquals(residual("Z(1, 1)"), residual("-Z(1, 1)"));
     }
 
+    @Test
+    void aWrittenZeroIsTheInvertibleZero() {
+        assertEquals("Z(1, 1)", residual("0"));
+        assertEquals("S(Z(6, 1), S(9, Z(1, 2)))", residual("(0 + 3)^2"), "9 + 6·0 + 0^2: the 0 is not dropped");
+        assertEquals("Z(3, 1)", residual("3·0"));
+        assertEquals("Z(1, 2)", residual("0^2"));
+        assertEquals("Z(Q(1, 1), -1)", residual("1/0"));
+        assertEquals("Z(Q(1, 1), 0)", residual("0/0"));
+        assertEquals("Z(-1, 1)", residual("-0"));
+        assertEquals("0", residual("3 - 3"), "a computed 0 is the number");
+    }
+
+    @Test
+    void theNumberZeroLeavesAZAsItIs() {
+        assertEquals("Z(3, 1)", residual("Z(3, 1) + (3 - 3)"));
+        assertEquals("Z(3, 1)", residual("(3 - 3) + Z(3, 1)"));
+        assertEquals("0", residual("(3 - 3)·Z(1, 1)"), "the number 0 is the classical one, and absorbs");
+    }
+
+    @Test
+    void aQuotientByASumOfOrdersIsAPair() {
+        assertEquals("Q(1, S(1, Z(1, 1)))", residual("1/(1 + 0)"), "1/(1 + 0) is a series in 0, never finished");
+        assertEquals("S(Z(Q(2, 1), 0), Z(Q(3, 1), 1))", residual("(2·0 + 3·0^2)/0"));
+    }
+
+    @Test
+    void aWrittenOmegaIsZsOmega() {
+        assertEquals("Z(1, -1)", residual("ω"));
+        assertEquals("Z(1, 0)", residual("0ω"), "0·ω = 1");
+        assertEquals("S(Z(1, -1), 1)", residual("ω + 1"));
+    }
+
+    @Test
+    void whereANumberIsMeantAWrittenZeroIsTheNumber() {
+        assertEquals("Z(3, 0)", residual("Z(3, 0)"));
+        assertEquals("Z(3, 0)", residual("Z(3, -0)"));
+        assertEquals("1", residual("2^0"));
+    }
+
+    @Test
+    void absorbingKeepsAWrittenZeroTheNumber() {
+        assertEquals("3", absorb("0 + 3"));
+        assertEquals("Q(1, 0)", absorb("1/0"));
+        assertEquals("Q(1, 0)", absorb("ω"));
+    }
+
     // ---- the residual ----
 
     @Test

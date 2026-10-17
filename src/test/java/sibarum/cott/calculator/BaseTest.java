@@ -74,7 +74,7 @@ class BaseTest {
         c.enter("e = i");
         assertEquals("C(1, 0)", c.enter("e").text());
         c.enter("e = ω");
-        assertEquals("Q(1, 0)", c.enter("e").text());
+        assertEquals("Z(1, -1)", c.enter("e").text());
     }
 
     @Test

@@ -79,30 +79,75 @@ public final class Evaluator {
 
     Object eval(Expr e) {
         return switch (e) {
-            case Expr.Num n -> numbers.ofInteger(n.value());
-            case Expr.Decimal d -> numbers.ofDecimal(d.value()).orElseThrow(() -> new CalculatorException(
-                    "a decimal is not an Integer: whether " + Printer.print(d)
-                            + " is a pair over a power of ten or its lowest terms is not chosen"));
-            case Expr.Omega o -> named(TractionAlgebra.Q, 1, 0);
+            case Expr.Num n -> written(number(n));
+            case Expr.Decimal d -> written(number(d));
+            case Expr.Omega o -> residual() ? named(TractionAlgebra.Z, 1, -1) : named(TractionAlgebra.Q, 1, 0);
             case Expr.Named n -> switch (n.name()) {
                 case "_0" -> named(TractionAlgebra.Q, 0, -1);
                 case "_1" -> named(TractionAlgebra.Q, 1, -1);
                 case "i" -> named(TractionAlgebra.C, 1, 0);
                 default -> throw new IllegalStateException("no named value " + n.name());
             };
-            case Expr.Construct c -> new Pair<>(TractionAlgebra.valueOf(c.algebra()), eval(c.p()), eval(c.q()));
+            case Expr.Construct c -> new Pair<>(TractionAlgebra.valueOf(c.algebra()), coordinate(c.p()), coordinate(c.q()));
             case Expr.Neg n -> neg(eval(n.operand()));
             case Expr.Add a -> add(eval(a.left()), eval(a.right()));
             case Expr.Sub s -> sub(eval(s.left()), eval(s.right()));
             case Expr.Mul m -> mul(eval(m.left()), eval(m.right()));
             case Expr.Div d -> div(eval(d.left()), eval(d.right()));
-            case Expr.Pow p -> pow(eval(p.base()), eval(p.exponent()), p);
+            case Expr.Pow p -> pow(eval(p.base()), coordinate(p.exponent()), p);
             case Expr.Var v -> throw new IllegalStateException("free variable " + v.name());
-            case Expr.Call c -> calls.call(c, c.args().stream().map(this::eval).toList());
+            case Expr.Call c -> calls.call(c, c.args().stream().map(this::coordinate).toList());
         };
     }
 
-    /** {@code ω = Q(1, 0)}, {@code _0 = Q(0, −1)}, {@code _1 = Q(1, −1)}, {@code i = C(1, 0)}: named pairs, exact. */
+    /** A literal as a number of the number type. */
+    private Object number(Expr literal) {
+        return switch (literal) {
+            case Expr.Num n -> numbers.ofInteger(n.value());
+            case Expr.Decimal d -> numbers.ofDecimal(d.value()).orElseThrow(() -> new CalculatorException(
+                    "a decimal is not an Integer: whether " + Printer.print(d)
+                            + " is a pair over a power of ten or its lowest terms is not chosen"));
+            default -> throw new IllegalStateException("not a literal: " + Printer.print(literal));
+        };
+    }
+
+    /**
+     * A number written as a value. A written {@code 0} is the invertible zero, {@code Z(1, 1)}, so it stays as a
+     * residual wherever it is used: {@code (0 + 3)^2} is {@code 9 + 6·0 + 0^2}, and {@code 1/0} is {@code Z(1/1, −1)}.
+     * A {@code 0} that is computed, as {@code 3 − 3}, is the number.
+     */
+    private Object written(Object n) {
+        return residual() && vanishes(n) ? named(TractionAlgebra.Z, 1, 1) : n;
+    }
+
+    /**
+     * Whether a written {@code 0} and {@code ω} are {@code Z}'s, {@code Z(1, 1)} and {@code Z(1, −1)}: in the
+     * {@code residual} mode over exact numbers. In the {@code absorb} mode, and for a double, they are the number
+     * {@code 0} and {@code Q(1, 0)}.
+     */
+    private boolean residual() {
+        return cancellation == Cancellation.RESIDUAL && !((Object) numbers instanceof IeeeLevel);
+    }
+
+    /**
+     * Where a number is meant rather than a value: a constructor's coordinate, an exponent, a function's argument. A
+     * literal there, signed or not, is the number, so {@code Z(1, 0)} is of order {@code 0} and {@code x^0} is a power.
+     * Anything else is evaluated as a value.
+     */
+    private Object coordinate(Expr e) {
+        return switch (e) {
+            case Expr.Num n -> number(n);
+            case Expr.Decimal d -> number(d);
+            case Expr.Neg(Expr operand) when operand instanceof Expr.Num || operand instanceof Expr.Decimal ->
+                    neg(number(operand));
+            default -> eval(e);
+        };
+    }
+
+    /**
+     * {@code ω = Z(1, −1)} ({@code Q(1, 0)} where a written {@code 0} is the number), {@code _0 = Q(0, −1)},
+     * {@code _1 = Q(1, −1)}, {@code i = C(1, 0)}: named pairs, exact.
+     */
     private Pair<Object> named(TractionAlgebra a, long p, long q) {
         return new Pair<>(a, numbers.ofInteger(BigInteger.valueOf(p)), numbers.ofInteger(BigInteger.valueOf(q)));
     }
@@ -197,11 +242,14 @@ public final class Evaluator {
     /**
      * {@code Z(a, n) + Z(b, n) = Z(a + b, n)}, at the left one's order as written. Where {@code a + b} cancels exactly,
      * the residual is {@code 0·x}, {@code Z(a, n + 1)}, unless the coefficients absorb. Sums of two orders are new
-     * elements, {@code S(x, y)}.
+     * elements, {@code S(x, y)}. The number {@code 0}, a computed one or a typeless identity, is {@code +}'s own and
+     * leaves the other as it is.
      */
     @Lean({"T.ZeroScale.toLaurent_add_same", "T.ZeroScale.Residual.R.add", "T.ZeroScale.Residual.R.cancel",
             "T.ZeroScale.Residual.R.add_neg_self"})
     private Object zeroSum(Pair<Object> u, Pair<Object> v, Object x, Object y) {
+        if (!isPair(x) && vanishes(x)) return y;
+        if (!isPair(y) && vanishes(y)) return x;
         if (!vanishes(sub(u.q(), v.q()))) return new Pair<>(TractionAlgebra.S, x, y);
         Object sum = add(u.p(), v.p());
         if (cancellation == Cancellation.RESIDUAL && vanishes(sum))
@@ -269,9 +317,17 @@ public final class Evaluator {
             case Q, P -> new Pair<>(a, mul(u.p(), v.p()), mul(u.q(), v.q()));
             case C -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), sub(mul(u.q(), v.q()), mul(u.p(), v.p())));
             case D, S -> new Pair<>(a, add(mul(u.p(), v.q()), mul(v.p(), u.q())), add(mul(u.q(), v.q()), mul(u.p(), v.p())));
-            case Z -> zeroProduct(u, v);
+            case Z -> absorbs(x) || absorbs(y) ? numbers.zero() : zeroProduct(u, v);
             case E, B -> throw new AssertionError();
         };
+    }
+
+    /**
+     * Whether {@code x} is the number {@code 0}, a computed one or a typeless identity, which absorbs a product or a
+     * quotient with a {@code Z}: it is the classical {@code 0}, not {@code Z(1, 1)}.
+     */
+    private boolean absorbs(Object x) {
+        return !isPair(x) && vanishes(x);
     }
 
     /** {@code Z(a, m)·Z(b, n) = Z(ab, m + n)}: the exponent law. */
@@ -316,7 +372,9 @@ public final class Evaluator {
      * {@code (p/r, q/s)}. {@code Z}: {@code (p/r, q − s)}. The divisions inside are this evaluator's, so over the
      * integers they are {@code Q} pairs. In the product-of-sums form a sum divided by a sum is {@code Q(x, y)} instead.
      * Two numbers the number type cannot divide are {@code Q(x, y)}, and so is a quotient of {@code B}s, or of
-     * {@code E}s other than two of order {@code 0}, which is a {@code B}.
+     * {@code E}s other than two of order {@code 0}, which is a {@code B}. So is a quotient by a {@code C}, {@code D} or
+     * {@code S} whose norm is itself a sum, as {@code 1/(1 + 0)}: the inverse would be divided by a sum again, without
+     * end, since it is a series in {@code 0}.
      */
     @Lean({"TOver.reciprocal", "T2.reciprocal", "T2.pointInv", "CTC.inv", "T.ZeroScale.Residual.R.inv"})
     Object div(Object x, Object y) {
@@ -328,10 +386,10 @@ public final class Evaluator {
         Pair<Object> u = in(a, x), v = in(a, y);
         return switch (a) {
             case Q -> mul(u, new Pair<>(a, v.q(), v.p()));
-            case C -> mul(u, inverse(a, v, add(mul(v.p(), v.p()), mul(v.q(), v.q()))));
-            case D, S -> mul(u, inverse(a, v, sub(mul(v.q(), v.q()), mul(v.p(), v.p()))));
+            case C -> byNorm(x, y, u, v, add(mul(v.p(), v.p()), mul(v.q(), v.q())));
+            case D, S -> byNorm(x, y, u, v, sub(mul(v.q(), v.q()), mul(v.p(), v.p())));
             case P -> new Pair<>(a, div(u.p(), v.p()), div(u.q(), v.q()));
-            case Z -> zeroProduct(u, new Pair<>(a, div(numbers.one(), v.p()), neg(v.q())));
+            case Z -> absorbs(x) ? numbers.zero() : zeroProduct(u, new Pair<>(a, div(numbers.one(), v.p()), neg(v.q())));
             case E, B -> throw new AssertionError();
         };
     }
@@ -346,6 +404,12 @@ public final class Evaluator {
                 && vanishes(pair(x).q()) && vanishes(pair(y).q()))
             return new Pair<>(TractionAlgebra.B, pair(y).p(), pair(x).p());
         return new Pair<>(TractionAlgebra.Q, x, y);
+    }
+
+    /** {@code u} times the inverse of {@code v} over its norm, or {@code Q(x, y)} where the norm is a sum. */
+    private Object byNorm(Object x, Object y, Pair<Object> u, Pair<Object> v, Object norm) {
+        if (isPair(norm) && pair(norm).algebra().isSum()) return new Pair<>(TractionAlgebra.Q, x, y);
+        return mul(u, inverse(v.algebra(), v, norm));
     }
 
     /** {@code (−r/N, s/N)}: the conjugate over the norm. */

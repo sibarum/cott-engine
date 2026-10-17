@@ -1,6 +1,7 @@
 package sibarum.cott.calculator;
 
 import org.junit.jupiter.api.Test;
+import sibarum.cott.algebra.Cancellation;
 import sibarum.cott.algebra.Form;
 import sibarum.cott.algebra.NumberType;
 import sibarum.cott.projection.Projections;
@@ -22,8 +23,19 @@ class CalculatorTest {
     }
 
     @Test
-    void divisionByZero() {
+    void divisionByZeroIsZsOmega() {
         Calculator c = new Calculator();
+        assertEquals("Z(Q(1, 1), -1)", c.enter("1/0").text());
+        assertEquals("ω", value(c, "1/0").readings().get("value"));
+        assertEquals("Z(Q(1, 1), 0)", c.enter("0/0").text());
+        assertEquals("Z(1, 0)", c.enter("0ω").text());
+        assertEquals("Z(Q(-3, 1), -1)", c.enter("-3/0").text());
+    }
+
+    @Test
+    void divisionByZeroWhereAWrittenZeroIsTheNumber() {
+        Calculator c = new Calculator();
+        c.set(Cancellation.ABSORB);
         assertEquals("Q(1, 0)", c.enter("1/0").text());
         assertEquals("Q(0, 0)", c.enter("0/0").text());
         assertEquals("Q(1, 0)", c.enter("ω + 1").text());
@@ -64,6 +76,7 @@ class CalculatorTest {
     @Test
     void theExampleFromTheBrief() {
         Calculator c = new Calculator();
+        c.set(Cancellation.ABSORB);
         c.enter("x = 1");
         Result.Value r = value(c, "ω(2x)-(0(x+1)+0^2(2x-1))/2");
         assertEquals(Optional.of(T.of(4, 0)), r.flat());
@@ -87,10 +100,10 @@ class CalculatorTest {
     @Test
     void anAnswerIsShownInTheNotationOfItsLine() {
         Calculator c = new Calculator();
-        assertEquals("1/0", value(c, "1/0").shown());
+        assertEquals("Z(1/1, -1)", value(c, "1/0").shown());
         assertEquals("6/3", value(c, "6/3").shown());
         assertEquals("2/(-4)", value(c, "2/(-4)").shown());
-        assertEquals("-3/0", value(c, "-3/0").shown());
+        assertEquals("Z(-3/1, -1)", value(c, "-3/0").shown());
         assertEquals("4 + 3i", value(c, "4 + 3i").shown());
         assertEquals("4 - 3i", value(c, "4 - 3i").shown());
         assertEquals("9/2 + 3i", value(c, "1/2 + (4 + 3i)").shown());
@@ -115,7 +128,7 @@ class CalculatorTest {
         Calculator c = new Calculator();
         for (String line : List.of("1/0", "6/3", "4 - 3i", "1/2 + (4 + 3i)", "(2 + i)^3")) {
             Result.Value once = value(c, line);
-            assertEquals(once.shown(), value(c, once.shown()).shown(), line);
+            assertEquals(once.text(), value(c, once.shown()).text(), line);
         }
     }
 
@@ -180,7 +193,7 @@ class CalculatorTest {
     void exponentsAreNumbers() {
         Calculator c = new Calculator();
         assertEquals("8", c.enter("2^3").text());
-        assertEquals("1", c.enter("0^0").text());
+        assertEquals("Z(1, 0)", c.enter("0^0").text());
         c.enter("n = 2");
         assertEquals("9", c.enter("3^n").text());
         assertEquals("4", c.enter("2^(1+1)").text());

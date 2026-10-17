@@ -98,7 +98,7 @@ class ModeTest {
         assertTrue(out.contains("  * integer  Integer"), out);
         assertTrue(out.contains("  * sum-of-products  Sum of products"), out);
         assertTrue(out.contains("Number type: IEEE 64-bit"), out);
-        assertTrue(out.contains("= 1/0"), out);
+        assertTrue(out.contains("= Z(1/1, -1)"), out);
         assertTrue(out.contains("= ∞"), out);
         assertTrue(out.contains("    exact  ∞"), out);
         assertTrue(out.contains("  * ieee64   IEEE 64-bit"), out);

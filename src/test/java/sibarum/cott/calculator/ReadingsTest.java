@@ -60,7 +60,7 @@ class ReadingsTest {
 
     @Test
     void aZeroDenominatorLeavesNoValue() {
-        Result.Value v = value("C(1, 2) + ω");
+        Result.Value v = value("C(1, 2) + Q(1, 0)");
         assertEquals("undefined", v.readings().get("value"));
         assertEquals(Rung.ERROR, v.rungs().get("value"));
     }

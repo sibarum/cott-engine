@@ -46,7 +46,7 @@ the same convention all the way down.
     norm       117/4   (up to invariant)
     turn       0.0935835209   (up to error)
     cott-lean  Nested/Point: C of Q
-> 1/0
+> Q(1, 0)
 = Q(1, 0)
     rung       exact
     ray        ω   (quotient)
@@ -102,8 +102,10 @@ divided by a sum is `Q(x, y)` instead.
 the base by itself, and a negative power is `1` divided by the positive one: `2^-3` is `Q(1, 8)`. In IEEE 64-bit,
 a number raised to a number is `StrictMath.pow`.
 
-**Named values** are exact pairs: `ω = Q(1, 0)`, `_0 = Q(0, -1)`, `_1 = Q(1, -1)`, `0ω = Q(0, 0)`, and
-`i = C(1, 0)`, so `4 + 3i` is `C(3, 4)`. `e` is the base, below.
+**Named values** are exact pairs: `ω = Z(1, -1)`, `_0 = Q(0, -1)`, `_1 = Q(1, -1)` and `i = C(1, 0)`, so
+`4 + 3i` is `C(3, 4)` and `0ω` is `Z(1, 0)`. `ω` is `Z`'s as a written `0` is,
+[below](#a-written-0-and-ω); where a written `0` is the number, `ω = Q(1, 0)` and `0ω = Q(0, 0)`. `e` is the
+base, below.
 
 ## Modes
 
@@ -115,8 +117,8 @@ changes what every later line evaluates to.
 
 | key | number type | `1/3` | `1/0` |
 |---|---|---|---|
-| `integer` (initial) | `BigInteger`, exact, with no division of its own | `Q(1, 3)` | `Q(1, 0)` |
-| `decimal` | `BigDecimal`, exact until a result has more digits than the limit, then rounded half to even | `0.3333…3` | `Q(1, 0)` |
+| `integer` (initial) | `BigInteger`, exact, with no division of its own | `Q(1, 3)` | `Z(Q(1, 1), -1)` |
+| `decimal` | `BigDecimal`, exact until a result has more digits than the limit, then rounded half to even | `0.3333…3` | `Z(1, -1)` |
 | `ieee64` | the `double`: each operation the IEEE one, so `3/5` is `0.6` and `3·(1/5)` is `0.6000000000000001` | `0.3333333333333333` | `∞` |
 
 A Decimal can divide, so it can bring an expression down to one pair. Over the Integers a decimal literal is
@@ -135,7 +137,9 @@ changing the pair it is in, so it is refused; a Decimal is rounded, and says so.
 
 **Cancellation**: what an exact cancellation in `Z`'s `+` leaves. `residual` (initial) keeps what cancelled,
 `x − x = 0·x`; `absorb` lets the coefficient reach `0`. Both are kept, since which invariants are tracked and
-which erased depends on the use. [Below](#the-residual-of-an-exact-cancellation).
+which erased depends on the use. [Below](#the-residual-of-an-exact-cancellation). The mode also says what a
+written `0` and `ω` are: `Z(1, 1)` and `Z(1, -1)` in `residual`, the number `0` and `Q(1, 0)` in `absorb`
+([below](#a-written-0-and-ω)).
 
 **Recursion limits**: how far the descent behind `cos` and `sin` may go, [below](#recursion-limits).
 
@@ -235,6 +239,31 @@ cancels nothing exactly and is `Z(1, 0)`, while `Z(1, 0) + (Z(1, 0) − Z(1, 0))
 In the `absorb` mode the coefficients add to `0` and absorb, `Z(3, 1) - Z(3, 1)` is `Z(0, 1)`, and a product then
 drops the other coefficient, `0·b = 0`. That is where `log₀` stops being a homomorphism
 (`Z.log_mul_coeff_zero_ne`).
+
+### A written 0 and ω
+
+In the `residual` mode over exact numbers, a `0` written in a line is `Z`'s invertible zero, `Z(1, 1)`, and a
+written `ω` is `Z(1, -1)`. So an explicit `0` is never dropped: it stays as a residual through whatever it meets.
+
+```
+> (0 + 3)^2
+= S(Z(6, 1), S(9, Z(1, 2)))          9 + 6·0 + 0^2
+> 1/0
+= Z(Q(1, 1), -1)                     ω
+> (1/2)/0
+= Q(1, Z(2, 1))                      ω·(1/2): the 2 is kept
+> 0ω
+= Z(1, 0)                            0·ω = 1
+> 3 - 3
+= 0                                  a computed 0 is the number
+```
+
+Where a number is meant rather than a value, a literal stays the number: a constructor's coordinate (`Z(3, 0)` is
+of order `0`), an exponent (`2^0` is `1`), a function's argument. The number `0`, computed or a typeless identity,
+is the classical one: it is `+`'s identity beside a `Z` and absorbs a product with one, `(3 − 3)·Z(1, 1) = 0`.
+A quotient by a sum of orders, as `1/(1 + 0)`, is a series in `0` that never ends, so it is the pair
+`Q(1, S(1, Z(1, 1)))`. In the `absorb` mode, and in IEEE 64-bit, a written `0` is the number and `ω` is
+`Q(1, 0)`, as before.
 
 Not yet: `E` and `B` over complex coefficients, which cott-lean states over the reals only, and `0^E` or `log₀`
 as operations rather than readings.

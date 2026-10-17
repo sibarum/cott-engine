@@ -37,15 +37,15 @@ class EvaluatorTest {
     void integersHaveNoDivisionSoItIsQ() {
         assertEquals("Q(6, 3)", integers("6/3"));
         assertEquals("Q(1, 8)", integers("2^-3"));
-        assertEquals("Q(1, 0)", integers("1/0"));
+        assertEquals("Z(Q(1, 1), -1)", integers("1/0"), "a written 0 is Z(1, 1)");
     }
 
     @Test
     void namedValuesAreExactPairs() {
-        assertEquals("Q(1, 0)", integers("ω"));
+        assertEquals("Z(1, -1)", integers("ω"));
         assertEquals("Q(0, -1)", integers("_0"));
         assertEquals("Q(-1, -1)", integers("-_1"));
-        assertEquals("Q(0, 0)", integers("0ω"));
+        assertEquals("Z(1, 0)", integers("0ω"));
         assertEquals("C(1, 0)", integers("i"));
         assertEquals("C(0, -1)", integers("i·i"));
         assertEquals("C(3, 4)", integers("4 + 3i"));
@@ -58,7 +58,8 @@ class EvaluatorTest {
         assertEquals("C(3, Q(9, 2))", integers("Q(1, 2) + C(3, 4)"));
         assertEquals("C(3, Q(9, 2))", integers("C(3, 4) + Q(1, 2)"));
         assertEquals("Q(C(6, 9), 2)", factored("Q(1, 2) + C(3, 4)"));
-        assertEquals("C(1, Q(1, 0))", integers("C(1, 2) + ω"));
+        assertEquals("C(1, S(2, Z(1, -1)))", integers("C(1, 2) + ω"));
+        assertEquals("C(1, Q(1, 0))", integers("C(1, 2) + Q(1, 0)"));
     }
 
     @Test
