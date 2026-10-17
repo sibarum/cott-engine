@@ -169,6 +169,11 @@ The prompt tags each reading with its rung unless it is exact. The readings are:
   of a whole turn, in `(−1/2, 1/2]`. Neither needs π.
 - **`lowest terms`**: each `Q` of two Integers inside a nested value reduced to its ratio's representative, where
   one is not already.
+- **`simplified`**: the value as a series in `0`, its sums flattened, its quotients reduced and its like terms
+  combined, from the highest power of `ω` down: `(2 + 0 + 1/0)^2` is `ω^2 + 4·ω + 6 + 4·0 + 0^2`. Like terms that
+  cancel follow the cancellation mode, as `Z`'s `+` does. Read from numbers, `Q`, `Z`, `S`, `D` and `P` with exact
+  coefficients; a double, an `E` or `B`, or a denominator of several orders has none, and a flat `Q` leaves it to its
+  projections. `Simplifier.simplify` gives it as a value. The first stage of the rewriting simplifier.
 - **`cott-lean`**: the file proving this nesting's operations, or that none does. A `C`, `D`, `S`, `Q` or `P`
   of two numbers is `T/Unquotiented` and `T/PairAlgebras`; `Q` of `Q` is `Nested/Basic`, `C` of `Q`
   `Nested/Point`, `Q` of `C` `Nested/RatioPoint`, `C` of `C` `Nested/Bicomplex`, and `C` of `Q` of `C`

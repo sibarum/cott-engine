@@ -148,7 +148,7 @@ public final class Calculator {
             }
             default -> {}
         }
-        for (Readings.Reading reading : Readings.of(r.value())) {
+        for (Readings.Reading reading : Readings.of(r.value(), cancellation())) {
             readings.put(reading.name(), reading.text());
             if (reading.rung() != null) rungs.put(reading.name(), reading.rung());
         }
