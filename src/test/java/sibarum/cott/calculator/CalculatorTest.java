@@ -124,6 +124,15 @@ class CalculatorTest {
     }
 
     @Test
+    void anAnswerSaysWhetherItsLineWroteAConstructor() {
+        Calculator c = new Calculator();
+        assertTrue(value(c, "Q(2, 3)").constructed());
+        assertTrue(!value(c, "2/3").constructed());
+        c.enter("h = Q(1, 2)");
+        assertTrue(value(c, "h + h").constructed(), "a variable counts as it was defined");
+    }
+
+    @Test
     void whatIsShownReadsBackAsTheSameValue() {
         Calculator c = new Calculator();
         for (String line : List.of("1/0", "6/3", "4 - 3i", "1/2 + (4 + 3i)", "(2 + i)^3")) {

@@ -30,10 +30,11 @@ public sealed interface Result {
      * {@link #shown} writes it in the notation the line was written in: by its constructors when the line wrote a
      * pair that way, as {@code Q(2, 3)}, and otherwise in the ordinary notation, as {@code 2/3} or {@code 3 + 2i}.
      * {@link #readings} gives the other ways of reading it, by name, written, and {@link #rungs} the {@link Rung} of
-     * each that is a reading of it: {@code rung} is the answer's own.
+     * each that is a reading of it: {@code rung} is the answer's own. {@link #constructed} says which notation that
+     * is, so a front end writing the value its own way can follow the same rule.
      */
-    record Value(Object value, String text, String shown, Map<String, String> readings, Map<String, Rung> rungs)
-            implements Result {
+    record Value(Object value, String text, String shown, Map<String, String> readings, Map<String, Rung> rungs,
+                 boolean constructed) implements Result {
 
         public Value {
             readings = Collections.unmodifiableMap(new LinkedHashMap<>(readings));

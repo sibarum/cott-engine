@@ -156,7 +156,8 @@ public final class Calculator {
             readings.put(call, certificate);
             rungs.put(call, Rung.UP_TO_ERROR);
         });
-        return new Result.Value(r.value(), r.text(), constructed(substituted) ? r.text() : r.ordinary(), readings, rungs);
+        boolean constructed = constructed(substituted);
+        return new Result.Value(r.value(), r.text(), constructed ? r.text() : r.ordinary(), readings, rungs, constructed);
     }
 
     /** The rungs of the flat ratio's projections: three quotients, and an angle that is a direction in a double. */
