@@ -8,6 +8,8 @@ import sibarum.cott.traction.Lean;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +51,12 @@ public final class Evaluator {
     private final Form form;
     private final Cancellation cancellation;
     private final Calls calls;
+
+    /** The most {@link #vanishes} questions open at once, before the answer is refused rather than the stack overflowed. */
+    static final int MAX_VANISHING = 512;
+
+    /** How many {@link #vanishes} questions are open now, each asked inside the one before. */
+    private int vanishing;
 
     @SuppressWarnings("unchecked")
     Evaluator(NumberType type, SizeLimit limit, Form form, Cancellation cancellation, Calls calls) {
@@ -299,22 +307,72 @@ public final class Evaluator {
      * Whether a value is exactly {@code 0}: a number that is, a {@code Q}, {@code Z} or {@code P} with a vanishing
      * factor, a {@code C} with both coordinates, a {@code D} or {@code S} whose difference or sum is. An {@code E} or a
      * {@code B} is never taken for one.
+     *
+     * <p>A {@code D} or {@code S} is taken apart into its terms, and the terms are added to one another wherever they
+     * combine. What is left does not combine, {@code Z(a, 1)} beside {@code Z(b, 2)}, so it is {@code 0} only where each
+     * term is. The sum is not asked again whole: {@code S(Z(a, 1), S(Z(b, 2), 9))} adds up to
+     * {@code S(Z(b, 2), S(Z(a, 1), 9))} and back, and asking it would ask the same question forever.
      */
     private boolean vanishes(Object v) {
-        return switch (v) {
-            case BigInteger n -> n.signum() == 0;
-            case BigDecimal d -> d.signum() == 0;
-            case Double d -> d == 0;
-            case Pair<?> x -> switch (x.algebra()) {
-                case Q, Z -> vanishes(x.p());
-                case P -> vanishes(x.p()) || vanishes(x.q());
-                case C -> vanishes(x.p()) && vanishes(x.q());
-                case D -> vanishes(sub(x.q(), x.p()));
-                case S -> vanishes(add(x.p(), x.q()));
-                case E, B, L -> false;
+        if (++vanishing > MAX_VANISHING)
+            throw new CalculatorException("too deeply nested to tell whether it is 0");
+        try {
+            return switch (v) {
+                case BigInteger n -> n.signum() == 0;
+                case BigDecimal d -> d.signum() == 0;
+                case Double d -> d == 0;
+                case Pair<?> x -> switch (x.algebra()) {
+                    case Q, Z -> vanishes(x.p());
+                    case P -> vanishes(x.p()) || vanishes(x.q());
+                    case C -> vanishes(x.p()) && vanishes(x.q());
+                    case D, S -> combined(terms(x, false, new ArrayList<>())).stream().allMatch(this::vanishes);
+                    case E, B, L -> false;
+                };
+                default -> throw new IllegalStateException("not a value: " + v);
             };
-            default -> throw new IllegalStateException("not a value: " + v);
-        };
+        } finally {
+            vanishing--;
+        }
+    }
+
+    /** The terms of a sum, {@code S(p, q)} as {@code p} and {@code q}, {@code D(p, q)} as {@code q} and {@code −p}. */
+    private List<Object> terms(Object v, boolean negated, List<Object> out) {
+        if (v instanceof Pair<?> x && x.algebra() == TractionAlgebra.S) {
+            terms(x.p(), negated, out);
+            terms(x.q(), negated, out);
+        } else if (v instanceof Pair<?> x && x.algebra() == TractionAlgebra.D) {
+            terms(x.q(), negated, out);
+            terms(x.p(), !negated, out);
+        } else {
+            out.add(negated ? neg(v) : v);
+        }
+        return out;
+    }
+
+    /**
+     * Terms added to one another until no two combine: two that do are replaced by their sum, which may combine
+     * again, and a term beside its negation is {@code 0}. Each sum leaves one term fewer, so this ends.
+     */
+    private List<Object> combined(List<Object> terms) {
+        List<Object> apart = new ArrayList<>();
+        ArrayDeque<Object> pending = new ArrayDeque<>(terms);
+        next:
+        while (!pending.isEmpty()) {
+            Object t = pending.pop();
+            for (int k = 0; k < apart.size(); k++) {
+                Object other = apart.get(k);
+                Object sum = add(other, t);
+                if (sum instanceof Pair<?> s && s.algebra() == TractionAlgebra.S)
+                    sum = other.equals(neg(t)) ? numbers.zero() : null;
+                if (sum != null) {
+                    apart.remove(k);
+                    pending.push(sum);
+                    continue next;
+                }
+            }
+            apart.add(t);
+        }
+        return apart;
     }
 
     /**

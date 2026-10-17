@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import sibarum.cott.notation.Parser;
 import sibarum.cott.traction.Proves;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -49,6 +50,15 @@ class ZeroScaleTest {
         assertEquals("Z(5, 0)", residual("Z(3, 0) + 2"));
         assertEquals("S(Z(3, 1), Z(4, 2))", residual("Z(3, 1) + Z(4, 2)"), "two orders are a new element");
         assertEquals("S(Z(1, 1), 2)", residual("Z(1, 1) + 2"));
+    }
+
+    @Test
+    void coefficientsOfSeveralOrdersAddWithoutAskingTheSameSumForever() {
+        // ω + (ω² + 1) adds up to S(ω², S(ω, 1)) and back again, so whether it vanishes was asked until the stack overflowed
+        assertEquals("Z(S(Z(Q(1, 1), -2), S(Z(Q(1, 1), -1), 1)), 1)", residual("Z(1/0, 1) + Z((1/0)^2 + 1, 1)"));
+        assertEquals("Z(S(Z(Q(1, 1), -2), S(1, Z(Q(1, 1), -1))), 1)", residual("Z((1/0)^2 + 1, 1) + Z(1/0, 1)"));
+        // the calculator's plot of (2+0+1/0)^2(3x+1/0)^2/0, sampled at x = 1/2
+        assertDoesNotThrow(() -> residual("(2+0+1/0)^2(3/2+1/0)^2/0"));
     }
 
     @Test
