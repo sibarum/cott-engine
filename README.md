@@ -174,6 +174,13 @@ The prompt tags each reading with its rung unless it is exact. The readings are:
   cancel follow the cancellation mode, as `Z`'s `+` does. Read from numbers, `Q`, `Z`, `S`, `D` and `P` with exact
   coefficients; a double, an `E` or `B`, or a denominator of several orders has none, and a flat `Q` leaves it to its
   projections. `Simplifier.simplify` gives it as a value. The first stage of the rewriting simplifier.
+- **`chebyshev`**: the series in the Chebyshev ring `ℚ[s][g] / (g² − s·g + 1)`, with `g = 0^(1/2)` and
+  `s = g + 1/g`, as `a + b·g` with `a` and `b` polynomials in `s`. A power of `0` and the same power of `ω` add up to
+  a Chebyshev polynomial in `s`, `0 + ω = s^2 − 2`, so a series symmetric in them is a polynomial in `s` alone:
+  `(2 + 0 + 1/0)^2` is `s^4`, the binomial row of `(g + 1/g)^4`. A lopsided one keeps a `g`: `(0 + 3)^2` is
+  `-s^2 + 4 + (s^3 + 4·s)·g`. It is exact, reads back to the series, and is the ring of cott/solver's
+  `chebyshev_ring.py`. A plain number has none, nor a series past `0^16` or `ω^16`, where the polynomials outgrow the
+  series.
 - **`cott-lean`**: the file proving this nesting's operations, or that none does. A `C`, `D`, `S`, `Q` or `P`
   of two numbers is `T/Unquotiented` and `T/PairAlgebras`; `Q` of `Q` is `Nested/Basic`, `C` of `Q`
   `Nested/Point`, `Q` of `C` `Nested/RatioPoint`, `C` of `C` `Nested/Bicomplex`, and `C` of `Q` of `C`

@@ -73,6 +73,15 @@ public final class Simplifier {
         }
     }
 
+    /** The series itself: each order of {@code 0} with its coefficient, none of them {@code 0}, lowest order first. */
+    static Optional<TreeMap<Integer, Rational>> series(Object value, Cancellation cancellation) {
+        try {
+            return Optional.of(combine(terms(value), cancellation));
+        } catch (Unread | ArithmeticException none) {
+            return Optional.empty();
+        }
+    }
+
     // ---- reading the terms ----
 
     private static List<Term> terms(Object v) {

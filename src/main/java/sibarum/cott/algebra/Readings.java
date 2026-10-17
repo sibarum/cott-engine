@@ -44,7 +44,7 @@ public final class Readings {
 
     /**
      * The readings of {@code value}, with its {@link Simplifier series} among them where that differs from it: like
-     * terms combined as {@code cancellation} says. A flat {@code Q} of two Integers has none, since reducing it is
+     * terms combined as {@code cancellation} says, and its {@link Chebyshev} decomposition where it has one. A flat {@code Q} of two Integers has none, since reducing it is
      * what its projections already say, ray and ratio and classical apart.
      */
     public static List<Reading> of(Object value, Cancellation cancellation) {
@@ -53,6 +53,8 @@ public final class Readings {
         boolean flatRatio = pair.algebra() == TractionAlgebra.Q && pair.p() instanceof BigInteger && pair.q() instanceof BigInteger;
         if (!flatRatio) Simplifier.simplify(value, cancellation).filter(s -> !s.equals(value)).ifPresent(s ->
                 out.add(new Reading("simplified", Simplifier.written(value, cancellation).orElseThrow(), Rung.QUOTIENT)));
+        if (!flatRatio) Chebyshev.of(value, cancellation).ifPresent(e ->
+                out.add(new Reading("chebyshev", Chebyshev.written(e), Rung.QUOTIENT)));
         if (zeroScale(pair.algebra())) {
             if (!holdsZeroScale(pair.p()) && !holdsZeroScale(pair.q())) out.addAll(zeroScaleReadings(pair));
         } else if (!flatRatio && !holdsZeroScale(value)) {
