@@ -62,9 +62,10 @@ the same convention all the way down.
     cott-lean  no file covers this nesting; computed by the engine's rules
 ```
 
-Build it with `mvn package` and run it with `java -jar target/cott.jar`. On Windows it puts the console in
-UTF-8 while it runs and restores it after, so PowerShell needs no `chcp` first. `mvn -q compile exec:exec`
-runs it without building the jar.
+Run it with `mvn -q compile exec:exec` from the repository's root. On Windows it puts the console in UTF-8
+while it runs and restores it after, so PowerShell needs no `chcp` first: that is `cott-engine-windows`, which
+the build adds on Windows. `java -jar cott-engine/target/cott.jar` runs it too, but the jar alone does not carry
+the Windows module, so there a console left in its own code page shows `ω` as whatever that page makes of it.
 
 At the prompt, symbols are typed as escapes and printed as themselves: `\o` is `ω`, `\.` is `·`, `\x` is `×`,
 `\/` is `÷`, `\-` is `−`. The symbols themselves also work. `:symbols` lists the symbols and their escapes,

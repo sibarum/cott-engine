@@ -1,5 +1,6 @@
 package sibarum.cott.calculator;
 
+import sibarum.cott.spi.UnicodeConsole;
 import sibarum.cott.algebra.Rung;
 import sibarum.cott.notation.SyntaxException;
 
@@ -9,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ServiceLoader;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -22,11 +24,19 @@ import java.util.Map;
 public final class Repl {
 
     public static void main(String[] args) throws IOException {
-        Console console = Console.utf8();
+        // The console in UTF-8 where its OS needs telling (UnicodeConsole); nothing to do where none is on the class path.
+        AutoCloseable console = ServiceLoader.load(UnicodeConsole.class).findFirst().map(UnicodeConsole::utf8)
+                .orElse(null);
         try {
             run(System.in, new PrintStream(System.out, true, StandardCharsets.UTF_8));
         } finally {
-            if (console != null) console.close();
+            if (console != null) {
+                try {
+                    console.close();
+                } catch (Exception ignored) {
+                    // the console is the console's to restore; nothing more can be done
+                }
+            }
         }
     }
 

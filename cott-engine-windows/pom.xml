@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>sibarum.cott</groupId>
+        <artifactId>cott-engine-parent</artifactId>
+        <version>0.1.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>cott-engine-windows</artifactId>
+
+    <name>cott-engine-windows</name>
+    <description>
+        The Windows console in UTF-8 for as long as the calculator runs, through kernel32's code-page calls. A
+        UnicodeConsole found through ServiceLoader; cott-engine's OS-activated profile adds it.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>sibarum.cott</groupId>
+            <artifactId>cott-engine-api</artifactId>
+        </dependency>
+    </dependencies>
+</project>

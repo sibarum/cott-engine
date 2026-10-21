@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>sibarum.cott</groupId>
+        <artifactId>cott-engine-parent</artifactId>
+        <version>0.1.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>cott-engine</artifactId>
+
+    <name>cott-engine</name>
+    <description>
+        The traction calculator, implementing only what cott-lean proves. Pure Java: no
+        subprocess, no native code, no reflection. Its prompt puts a console in UTF-8 through the OS module the
+        profile below adds, where there is one.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>sibarum.cott</groupId>
+            <artifactId>cott-engine-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>cott</finalName>
+        <plugins>
+            <plugin>
+                <!-- java -jar target/cott.jar: the calculator, with native access enabled for the console -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>sibarum.cott.calculator.Repl</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- mvn -q compile exec:exec: the calculator at a prompt -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <skip>false</skip>
+                    <executable>java</executable>
+                    <classpathScope>runtime</classpathScope>
+                    <arguments>
+                        <argument>--enable-native-access=ALL-UNNAMED</argument>
+                        <argument>-Dstdout.encoding=UTF-8</argument>
+                        <argument>-cp</argument>
+                        <!-- the runtime class path, so the console's OS module is on it -->
+                        <classpath/>
+                        <argument>sibarum.cott.calculator.Repl</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- cott-lean checked out beside this repository: every citation is checked against it -->
+                        <cott.lean.declarations>${project.basedir}/../../cott-lean/declarations.txt</cott.lean.declarations>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Where the console needs putting into UTF-8 for ω, the OS module that does it. -->
+    <profiles>
+        <profile>
+            <id>platform-windows</id>
+            <activation><os><family>windows</family></os></activation>
+            <dependencies>
+                <dependency>
+                    <groupId>sibarum.cott</groupId>
+                    <artifactId>cott-engine-windows</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+</project>

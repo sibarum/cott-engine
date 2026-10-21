@@ -5,14 +5,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>sibarum.cott</groupId>
-    <artifactId>cott-engine</artifactId>
+    <artifactId>cott-engine-parent</artifactId>
     <version>0.1.2-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-    <name>cott-engine</name>
+    <name>cott-engine-parent</name>
     <description>
-        The traction calculator, implementing only what cott-lean proves. Pure Java: no
-        subprocess, no native code, no reflection.
+        The traction calculator, as modules: cott-engine (the number model and its prompt, pure Java), and what the
+        prompt needs from an operating system's console, behind UnicodeConsole (cott-engine-api), with an OS module
+        only where there is something to do: on Windows, whose consoles default to code pages without ω.
     </description>
+
+    <modules>
+        <module>cott-engine-api</module>
+        <module>cott-engine-windows</module>
+        <module>cott-engine</module>
+    </modules>
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
@@ -20,67 +28,48 @@
         <junit.version>5.11.4</junit.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>sibarum.cott</groupId>
+                <artifactId>cott-engine-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>sibarum.cott</groupId>
+                <artifactId>cott-engine-windows</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
-        <finalName>cott</finalName>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
+            <!-- `mvn compile exec:exec` from here runs the calculator: skipped everywhere but cott-engine. -->
             <plugin>
-                <!-- java -jar target/cott.jar: the calculator, with native access enabled for the console -->
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.2</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>sibarum.cott.calculator.Repl</mainClass>
-                        </manifest>
-                        <manifestEntries>
-                            <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <release>${maven.compiler.release}</release>
-                </configuration>
-            </plugin>
-            <plugin>
-                <!-- mvn -q compile exec:exec: the calculator at a prompt -->
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.0</version>
                 <configuration>
+                    <skip>true</skip>
                     <executable>java</executable>
-                    <arguments>
-                        <argument>--enable-native-access=ALL-UNNAMED</argument>
-                        <argument>-Dstdout.encoding=UTF-8</argument>
-                        <argument>-cp</argument>
-                        <argument>${project.build.outputDirectory}</argument>
-                        <argument>sibarum.cott.calculator.Repl</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
-                <configuration>
-                    <systemPropertyVariables>
-                        <!-- cott-lean checked out beside this repository: every citation is checked against it -->
-                        <cott.lean.declarations>${project.basedir}/../cott-lean/declarations.txt</cott.lean.declarations>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
