@@ -170,7 +170,7 @@ public final class Readings {
 
     /** The value of a pair of doubles, by complex arithmetic in doubles; empty where it is not a number. */
     private static Optional<String> approximately(Object v) {
-        return approximately(complex(v));
+        return complex(v).flatMap(Readings::approximately);
     }
 
     private static Optional<String> approximately(double[] z) {
@@ -182,9 +182,24 @@ public final class Readings {
         return Optional.of(re + (z[1] < 0 ? " - " : " + ") + im);
     }
 
-    private static double[] complex(Object v) {
+    /**
+     * The complex number a value stands for, {@code {re, im}} in doubles, up to error: each algebra read as its meaning
+     * all the way down, and {@code L(s, t)} as {@code e^(s/2)} turned {@code t}. Empty for a {@code Z}, {@code E} or
+     * {@code B}, a zero magnitude turned, or a {@code Q} over {@code 0}, none of which is a complex number, and where
+     * the doubles make a NaN. A double's infinity is kept.
+     */
+    public static Optional<double[]> complex(Object v) {
+        double[] z = point(v);
+        return z == null || Double.isNaN(z[0]) || Double.isNaN(z[1]) ? Optional.empty() : Optional.of(z);
+    }
+
+    /** {@link #complex}, or null where there is none. */
+    private static double[] point(Object v) {
         if (v instanceof Pair<?> x) {
-            double[] a = complex(x.p()), b = complex(x.q());
+            if (x.algebra() == TractionAlgebra.L) return logPairPoint(x);
+            if (zeroScale(x.algebra())) return null;
+            double[] a = point(x.p()), b = point(x.q());
+            if (a == null || b == null) return null;
             return switch (x.algebra()) {
                 case C -> new double[]{b[0] - a[1], b[1] + a[0]};
                 case D -> new double[]{b[0] - a[0], b[1] - a[1]};
@@ -192,14 +207,29 @@ public final class Readings {
                 case P -> new double[]{a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]};
                 case Q -> {
                     double n = b[0] * b[0] + b[1] * b[1];
-                    yield new double[]{(a[0] * b[0] + a[1] * b[1]) / n, (a[1] * b[0] - a[0] * b[1]) / n};
+                    yield n == 0 ? null : new double[]{(a[0] * b[0] + a[1] * b[1]) / n, (a[1] * b[0] - a[0] * b[1]) / n};
                 }
-                case Z, E, B, L -> throw new IllegalStateException(x.algebra() + " has no complex value");
+                case Z, E, B, L -> throw new AssertionError();
             };
         }
         if (v instanceof Double d) return new double[]{d, 0};
         if (v instanceof BigDecimal d) return new double[]{d.doubleValue(), 0};
-        return new double[]{((BigInteger) v).doubleValue(), 0};
+        if (v instanceof BigInteger n) return new double[]{n.doubleValue(), 0};
+        return null;
+    }
+
+    /** {@code L(s, t)} as {@code e^(s/2)} turned {@code t}, exactly at a whole quarter turn of magnitude {@code 1}. */
+    @Lean("T.Unquotiented.L")
+    private static double[] logPairPoint(Pair<?> x) {
+        Optional<Rational> s = Logs.ratio(x.p()).flatMap(Logs.Ratio::value), t = Logs.ratio(x.q()).flatMap(Logs.Ratio::value);
+        if (s.isEmpty() || t.isEmpty()) return null;
+        Rational quarters = t.get().times(Rational.of(4, 1));
+        if (s.get().num().signum() == 0 && quarters.den().equals(BigInteger.ONE)) {
+            int k = quarters.num().mod(BigInteger.valueOf(4)).intValue();
+            return new double[][]{{1, 0}, {0, 1}, {-1, 0}, {0, -1}}[k];
+        }
+        double r = Math.exp(decimal(s.get()) / 2), a = 2 * Math.PI * decimal(t.get());
+        return new double[]{r * Math.cos(a), r * Math.sin(a)};
     }
 
     /** The direction as a fraction of a whole turn, in {@code (−1/2, 1/2]}, to ten places. */
@@ -273,10 +303,7 @@ public final class Readings {
     private record Coordinate(Gaussian exact, double[] approx) {
 
         static Optional<Coordinate> of(Object v) {
-            if (hasDouble(v)) {
-                double[] z = complex(v);
-                return Double.isNaN(z[0]) || Double.isNaN(z[1]) ? Optional.empty() : Optional.of(new Coordinate(null, z));
-            }
+            if (hasDouble(v)) return complex(v).map(z -> new Coordinate(null, z));
             return exactly(v).map(g -> new Coordinate(g, null));
         }
 

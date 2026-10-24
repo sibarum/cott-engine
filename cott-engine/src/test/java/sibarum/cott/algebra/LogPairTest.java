@@ -9,8 +9,10 @@ import sibarum.cott.traction.Proves;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * {@code L(s, t)}: a value's logarithm as a scale ratio and a turn ratio. {@code +} adds both (the product of the
@@ -83,6 +85,19 @@ class LogPairTest {
         assertEquals("i", readings("(-1)^(2/4)").get("value"));
         assertEquals("-i", readings("(-1)^(3/2)").get("value"));
         assertEquals("L(Q(0, 2), Q(0, 2))", text("1^(1/2)"), "the identity 1 has no turn");
+    }
+
+    /** The complex number a plot reads off a value: an {@code L} too, and nothing for a zero magnitude turned. */
+    @Test
+    void aLogPairIsAComplexNumber() {
+        double[] eighth = Readings.complex(value(NumberType.INTEGER, "i^(1/2)")).orElseThrow();
+        assertEquals(Math.sqrt(0.5), eighth[0], 1e-15);
+        assertEquals(Math.sqrt(0.5), eighth[1], 1e-15);
+        assertArrayEquals(new double[]{0, -1}, Readings.complex(value(NumberType.INTEGER, "(-1)^(3/2)")).orElseThrow(),
+                "a whole quarter turn is exact");
+        assertArrayEquals(new double[]{0, 1}, Readings.complex(value(NumberType.INTEGER, "i")).orElseThrow());
+        assertTrue(Readings.complex(value(NumberType.INTEGER, "0^(1/2)")).isEmpty(), "0 turned is no complex number");
+        assertTrue(Readings.complex(value(NumberType.INTEGER, "0")).isEmpty(), "nor is a written 0, Z(1, 1)");
     }
 
     @Test
