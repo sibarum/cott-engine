@@ -7,7 +7,7 @@
     <parent>
         <groupId>sibarum.cott</groupId>
         <artifactId>cott-engine-parent</artifactId>
-        <version>0.1.2-SNAPSHOT</version>
+        <version>0.1.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>cott-engine</artifactId>
